@@ -7,7 +7,7 @@ The stage 0 code verifies the stage 1 payload against a specific hash, preventin
 it's an extension of the stage 0 payload, but stored on the server for lack of a good place to store it in game memory.
 
 ## Building
-The code is very small and as such does not need a very complicated build system. The Python script `build.py`
+The code is very small and as such does not need a very complicated build system. The Python script `make-stage1.py`
 includes the commands to build it. You will need the `DEVKITPPC` environment variable set.
 
 ## Other Licenses
