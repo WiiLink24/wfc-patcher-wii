@@ -1,0 +1,134 @@
+// info.cpp - WWFC payload info header
+
+#include "wwfcPatch.hpp"
+#include "wwfcSupport.hpp"
+#include "wwfcUtil.h"
+#include <wwfcCommon.h>
+#include <wwfcError.h>
+
+namespace wwfc::Payload
+{
+
+// Define low level symbols
+extern "C" {
+
+/**
+ * Payload entry point. Does not apply global offset table and fixup
+ * relocations. Automatically called by wwfc_payload_entry.
+ */
+s32 wwfc_payload_entry_no_got(wwfc_payload* payload);
+
+/**
+ * Payload entry point. Applies global offset table and fixup relocations, and
+ * then calls wwfc_payload_entry_no_got.
+ */
+s32 wwfc_payload_entry(wwfc_payload* payload);
+
+// Symbols provided in the linker script
+extern u32 _G_GOTStart;
+extern u32 _G_GOTEnd;
+extern wwfc_patch _G_WWFCPatchStart;
+extern wwfc_patch _G_WWFCPatchEnd;
+extern u32 _G_FixupStart;
+extern u32 _G_FixupEnd;
+extern u8 _G_End;
+}
+
+SECTION("wwfc_header")
+wwfc_payload header = {
+    .header =
+        {
+            .magic =
+                {'W', 'W', 'F', 'C', '/', 'P', 'a', 'y', 'l', 'o', 'a', 'd'},
+            .total_size = u32(&_G_End),
+            .signature = {},
+        },
+    .salt = {},
+    .info =
+        {
+            .format_version = 1,
+            .format_version_compat = 1,
+            .name = PAYLOAD_NAME,
+            .version = 0,
+            .got_start = u32(&_G_GOTStart),
+            .got_end = u32(&_G_GOTEnd),
+            .fixup_start = u32(&_G_FixupStart),
+            .fixup_end = u32(&_G_FixupEnd),
+            .patch_list_offset = u32(&_G_WWFCPatchStart),
+            .patch_list_end = u32(&_G_WWFCPatchEnd),
+            .entry_point = u32(&wwfc_payload_entry),
+            .entry_point_no_got = u32(&wwfc_payload_entry_no_got),
+            .reserved = {},
+            .build_timestamp = __TIMESTAMP__,
+        },
+};
+
+/**
+ * Payload entry point. Applies global offset table and fixup relocations, and
+ * then calls wwfc_payload_entry_no_got.
+ */
+ASM_FUNCTION( //
+    s32 wwfc_payload_entry(wwfc_payload* payload),
+    // clang-format off
+    addi    r6, r3, (_G_GOTStart - 4)@l;
+    addi    r7, r3, (_G_GOTEnd - 4)@l;
+    addi    r8, r3, (_G_FixupEnd - 4)@l;
+L_LoopStart:;
+    cmplw   r6, r7;
+    bge-    L_LoopFixupStart;
+    lwzu    r9, 0x4(r6);
+    rlwinm. r0, r9, 0, 0x80000000;
+    bne-    L_LoopStart;
+    add     r9, r9, r3;
+    stw     r9, 0(r6);
+    b       L_LoopStart;
+L_LoopFixupStart:;
+    cmplw   r6, r8;
+    bge-    L_LoopFixupEnd;
+    lwzu    r9, 0x4(r6);
+    lwzx    r10, r9, r3;
+    rlwinm. r0, r10, 0, 0x80000000;
+    bne-    L_LoopFixupStart;
+    add     r10, r10, r3;
+    stwx    r10, r9, r3;
+    b       L_LoopFixupStart;
+L_LoopFixupEnd:;
+    b       wwfc_payload_entry_no_got;
+    // clang-format on
+)
+
+extern struct LoMem {
+    u32 discId;
+    u16 makerCode;
+    u8 discNumber;
+    u8 discVersion;
+} g_LoMem AT(0x80000000);
+
+/**
+ * Payload entry point. Does not apply global offset table and fixup
+ * relocations. Automatically called by wwfc_payload_entry.
+ */
+s32 wwfc_payload_entry_no_got(wwfc_payload* payload)
+{
+#if TITLE_TYPE == TITLE_TYPE_DISC
+    // Verify that the current game is the one this payload is built for
+    if (g_LoMem.discId != GAME_ID) {
+        return WL_ERROR_PAYLOAD_GAME_MISMATCH;
+    }
+
+    if (g_LoMem.discVersion != TITLE_VERSION) {
+        return WL_ERROR_PAYLOAD_GAME_MISMATCH;
+    }
+#endif
+
+    Patch::ApplyPatchList(
+        reinterpret_cast<u32>(payload), &_G_WWFCPatchStart,
+        std::distance(&_G_WWFCPatchStart, &_G_WWFCPatchEnd)
+    );
+
+    Support::ChangeAuthURL();
+
+    return WL_ERROR_PAYLOAD_OK;
+}
+
+} // namespace wwfc::Payload
