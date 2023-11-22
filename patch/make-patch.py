@@ -2,8 +2,9 @@ from multiprocessing.pool import ThreadPool, TimeoutError
 from sys import argv
 import os, csv, time, subprocess, hashlib
 
-cc = "powerpc-eabi-gcc"
-objcopy = "powerpc-eabi-objcopy"
+devkitppc = os.environ.get('DEVKITPPC')
+path_cc = os.path.join(devkitppc, "bin", "powerpc-eabi-gcc")
+path_objcopy = os.path.join(devkitppc, "bin", "powerpc-eabi-objcopy")
 
 gct_print = False
 stage1_hash_md5 = ""
@@ -30,9 +31,9 @@ def build(game):
     flags.append("-DSTAGE1_SIZE=" + str(stage1_size))
     flags += extra_build_flags
 
-    out_path = "./build/" + game["Title"]
-    subprocess.run([cc, "-o" + out_path + ".o", "-xassembler-with-cpp", "./wwfcPatch.s", "-c", "-mregnames", "-I../include"] + flags).check_returncode()
-    subprocess.run([objcopy, out_path + ".o", out_path + ".bin", "-O", "binary"])
+    out_path = os.path.join("build", game["Title"])
+    subprocess.run([path_cc, "-o" + out_path + ".o", "-xassembler-with-cpp", "wwfcPatch.s", "-c", "-mregnames", "-I" + os.path.join("..", "include")] + flags).check_returncode()
+    subprocess.run([path_objcopy, out_path + ".o", out_path + ".bin", "-O", "binary"])
 
     raw = open(out_path + ".bin", "rb").read()
     text = ""
@@ -53,19 +54,19 @@ def build(game):
 
 if __name__ == "__main__":
     try:
-        os.mkdir("./build")
+        os.mkdir("build")
     except:
         pass
 
     game_list = []
 
-    with open("../gamedefs.csv") as csv_file:
+    with open(os.path.join("..", "gamedefs.csv")) as csv_file:
         reader = csv.DictReader(csv_file, delimiter=",", dialect="excel")
         for game in reader:
             game_list.append(game)
 
     try:
-        stage1_data = open("../stage1/build/stage1.bin", "rb").read()
+        stage1_data = open(os.path.join("..", "stage1", "build", "stage1.bin"), "rb").read()
         stage1_hash_md5 = hashlib.md5(b"\x01\x2C" + stage1_data).hexdigest()
         stage1_size = len(stage1_data)
     except:

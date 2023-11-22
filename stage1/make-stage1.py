@@ -1,9 +1,10 @@
 import sys, os, struct, subprocess, string
 from sys import argv
 
-path_cc = "powerpc-eabi-gcc"
-path_objcopy = "powerpc-eabi-objcopy"
-path_build = "./build"
+devkitppc = os.environ.get('DEVKITPPC')
+path_cc = os.path.join(devkitppc, "bin", "powerpc-eabi-gcc")
+path_objcopy = os.path.join(devkitppc, "bin", "powerpc-eabi-objcopy")
+path_build = "build"
 
 extra_build_flags = []
 
@@ -19,10 +20,11 @@ try:
 except:
     pass
 
-ccflags = "-Os -std=c++20 -fno-rtti -ffreestanding -nodefaultlibs -nostdlib -fno-unwind-tables -fno-exceptions -fmerge-all-constants -ffunction-sections -fdata-sections -fshort-enums -I../include -nodefaultlibs -nostdlib -lgcc -Wl,--gc-sections"
+ccflags = "-Os -std=c++20 -fno-rtti -ffreestanding -nodefaultlibs -nostdlib -fno-unwind-tables -fno-exceptions -fmerge-all-constants -ffunction-sections -fdata-sections -fshort-enums -nodefaultlibs -nostdlib -lgcc -Wl,--gc-sections "
+ccflags += "-I" + os.path.join("..", "include")
 
-subprocess.run([path_cc, "./wwfcStage1.cpp"] + ccflags.split(" ") + ["-S", "-o" + path_build + "/build.s"] + extra_build_flags).check_returncode()
+subprocess.run([path_cc, "wwfcStage1.cpp"] + ccflags.split(" ") + ["-S", "-o" + os.path.join(path_build, "build.s")] + extra_build_flags).check_returncode()
 
-subprocess.run([path_cc, path_build + "/build.s"] + ccflags.split(" ") + ['-o' + path_build + "/build.elf", "-Tstage1.ld"]).check_returncode()
+subprocess.run([path_cc, os.path.join(path_build, "build.s")] + ccflags.split(" ") + ['-o' + os.path.join(path_build, "build.elf"), "-Tstage1.ld"]).check_returncode()
 
-subprocess.run([path_objcopy, path_build + "/build.elf", path_build + "/stage1.bin", "-O", "binary"]).check_returncode()
+subprocess.run([path_objcopy, os.path.join(path_build, "build.elf"), os.path.join(path_build, "stage1.bin"), "-O", "binary"]).check_returncode()

@@ -1,12 +1,10 @@
 from multiprocessing.pool import ThreadPool, TimeoutError
-import time
-import os
-import csv
-import subprocess
+import time, os, csv, subprocess
 from sys import argv
 
-cc = "powerpc-eabi-gcc"
-objcopy = "powerpc-eabi-objcopy"
+devkitppc = os.environ.get('DEVKITPPC')
+path_cc = os.path.join(devkitppc, "bin", "powerpc-eabi-gcc")
+path_objcopy = os.path.join(devkitppc, "bin", "powerpc-eabi-objcopy")
 
 extra_build_flags = []
 
@@ -34,23 +32,25 @@ def build(game):
     flags += ["-g", "-Os", "-fPIE", "-std=c++20", "-n", "-ffunction-sections", "-fdata-sections", "-Wl,--gc-sections"]
     flags += extra_build_flags
 
-    out_path = "./build/" + game["Title"]
-    subprocess.run([cc, "-o" + out_path + ".elf", "./wwfc.cpp", "-T./payload.ld", "-I../include", "-I."] + flags).check_returncode()
-    subprocess.run([objcopy, out_path + ".elf", './binary/payload.' + game["Title"] + ".bin", "-O", "binary"]).check_returncode()
+    out_path = os.path.join("build", game["Title"])
+    binary_path = os.path.join("binary", "payload." + game["Title"] + ".bin")
+    include_path = os.path.join("..", "include")
+    subprocess.run([path_cc, "-o" + out_path + ".elf", "wwfc.cpp", "-Tpayload.ld", "-I" + include_path, "-I."] + flags).check_returncode()
+    subprocess.run([path_objcopy, out_path + ".elf", binary_path, "-O", "binary"]).check_returncode()
 
 if __name__ == "__main__":
     try:
-        os.mkdir("./build")
+        os.mkdir("build")
     except:
         pass
 
     try:
-        os.mkdir("./binary")
+        os.mkdir("binary")
     except:
         pass
 
     game_list = []
-    with open("../gamedefs.csv") as csv_file:
+    with open(os.path.join("..", "gamedefs.csv")) as csv_file:
         reader = csv.DictReader(csv_file, delimiter=",", dialect="excel")
         for game in reader:
             game_list.append(game)
