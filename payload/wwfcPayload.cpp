@@ -1,5 +1,3 @@
-// info.cpp - WWFC payload info header
-
 #include "wwfcPatch.hpp"
 #include "wwfcSupport.hpp"
 #include "wwfcUtil.h"
@@ -10,37 +8,35 @@ namespace wwfc::Payload
 {
 
 // Define low level symbols
-extern "C" {
-
-/**
- * Payload entry point. Does not apply global offset table and fixup
- * relocations. Automatically called by wwfc_payload_entry.
- */
-s32 wwfc_payload_entry_no_got(wwfc_payload* payload);
 
 /**
  * Payload entry point. Applies global offset table and fixup relocations, and
  * then calls wwfc_payload_entry_no_got.
  */
-s32 wwfc_payload_entry(wwfc_payload* payload);
+s32 Entry(wwfc_payload* payload) asm("wwfc_payload_entry");
+
+/**
+ * Payload entry point. Does not apply global offset table and fixup
+ * relocations. Automatically called by wwfc_payload_entry.
+ */
+s32 EntryAfterGOT(wwfc_payload* payload) asm("wwfc_payload_entry_no_got");
 
 // Symbols provided in the linker script
-extern u32 _G_GOTStart;
-extern u32 _G_GOTEnd;
-extern wwfc_patch _G_WWFCPatchStart;
-extern wwfc_patch _G_WWFCPatchEnd;
-extern u32 _G_FixupStart;
-extern u32 _G_FixupEnd;
-extern u8 _G_End;
-}
+extern u32 GOTStart asm("_G_GOTStart");
+extern u32 GOTEnd asm("_G_GOTEnd");
+extern u32 FixupStart asm("_G_FixupStart");
+extern u32 FixupEnd asm("_G_FixupEnd");
+extern wwfc_patch PatchStart asm("_G_WWFCPatchStart");
+extern wwfc_patch PatchEnd asm("_G_WWFCPatchEnd");
+extern u8 PayloadEnd asm("_G_End");
 
 SECTION("wwfc_header")
-wwfc_payload header = {
+const wwfc_payload Header = {
     .header =
         {
             .magic =
                 {'W', 'W', 'F', 'C', '/', 'P', 'a', 'y', 'l', 'o', 'a', 'd'},
-            .total_size = u32(&_G_End),
+            .total_size = u32(&PayloadEnd),
             .signature = {},
         },
     .salt = {},
@@ -49,15 +45,15 @@ wwfc_payload header = {
             .format_version = 1,
             .format_version_compat = 1,
             .name = PAYLOAD_NAME,
-            .version = 0,
-            .got_start = u32(&_G_GOTStart),
-            .got_end = u32(&_G_GOTEnd),
-            .fixup_start = u32(&_G_FixupStart),
-            .fixup_end = u32(&_G_FixupEnd),
-            .patch_list_offset = u32(&_G_WWFCPatchStart),
-            .patch_list_end = u32(&_G_WWFCPatchEnd),
-            .entry_point = u32(&wwfc_payload_entry),
-            .entry_point_no_got = u32(&wwfc_payload_entry_no_got),
+            .version = 1,
+            .got_start = u32(&GOTStart),
+            .got_end = u32(&GOTEnd),
+            .fixup_start = u32(&FixupStart),
+            .fixup_end = u32(&FixupEnd),
+            .patch_list_offset = u32(&PatchStart),
+            .patch_list_end = u32(&PatchEnd),
+            .entry_point = u32(&Entry),
+            .entry_point_no_got = u32(&EntryAfterGOT),
             .reserved = {},
             .build_timestamp = __TIMESTAMP__,
         },
@@ -68,7 +64,7 @@ wwfc_payload header = {
  * then calls wwfc_payload_entry_no_got.
  */
 ASM_FUNCTION( //
-    s32 wwfc_payload_entry(wwfc_payload* payload),
+    s32 Entry(wwfc_payload* payload),
     // clang-format off
     addi    r6, r3, (_G_GOTStart - 4)@l;
     addi    r7, r3, (_G_GOTEnd - 4)@l;
@@ -108,7 +104,7 @@ extern struct LoMem {
  * Payload entry point. Does not apply global offset table and fixup
  * relocations. Automatically called by wwfc_payload_entry.
  */
-s32 wwfc_payload_entry_no_got(wwfc_payload* payload)
+s32 EntryAfterGOT(wwfc_payload* payload)
 {
 #if TITLE_TYPE == TITLE_TYPE_DISC
     // Verify that the current game is the one this payload is built for
@@ -122,8 +118,8 @@ s32 wwfc_payload_entry_no_got(wwfc_payload* payload)
 #endif
 
     Patch::ApplyPatchList(
-        reinterpret_cast<u32>(payload), &_G_WWFCPatchStart,
-        std::distance(&_G_WWFCPatchStart, &_G_WWFCPatchEnd)
+        reinterpret_cast<u32>(payload), &PatchStart,
+        std::distance(&PatchStart, &PatchEnd)
     );
 
     Support::ChangeAuthURL();
