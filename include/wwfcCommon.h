@@ -28,10 +28,10 @@ typedef double f64;
 
 #ifndef WWFC_DOMAIN
 
-#  ifdef USE_TEST_DOMAIN
-#    define WWFC_DOMAIN "nwfc.wiinoma.com" // Points to localhost
-#  else
+#  ifdef PROD
 #    define WWFC_DOMAIN "wiilink24.com"
+#  else
+#    define WWFC_DOMAIN "nwfc.wiinoma.com" // Points to localhost
 #  endif
 
 #endif

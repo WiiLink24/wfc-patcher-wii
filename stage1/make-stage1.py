@@ -20,11 +20,11 @@ try:
 except:
     pass
 
-ccflags = "-Os -std=c++20 -fno-rtti -ffreestanding -nodefaultlibs -nostdlib -fno-unwind-tables -fno-exceptions -fmerge-all-constants -ffunction-sections -fdata-sections -fshort-enums -nodefaultlibs -nostdlib -lgcc -Wl,--gc-sections "
+ccflags = "-g -Os -std=c++20 -fno-rtti -ffreestanding -nodefaultlibs -nostdlib -fno-unwind-tables -fno-exceptions -fmerge-all-constants -ffunction-sections -fdata-sections -fshort-enums -nodefaultlibs -nostdlib -lgcc -Wl,--gc-sections -n "
 ccflags += "-I" + os.path.join("..", "include")
 
-subprocess.run([path_cc, "wwfcStage1.cpp"] + ccflags.split(" ") + ["-S", "-o" + os.path.join(path_build, "build.s")] + extra_build_flags).check_returncode()
+subprocess.run([path_cc, "wwfcStage1.cpp"] + ccflags.split(" ") + ["-S", "-o" + os.path.join(path_build, "stage1.s")] + extra_build_flags).check_returncode()
 
-subprocess.run([path_cc, os.path.join(path_build, "build.s")] + ccflags.split(" ") + ['-o' + os.path.join(path_build, "build.elf"), "-Tstage1.ld"]).check_returncode()
+subprocess.run([path_cc, os.path.join(path_build, "stage1.s")] + ccflags.split(" ") + ['-o' + os.path.join(path_build, "stage1.elf"), "-Tstage1.ld"]).check_returncode()
 
-subprocess.run([path_objcopy, os.path.join(path_build, "build.elf"), os.path.join(path_build, "stage1.bin"), "-O", "binary"]).check_returncode()
+subprocess.run([path_objcopy, os.path.join(path_build, "stage1.elf"), os.path.join(path_build, "stage1.bin"), "-O", "binary"]).check_returncode()
