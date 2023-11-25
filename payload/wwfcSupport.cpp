@@ -111,6 +111,11 @@ void ChangeAuthURL()
 {
     *(const char**) ADDRESS_NASWII_AC_URL_POINTER =
         "http://naswii." WWFC_DOMAIN "/ac";
+
+#if ADDRESS_NASWII_PR_URL_POINTER
+    *(const char**) ADDRESS_NASWII_PR_URL_POINTER =
+        "http://naswii." WWFC_DOMAIN "/pr";
+#endif
 }
 
 #if ADDRESS_GHIPARSEURL_HTTPS_PATCH
