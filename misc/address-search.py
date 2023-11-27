@@ -70,6 +70,15 @@ def parse_file(file_path, title_name):
         exit('missing naswii url pointer :( ' + title_name)
     ADDRESS_NASWII_AC_URL_POINTER = dol_to_real(hdr, index+0x50)
 
+    index = dol.find('https://naswii.nintendowifi.net/pr'.encode('ascii'))
+    ADDRESS_NASWII_PR_URL = 0
+    ADDRESS_NASWII_PR_URL_POINTER = 0
+    if index != -1:
+        ADDRESS_NASWII_PR_URL = dol_to_real(hdr, index)
+        if dol[index+0x50:index+0x54] != ADDRESS_NASWII_PR_URL.to_bytes(4):
+            exit('missing naswii pr url pointer :( ' + title_name)
+        ADDRESS_NASWII_PR_URL_POINTER = dol_to_real(hdr, index+0x50)
+
 
     index = dol.find(b'\x7C\x00\x18\xAC\x38\x63\x00\x20\x42\x00\xFF\xF8\x44\x00\x00\x02')
     if index == -1:
@@ -80,6 +89,30 @@ def parse_file(file_path, title_name):
     if index == -1:
         exit('missing icinvalidaterange :( ' + title_name)
     ADDRESS_ICInvalidateRange = dol_to_real(hdr, index-0x1C)
+
+    index = dol.find(b'\x38\xA0\x00\x00\x90\xA3\x00\x20\x38\x00\x00\x01\x80\x81\x00\x08')
+    if index == -1:
+        index = dol.find(b'\x38\xA0\x00\x00\x38\x00\x00\x01\x90\xA3\x00\x20\x80\x81\x00\x08')
+        if index == -1:
+            exit('missing IOS_Open :( ' + title_name)
+
+    assert(dol[index-0x5C:index-0x58] == b'\x94\x21\xFF\xE0')
+    ADDRESS_IOS_Open = dol_to_real(hdr, index - 0x5C)
+
+    index = dol.find(b'\x38\xA0\x00\x00\x90\xA3\x00\x20\x38\x00\x00\x02\x80\x81\x00\x08')
+    if index == -1:
+        index = dol.find(b'\x38\xA0\x00\x00\x38\x00\x00\x02\x90\xA3\x00\x20\x80\x81\x00\x08')
+        if index == -1:
+            exit('missing IOS_Close :( ' + title_name)
+
+    assert(dol[index-0x50:index-0x4C] == b'\x94\x21\xFF\xE0')
+    ADDRESS_IOS_Close = dol_to_real(hdr, index - 0x50)
+
+    index = dol.find(b'\x40\x82\x00\x38\x80\x61\x00\x08\x7F\x64\xDB\x78\x7F\x85\xE3\x78')
+    if index == -1:
+        exit('missing IOS_Ioctlv :( ' + title_name)
+    assert(dol[index-0x88:index-0x84] == b'\x94\x21\xFF\xD0')
+    ADDRESS_IOS_Ioctlv = dol_to_real(hdr, index - 0x88)
 
 
 
@@ -217,8 +250,6 @@ def parse_file(file_path, title_name):
     if found == False:
         print(title_name + ' ####### FOUND NOTHING')
         return
-
-
 
     # 0x180 type with B
     response = ''
@@ -641,6 +672,25 @@ def parse_file(file_path, title_name):
             assert(dol[index-0x14:index-0x10] == b'\x41\x82\x00\x18')
             ADDRESS_PATCH_SECURITY_QR2MATCHCOMMAND = dol_to_real(hdr, index+4)
 
+    # find gpiSendLogin
+    match = re.search(b'\x7F\x83\xE3\x78\x38\x9E\x02\x10\x38...\x4B...\x39\x61\x02\xB0\x38\x60\x00\x00', dol, flags=re.DOTALL)
+    if match == None:
+        exit('Missing find gpiSendLogin ' + title_name)
+
+    ADDRESS_PATCH_GPISENDLOGIN = dol_to_real(hdr, match.start(0))
+    ADDRESS_gpiAppendStringToBuffer = decode_bl(dol, match.start(0)+0xC)
+    ADDRESS_gpiAppendIntToBuffer = 0
+
+    if dol[match.start(0)-0x38:match.start(0)-0x35].hex() == "38a000":
+        ADDRESS_gpiAppendIntToBuffer = decode_bl(dol, match.start(0)-0x34)
+    elif dol[match.start(0)-0x18:match.start(0)-0x15].hex() == "38a000":
+        ADDRESS_gpiAppendIntToBuffer = decode_bl(dol, match.start(0)-0x14)
+    else:
+        exit(title_name + " GPISENDLOGIN " + dol[match.start(0)-0x34:match.start(0)-0x10].hex())
+
+    d = real_to_dol(hdr, ADDRESS_DWC_AUTH_ADD_MACADDR)
+    ADDRESS_DWC_Base64Encode = decode_bl(dol, d + 0x48)
+
 
     def fmthex(v):
         return "0x{:08X}".format(v)
@@ -651,8 +701,13 @@ def parse_file(file_path, title_name):
         "ADDRESS_strcmp":                    fmthex(ADDRESS_strcmp),
         "ADDRESS_DCFlushRange":              fmthex(ADDRESS_DCFlushRange),
         "ADDRESS_ICInvalidateRange":         fmthex(ADDRESS_ICInvalidateRange),
+        "ADDRESS_IOS_Open":                  fmthex(ADDRESS_IOS_Open),
+        "ADDRESS_IOS_Close":                 fmthex(ADDRESS_IOS_Close),
+        "ADDRESS_IOS_Ioctlv":                fmthex(ADDRESS_IOS_Ioctlv),
         "ADDRESS_NASWII_AC_URL":             fmthex(ADDRESS_NASWII_AC_URL),
         "ADDRESS_NASWII_AC_URL_POINTER":     fmthex(ADDRESS_NASWII_AC_URL_POINTER),
+        "ADDRESS_NASWII_PR_URL":             fmthex(ADDRESS_NASWII_PR_URL),
+        "ADDRESS_NASWII_PR_URL_POINTER":     fmthex(ADDRESS_NASWII_PR_URL_POINTER),
         "ADDRESS_AVAILABLE_URL":             fmthex(ADDRESS_AVAILABLE_URL),
         "ADDRESS_DWCi_Auth_SendRequest":     fmthex(ADDRESS_DWCi_Auth_SendRequest),
         "ADDRESS_DWCi_Auth_HandleResponse":  fmthex(ADDRESS_DWCi_Auth_HandleResponse),
@@ -680,6 +735,10 @@ def parse_file(file_path, title_name):
         "ADDRESS_GHIPARSEURL_HTTPS_PATCH":   fmthex(ADDRESS_GHIPARSEURL_HTTPS_PATCH),
         "ADDRESS_PATCH_SECURITY_GT2MATCHCOMMAND": fmthex(ADDRESS_PATCH_SECURITY_GT2MATCHCOMMAND),
         "ADDRESS_PATCH_SECURITY_QR2MATCHCOMMAND": fmthex(ADDRESS_PATCH_SECURITY_QR2MATCHCOMMAND),
+        "ADDRESS_gpiAppendStringToBuffer":   fmthex(ADDRESS_gpiAppendStringToBuffer),
+        "ADDRESS_gpiAppendIntToBuffer":      fmthex(ADDRESS_gpiAppendIntToBuffer),
+        "ADDRESS_PATCH_GPISENDLOGIN":        fmthex(ADDRESS_PATCH_GPISENDLOGIN),
+        "ADDRESS_DWC_Base64Encode":          fmthex(ADDRESS_DWC_Base64Encode),
     }
 
     games.append(game)
@@ -697,8 +756,13 @@ if __name__ == '__main__':
 		"ADDRESS_strcmp",
         "ADDRESS_DCFlushRange",
         "ADDRESS_ICInvalidateRange",
+        "ADDRESS_IOS_Open",
+        "ADDRESS_IOS_Close",
+        "ADDRESS_IOS_Ioctlv",
 		"ADDRESS_NASWII_AC_URL",
 		"ADDRESS_NASWII_AC_URL_POINTER",
+		"ADDRESS_NASWII_PR_URL",
+		"ADDRESS_NASWII_PR_URL_POINTER",
 		"ADDRESS_AVAILABLE_URL",
 		"ADDRESS_DWCi_Auth_SendRequest",
 		"ADDRESS_DWCi_Auth_HandleResponse",
@@ -726,6 +790,10 @@ if __name__ == '__main__':
         "ADDRESS_GHIPARSEURL_HTTPS_PATCH",
         "ADDRESS_PATCH_SECURITY_GT2MATCHCOMMAND",
         "ADDRESS_PATCH_SECURITY_QR2MATCHCOMMAND",
+        "ADDRESS_gpiAppendStringToBuffer",
+        "ADDRESS_gpiAppendIntToBuffer",
+        "ADDRESS_PATCH_GPISENDLOGIN",
+        "ADDRESS_DWC_Base64Encode",
 	]
 
     with open('gamedefs.csv', 'w', newline='') as csvfile:
