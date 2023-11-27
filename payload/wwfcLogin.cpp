@@ -220,7 +220,7 @@ static void SendAuthTokenSignature(
     // Add null terminator
     b64AuthSig[b64Len] = '\0';
 
-    gpiAppendStringToBuffer(connection, outputBuffer, "\\wwfc_auth_sig\\");
+    gpiAppendStringToBuffer(connection, outputBuffer, "\\wwfc_sig\\");
     gpiAppendStringToBuffer(connection, outputBuffer, b64AuthSig);
 }
 
