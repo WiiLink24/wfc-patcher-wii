@@ -56,6 +56,18 @@ L_GHAllocDone:
     // 0x58 -> 0x6C
 #endif
 
+#if ADDRESS_SSBB_GET_HEAP_FUNCTION
+    // Super Smash Bros. Brawl doesn't have the HBM heap pointer set yet so we need to do it ourselves
+    /* 0x0C */ li      r3, 6
+    /* 0x10 */ HC(GCT_STRING_BL_CALL, ADDRESS_SSBB_GET_HEAP_FUNCTION)
+    // TODO: This could be shortened to use r13
+    /* 0x14 */ lis     r4, ADDRESS_HBM_ALLOCATOR@ha
+    /* 0x18 */ stw     r3, ADDRESS_HBM_ALLOCATOR@l(r4)
+    // Adjust offsets from this point:
+    // 0x0C -> 0x1C
+    // 0x58 -> 0x68
+#endif
+
     // Calculate stage 1 MD5 hash
     /* 0x0C */ lwz     r3, 0xC(sp)
     /* 0x10 */ li      r4, STAGE1_SIZE + 0x2

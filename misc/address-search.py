@@ -429,12 +429,19 @@ def parse_file(file_path, title_name):
                 exit('MISSING N_Trans ' + title_name)
             if (index & 7) == 0 and dol[index-4] == 0x80:
                 ADDRESS_HBM_ALLOCATOR = dol_to_real(hdr, index-4)
-            if (index & 7) == 0 and dol[index-8] == 0x80:
+            elif (index & 7) == 0 and dol[index-8] == 0x80:
                 ADDRESS_HBM_ALLOCATOR = dol_to_real(hdr, index-8)
             else:
                 exit('BAD N_Trans ' + title_name)
 
-
+    # Super Smash Bros. Brawl only sets the HBM heap after pressing the home button for the first time
+    # so we must set it ourselves manually
+    ADDRESS_SSBB_GET_HEAP_FUNCTION = 0
+    if title_name.startswith('RSB'):
+        index = dol.find(b'\x38\x60\x00\x00\x7c\x84\x02\x14\x80\x84\x00\x04\x2c\x04\x00\x00\x4d\x82\x00\x20\x38\x64\x00\x40\x4e\x80\x00\x20')
+        if index == -1:
+            exit('SSBB MISSING GET HEAP FUNCTION ' + title_name)
+        ADDRESS_SSBB_GET_HEAP_FUNCTION = dol_to_real(hdr, index-0xC)
 
 
     # ---- SEARCH NHTTP FUNCTIONS
@@ -726,6 +733,7 @@ def parse_file(file_path, title_name):
         "ADDRESS_DWC_ERROR":                 fmthex(ADDRESS_DWC_ERROR),
         "ADDRESS_HBM_ALLOCATOR":             fmthex(ADDRESS_HBM_ALLOCATOR),
         "ADDRESS_GH_ALLOC_FUNCTION":         fmthex(ADDRESS_GH_ALLOC_FUNCTION),
+        "ADDRESS_SSBB_GET_HEAP_FUNCTION":    fmthex(ADDRESS_SSBB_GET_HEAP_FUNCTION),
         "ADDRESS_SKIP_DNS_CACHE":            fmthex(ADDRESS_SKIP_DNS_CACHE),
         "ADDRESS_SKIP_DNS_CACHE_CONTINUE":   fmthex(ADDRESS_SKIP_DNS_CACHE_CONTINUE),
         "ADDRESS_gethostbyname":             fmthex(ADDRESS_gethostbyname),
@@ -781,6 +789,7 @@ if __name__ == '__main__':
 		"ADDRESS_DWC_ERROR",
 		"ADDRESS_HBM_ALLOCATOR",
 		"ADDRESS_GH_ALLOC_FUNCTION",
+		"ADDRESS_SSBB_GET_HEAP_FUNCTION",
 		"ADDRESS_SKIP_DNS_CACHE",
 		"ADDRESS_SKIP_DNS_CACHE_CONTINUE",
 		"ADDRESS_gethostbyname",
