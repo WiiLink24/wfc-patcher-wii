@@ -172,9 +172,16 @@ static void SendAuthTokenSignature(
 
     // Now call ES sign
     u8 eccSignature[0x3C + 0x4] alignas(32) = {};
+    char authToken[GP_AUTHTOKEN_LEN] alignas(64) = {};
 
-    vec[0].data = &data->authtoken;
-    vec[0].size = std::strlen(data->authtoken);
+    s32 authTokenSize = std::strlen(data->authtoken);
+    if (authTokenSize > GP_AUTHTOKEN_LEN) {
+        authTokenSize = GP_AUTHTOKEN_LEN;
+    }
+    std::memcpy(authToken, data->authtoken, authTokenSize);
+
+    vec[0].data = &authToken;
+    vec[0].size = authTokenSize;
     vec[1].data = eccSignature;
     vec[1].size = 0x3C;
     vec[2].data = &eccCert;
