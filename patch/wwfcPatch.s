@@ -35,13 +35,32 @@ GCT_STRING(ADDRESS_DWC_AUTH_ADD_CSNUM, AuthStage0Code) // 0x800EE098
     // Hook at 0x800EE3AC (DWCi_Auth_HandleResponse, just after NHTTPGetBodyAll call)
 
 #if ADDRESS_HBM_ALLOCATOR
-    // Normal routine
+#  if R7EPD00 || R7EJD00 || R7EED00
+    // NiGHTS: Journey of Dreams doesn't have the HBM heap at all times
+    // These addresses are region-independent, much like other SEGA games
+    /* 0x04 */ HD(GCT_STRING_PTR_LWZU, r0, r31, LD_Stage1ParamBlock)
+    /* 0x0C */ cmplwi  r0, 0
+    /* 0x10 */ bne-    L_GHAllocDone
+
+    /* 0x14 */ lis     r3, 0x805BA418@h
+    /* 0x18 */ ori     r3, r3, 0x805BA418@l
+    /* 0x1C */ lis     r4, 0x20000@h
+    /* 0x20 */ li      r5, 32
+    /* 0x24 */ HC(GCT_STRING_BL_CALL, 0x80348F28)
+    /* 0x28 */ stw     r3, 0(r31)
+
+    // Adjust offsets from this point:
+    // 0x0C -> 0x2C
+    // 0x58 -> 0x78
+#  else
+    // Normal routine, executed if the HBM allocator is used
     /* 0x04 */ HD(GCT_STRING_PTR, r31, LD_Stage1ParamBlock)
+#  endif
 #else
 #  if !ADDRESS_GH_ALLOC_FUNCTION
 #    error Missing HBM allocator
 #  endif
-    // Guitar Hero alloc routine
+    // Guitar Hero games don't have the HBM heap at all times
     /* 0x04 */ HD(GCT_STRING_PTR_LWZU, r0, r31, LD_Stage1ParamBlock)
     /* 0x0C */ cmplwi  r0, 0
     /* 0x10 */ bne-    L_GHAllocDone
@@ -50,7 +69,6 @@ GCT_STRING(ADDRESS_DWC_AUTH_ADD_CSNUM, AuthStage0Code) // 0x800EE098
     /* 0x18 */ HC(GCT_STRING_BL_CALL, ADDRESS_GH_ALLOC_FUNCTION)
     /* 0x1C */ stw     r3, 0(r31)
 
-L_GHAllocDone:
     // Adjust offsets from this point:
     // 0x0C -> 0x20
     // 0x58 -> 0x6C
@@ -68,6 +86,7 @@ L_GHAllocDone:
     // 0x58 -> 0x68
 #endif
 
+L_GHAllocDone:
     // Calculate stage 1 MD5 hash
     /* 0x0C */ lwz     r3, 0xC(sp)
     /* 0x10 */ li      r4, STAGE1_SIZE + 0x2

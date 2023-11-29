@@ -641,9 +641,22 @@ public:
                 return WL_ERROR_PAYLOAD_STAGE1_ALLOC;
             }
 
-            block =
-                (*param->allocator)
-                    ->func->alloc(*param->allocator, PAYLOAD_BLOCK_SIZE + 32);
+            auto allocator = *param->allocator;
+            if (allocator == nullptr) {
+                return WL_ERROR_PAYLOAD_STAGE1_ALLOC;
+            }
+
+            auto func = allocator->func;
+            if (func == nullptr) {
+                return WL_ERROR_PAYLOAD_STAGE1_ALLOC;
+            }
+
+            auto allocFunc = func->alloc;
+            if (allocFunc == nullptr) {
+                return WL_ERROR_PAYLOAD_STAGE1_ALLOC;
+            }
+
+            block = allocFunc(allocator, PAYLOAD_BLOCK_SIZE + 32);
         }
 
         if (block == nullptr) {
@@ -687,7 +700,8 @@ public:
             SHA256Update(&ctx, ((u8*) seedData) - 0x400, 0x2000);
             SHA256Update(&ctx, (void*) 0x80000000, 0x4000);
             SHA256Update(&ctx, (void*) 0x90000000, 0x1000);
-            SHA256Update(&ctx, (void*) 0x935E0000, 0x30000);
+            ASM_LOAD_HI(u32* __restrict, MEM1_BASE, 0x8000);
+            SHA256Update(&ctx, &MEM1_BASE[0x3130 / 4], 0x30000);
             memcpy(salt, SHA256Final(&ctx), SHA256_DIGEST_SIZE);
         }
 
