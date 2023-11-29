@@ -5,6 +5,15 @@
 #  define WWFC_DOMAIN "wiilink24.com"
 #endif
 
+#define IBAT4U 560
+#define IBAT4L 561
+#define SRR0 26
+#define SRR1 27
+
+#if ST7PD00 || ST7ED00 | ST7JD00
+#  define NEEDS_IBAT_CONFIG
+#endif
+
 // The stage 1 payload is downloaded from the server and verified using its MD5
 // hash, preventing it from ever being updated, essentially making it an
 // extension of this code. Security note: I'm aware that MD5 has been
@@ -24,7 +33,6 @@ GCT_IF_NOT_EQUAL_INST(ADDRESS_DWC_AUTH_ADD_MACADDR, b 0x7C)
 // Skip adding the serial number to the auth request, and use the small area we
 // cleared for code.
 GCT_STRING(ADDRESS_DWC_AUTH_ADD_CSNUM, AuthStage0Code) // 0x800EE098
-
     // We have 0x800EE098 -> 0x800EE120
 #if RPBJD00 || RPBJD01 || RPBJD02
     // Different for Pokemon Battle Revolution
@@ -35,7 +43,7 @@ GCT_STRING(ADDRESS_DWC_AUTH_ADD_CSNUM, AuthStage0Code) // 0x800EE098
     // Hook at 0x800EE3AC (DWCi_Auth_HandleResponse, just after NHTTPGetBodyAll call)
 
 #if ADDRESS_HBM_ALLOCATOR
-#  if R7EPD00 || R7EJD00 || R7EED00
+#  if R7EPD00 || R7EED00 || R7EJD00
     // NiGHTS: Journey of Dreams doesn't have the HBM heap at all times
     // These addresses are region-independent, much like other SEGA games
     /* 0x04 */ HD(GCT_STRING_PTR_LWZU, r0, r31, LD_Stage1ParamBlock)
@@ -81,6 +89,7 @@ GCT_STRING(ADDRESS_DWC_AUTH_ADD_CSNUM, AuthStage0Code) // 0x800EE098
     // TODO: This could be shortened to use r13
     /* 0x14 */ lis     r4, ADDRESS_HBM_ALLOCATOR@ha
     /* 0x18 */ stw     r3, ADDRESS_HBM_ALLOCATOR@l(r4)
+
     // Adjust offsets from this point:
     // 0x0C -> 0x1C
     // 0x58 -> 0x68
@@ -107,6 +116,15 @@ L_GHAllocDone:
 
 L_HashMatched:
     // Hash matched, call stage 1
+#ifdef NEEDS_IBAT_CONFIG
+    /* 0x38 */ addi    r3, r31, L_ConfigMEM2IBAT - LD_Stage1ParamBlock
+    /* 0x3C */ HC(GCT_STRING_BL_CALL, ADDRESS_RealMode) // 0x801A7C94
+
+    // Adjust offsets from this point:
+    // 0x38 -> 0x40
+    // 0x58 -> 0x60
+#endif
+
     /* 0x38 */ lwz     r3, 0xC(sp)
     /* 0x3C */ addi    r3, r3, 0x2
     /* 0x40 */ addi    r4, r31, LD_Stage1Param - LD_Stage1ParamBlock
@@ -143,6 +161,26 @@ LD_Stage1ParamBlock:
             // .ascii  "RMCPD00\0\0"
     /* 0x40 */ .ascii  PAYLOAD
 // LD_Stage1Param end
+    /* 0x4C */ .balign 4
+
+#ifdef NEEDS_IBAT_CONFIG
+L_ConfigMEM2IBAT:
+    /* 0x4C */ lis     r5, 0x1000
+    /* 0x50 */ ori     r5, r5, 0x0002
+    /* 0x54 */ lis     r4, 0x9000
+    /* 0x58 */ ori     r4, r4, 0x1FFF
+
+    /* 0x5C */ mtspr   IBAT4L, r5
+    /* 0x60 */ mtspr   IBAT4U, r4
+    /* 0x64 */ isync
+
+    /* 0x68 */ ori     r3, r3, 0x30
+    /* 0x6C */ mtspr   SRR1, r3
+    /* 0x70 */ mflr    r3
+    /* 0x74 */ mtspr   SRR0, r3
+    /* 0x78 */ rfi
+    // This is cutting it close, we can't add a single more instruction
+#endif
 GCT_STRING_END(AuthStage0Data)
 
 
@@ -164,6 +202,3 @@ GCT_STRING_END(AvailableURLOverride)
 GCT_STRING(ADDRESS_NASWII_AC_URL + 0x4, AuthURLOverride) // 0x8027A42C
     .ascii  "://naswii." WWFC_DOMAIN "/p0\0"
 GCT_STRING_END(AuthURLOverride)
-
-
-
