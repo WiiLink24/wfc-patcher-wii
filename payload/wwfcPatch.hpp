@@ -1,10 +1,10 @@
 #pragma once
 
-#include "wwfcASM.h"
 #include <array>
 #include <functional>
 #include <string>
 #include <type_traits>
+#include <wwfcAsm.h>
 #include <wwfcCommon.h>
 
 namespace wwfc::Patch

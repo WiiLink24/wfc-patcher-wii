@@ -1,0 +1,73 @@
+name: Build Prod
+
+on:
+    push:
+    pull_request:
+
+jobs:
+    payload:
+        name: Payloads
+        runs-on: ubuntu-latest
+        container: devkitpro/devkitppc:latest
+        steps:
+            - uses: actions/checkout@v3
+            - name: Build Payload
+              run: |
+                cd ./payload
+                python3 make-payload.py -DPROD -j
+                mv ./binary ./payload
+                cd ..
+            - name: Upload Payload Files
+              uses: actions/upload-artifact@v3
+              with:
+                  name: payload
+                  path: ./payload/payload
+            - name: Upload Payload .ELF Files
+              uses: actions/upload-artifact@v3
+              with:
+                  name: payload-elf
+                  path: ./payload/build
+    stage1:
+        name: Stage 1 and 0
+        runs-on: ubuntu-latest
+        container: devkitpro/devkitppc:latest
+        steps:
+            - uses: actions/checkout@v3
+            - name: Build Stage 1
+              run: |
+                cd ./stage1
+                python3 make-stage1.py -DPROD -j
+                cd ..
+            - name: Upload Stage 1
+              uses: actions/upload-artifact@v3 
+              with:
+                  name: stage1
+                  path: ./stage1/build/stage1.bin
+            - name: Build Stage 0
+              run: |
+                cd ./patch
+                python3 make-patch.py -DPROD -j
+                cd ..
+            - name: Upload Stage 0
+              uses: actions/upload-artifact@v3
+              with:
+                  name: stage0
+                  path: ./patch/build/*.txt
+    package:
+        name: Package
+        needs: [payload, stage1]
+        runs-on: ubuntu-latest
+        container: devkitpro/devkitppc:latest
+        steps:
+            - uses: actions/download-artifact@v3
+              with:
+                  name: payload
+                  path: ./payload/binary
+            - uses: actions/download-artifact@v3
+              with:
+                  name: stage1
+                  path: ./payload
+            - uses: actions/upload-artifact@v3
+              with:
+                  name: packaged-payload-prod
+                  path: ./payload
