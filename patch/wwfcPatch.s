@@ -2,7 +2,13 @@
 #include <wwfcError.h>
 
 #ifndef WWFC_DOMAIN
-#  define WWFC_DOMAIN "wiilink24.com"
+
+#  ifdef PROD
+#    define WWFC_DOMAIN "wiilink24.com"
+#  else
+#    define WWFC_DOMAIN "nwfc.wiinoma.com" // Points to localhost
+#  endif
+
 #endif
 
 #define IBAT4U 560
@@ -200,5 +206,5 @@ GCT_STRING_END(AvailableURLOverride)
 
 
 GCT_STRING(ADDRESS_NASWII_AC_URL + 0x4, AuthURLOverride) // 0x8027A42C
-    .ascii  "://naswii." WWFC_DOMAIN "/p0\0"
+    .ascii  "://nas." WWFC_DOMAIN "/p0\0"
 GCT_STRING_END(AuthURLOverride)
