@@ -1,3 +1,4 @@
+#include "import/mkwNet.hpp"
 #include "wwfcPatch.hpp"
 #include "wwfcUtil.h"
 #include <cstddef>
@@ -17,7 +18,7 @@ WWFC_DEFINE_PATCH = {
     // The peer to peer match command exploit
     Patch::CallWithCTR(
         WWFC_PATCH_LEVEL_CRITICAL, //
-        ADDRESS_PATCH_SECURITY_GT2MATCHCOMMAND - 0x24, //
+        ADDRESS_PATCH_SECURITY_GT2MATCHCOMMAND - 0x24, // 0x800E591C
         ASM_LAMBDA(
             // clang-format off
             lbz     r5, 0x11(sp);
@@ -30,8 +31,8 @@ WWFC_DEFINE_PATCH = {
             bgtlr-; // Error "Got wrong data size GT2 command."
 
             // OK, jump to the copy routine
-            lis     r12, ADDRESS_PATCH_SECURITY_GT2MATCHCOMMAND@h;
-            ori     r12, r12, ADDRESS_PATCH_SECURITY_GT2MATCHCOMMAND@l;
+            mflr    r12;
+            addi    r12, r12, 0x14;
             mtctr   r12;
             bctr;
             // clang-format on
@@ -44,7 +45,7 @@ WWFC_DEFINE_PATCH = {
     // The QR2/MASTER server-sent match command exploit
     Patch::CallWithCTR(
         WWFC_PATCH_LEVEL_CRITICAL, //
-        ADDRESS_PATCH_SECURITY_QR2MATCHCOMMAND, //
+        ADDRESS_PATCH_SECURITY_QR2MATCHCOMMAND, // 0x800E5AC8
         ASM_LAMBDA(
             // clang-format off
             lbz     r5, 0x11(sp);
@@ -60,8 +61,8 @@ WWFC_DEFINE_PATCH = {
 
         L_SBCommandError:;
             // Jump to "Got different version SBcommand." error
-            lis     r12, (ADDRESS_PATCH_SECURITY_QR2MATCHCOMMAND - 0x20)@h;
-            ori     r12, r12, (ADDRESS_PATCH_SECURITY_QR2MATCHCOMMAND - 0x20)@l;
+            mflr    r12;
+            subi    r12, r12, 0x24;
             mtctr   r12;
             bctr;
             // clang-format on
@@ -97,31 +98,14 @@ WWFC_DEFINE_PATCH = {
 // CVE-ID: CVE-2023-35856
 // https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2023-35856
 
-struct RACEPacket {
-    enum EType {
-        HEADER,
-        RACEHEADER_1,
-        RACEHEADER_2,
-        ROOM_SELECT,
-        RACEDATA,
-        USER,
-        ITEM,
-        EVENT,
-    };
-
-    /* 0x00 */ u32 pad;
-    /* 0x04 */ u32 checksum;
-    /* 0x08 */ u8 sizes[8];
-};
-
-static_assert(sizeof(RACEPacket) == 0x10);
-
 WWFC_DEFINE_PATCH = {Patch::BranchWithCTR( //
     WWFC_PATCH_LEVEL_CRITICAL, //
     RMCXD_PORT(0x80658604, 0x8065417C, 0x80657C70, 0x8064691C), //
 
-    [](void* rkNetController, RACEPacket* packet, u32 packetSize, u32 _,
-       u32 playerIndex) -> void {
+    [](void* rkNetController, mkw::Net::RACEPacket* packet, u32 packetSize,
+       u32 _, u32 playerIndex) -> void {
+        using namespace mkw::Net;
+
         if (packetSize < sizeof(RACEPacket)) {
             return;
         }
