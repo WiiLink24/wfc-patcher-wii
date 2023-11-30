@@ -4,6 +4,7 @@
 
 #define SECTION(_SECTION) __attribute__((__section__(_SECTION)))
 #define LONGCALL __attribute__((__longcall__))
+#define PACKED __attribute__((__packed__))
 
 #define FILL(_START, _END) u8 _##_START[_END - _START]
 
