@@ -1,10 +1,11 @@
+#include "import/dwc.h"
+#include "import/gamespy.h"
+#include "import/revolution.h"
+#include "wwfcLog.hpp"
 #include "wwfcPatch.hpp"
 #include "wwfcPayload.hpp"
 #include "wwfcUtil.h"
 #include <cstring>
-#include <import/dwc.h>
-#include <import/gamespy.h>
-#include <import/revolution.h>
 
 namespace wwfc::Login
 {
@@ -45,7 +46,7 @@ int SendExtendedLogin(
             SendAuthTokenSignature(connection, data, outputBuffer, fd);
             IOS_Close(fd);
         } else {
-            OSReport("[WWFC] Failed to open ES: %d\n", fd);
+            LOG_ERROR_FMT("Failed to open ES: %d", fd);
         }
     }
 
@@ -132,7 +133,7 @@ static void SendAuthTokenSignature(
     vec[0].size = sizeof(IOSCECCCert);
     s32 ret = IOS_Ioctlv(esFd, ES_IOCTL_GET_DEVICE_CERT, 0, 1, vec);
     if (ret != 0) {
-        OSReport("[WWFC] Failed to get device certificate: %d\n", ret);
+        LOG_ERROR_FMT("Failed to get device certificate: %d", ret);
         return;
     }
 
@@ -146,7 +147,7 @@ static void SendAuthTokenSignature(
         !IsZeroBlock(eccCert.publicKeyPad, sizeof(eccCert.publicKeyPad)) ||
         std::memcmp(eccCert.name, "NG", 2) ||
         !IsZeroBlock(eccCert.name + 0xA, 0x40 - 0xA)) {
-        OSReport("[WWFC] Invalid device certificate\n");
+        LOG_ERROR("Invalid device certificate");
         return;
     }
 
@@ -157,7 +158,7 @@ static void SendAuthTokenSignature(
         std::memcmp(eccCert.issuer, "Root-CA", 7) ||
         std::memcmp(eccCert.issuer + 0xF, "-MS", 3) ||
         !IsZeroBlock(eccCert.issuer + 0x1A, 0x40 - 0x1A)) {
-        OSReport("[WWFC] Invalid device certificate issuer\n");
+        LOG_ERROR("Invalid device certificate issuer");
         return;
     }
 
@@ -189,7 +190,7 @@ static void SendAuthTokenSignature(
 
     ret = IOS_Ioctlv(esFd, ES_IOCTL_SIGN, 1, 2, vec);
     if (ret != 0) {
-        OSReport("[WWFC] Failed to sign auth token: %d\n", ret);
+        LOG_ERROR_FMT("Failed to sign auth token: %d", ret);
         return;
     }
 
@@ -200,13 +201,13 @@ static void SendAuthTokenSignature(
         !IsZeroBlock(eccCert.publicKeyPad, sizeof(eccCert.publicKeyPad)) ||
         std::memcmp(eccCert.name, "AP", 2) ||
         !IsZeroBlock(eccCert.name + 0x12, 0x40 - 0x12)) {
-        OSReport("[WWFC] Invalid app certificate\n");
+        LOG_ERROR("Invalid app certificate");
         return;
     }
 
     if (std::memcmp(eccCert.issuer, appIssuer, 0x25) ||
         !IsZeroBlock(eccCert.issuer + 0x25, 0x40 - 0x25)) {
-        OSReport("[WWFC] Invalid app certificate issuer\n");
+        LOG_ERROR("Invalid app certificate issuer");
         return;
     }
 
@@ -220,7 +221,7 @@ static void SendAuthTokenSignature(
         &authSig, sizeof(authSig), b64AuthSig, sizeof(b64AuthSig)
     );
     if (b64Len < 0 || b64Len >= 0x400) {
-        OSReport("[WWFC] Could not base64 encode the signature\n");
+        LOG_ERROR("Could not base64 encode the signature");
         return;
     }
 

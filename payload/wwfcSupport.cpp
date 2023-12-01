@@ -1,3 +1,4 @@
+#include "wwfcLog.hpp"
 #include "wwfcPatch.hpp"
 #include <cstring>
 #include <import/revolution.h>
@@ -32,7 +33,7 @@ static const char* FixHostname(const char* name, char* out)
             std::memcpy(out, name, i);
             std::memcpy(out + i, replace, replaceSize);
             std::strcpy(out + i + replaceSize, name + i + checkSize);
-            OSReport("[WWFC] Hostname: %s -> %s\n", name, out);
+            LOG_INFO_FMT("Hostname: %s -> %s", name, out);
             return true;
         };
 
