@@ -8,7 +8,7 @@
 #  define RMC 1
 
 #  define RMCXD_PORT(P, E, J, K) P
-#  define RMCXN_PORT(P, E, J, K) 0
+#  define RMCXN_PORT(P, E, J, K)
 
 #elif RMCED00
 
@@ -16,7 +16,7 @@
 #  define RMC 1
 
 #  define RMCXD_PORT(P, E, J, K) E
-#  define RMCXN_PORT(P, E, J, K) 0
+#  define RMCXN_PORT(P, E, J, K)
 
 #elif RMCJD00
 
@@ -24,7 +24,7 @@
 #  define RMC 1
 
 #  define RMCXD_PORT(P, E, J, K) J
-#  define RMCXN_PORT(P, E, J, K) 0
+#  define RMCXN_PORT(P, E, J, K)
 
 #elif RMCKD00
 
@@ -32,14 +32,14 @@
 #  define RMC 1
 
 #  define RMCXD_PORT(P, E, J, K) K
-#  define RMCXN_PORT(P, E, J, K) 0
+#  define RMCXN_PORT(P, E, J, K)
 
 #elif RMCPN0001
 
 // Mario Kart Channel Rev 0 [PAL]
 #  define RMCN 1
 
-#  define RMCXD_PORT(P, E, J, K) 0
+#  define RMCXD_PORT(P, E, J, K)
 #  define RMCXN_PORT(P, E, J, K) P
 
 #elif RMCEN0001
@@ -47,7 +47,7 @@
 // Mario Kart Channel Rev 0 [NTSC-U]
 #  define RMCN 1
 
-#  define RMCXD_PORT(P, E, J, K) 0
+#  define RMCXD_PORT(P, E, J, K)
 #  define RMCXN_PORT(P, E, J, K) E
 
 #elif RMCJN0001
@@ -55,7 +55,7 @@
 // Mario Kart Channel Rev 0 [NTSC-J]
 #  define RMCN 1
 
-#  define RMCXD_PORT(P, E, J, K) 0
+#  define RMCXD_PORT(P, E, J, K)
 #  define RMCXN_PORT(P, E, J, K) J
 
 #elif RMCKN0001
@@ -63,7 +63,7 @@
 // Mario Kart Channel Rev 0 [NTSC-K]
 #  define RMCN 1
 
-#  define RMCXD_PORT(P, E, J, K) 0
+#  define RMCXD_PORT(P, E, J, K)
 #  define RMCXN_PORT(P, E, J, K) K
 
 #endif

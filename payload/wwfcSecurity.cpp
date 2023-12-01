@@ -71,18 +71,20 @@ WWFC_DEFINE_PATCH = {
 #endif
 };
 
-#if RMC
+#if RMC || RMCN
 
 // SERVER TO CLIENT VULNERABILITY
 // Patch for Mario Kart Wii friend status (locstring) stack buffer overflow.
 // Located in DWC_GetFriendStatusData, this one is a bit annoying because it
 // could exist in other games, it just depends on the size the caller is
 // expecting.
-// SECURITY TODO: This would also exist in the Mario Kart Channel
 WWFC_DEFINE_PATCH = {
     Patch::WriteASM(
         WWFC_PATCH_LEVEL_CRITICAL, //
-        RMCXD_PORT(0x800CE220, 0x800CE180, 0x800CE140, 0x800CE280), //
+        RMCX_PORT(
+            0x800CE220, 0x800CE180, 0x800CE140, 0x800CE280, // Disc
+            0x800B5D98, 0x800B5D08, 0x800B5CE8, 0x800B5E08 // Channel
+        ),
         1, ASM_LAMBDA(li r6, 0x10)
     ),
 };
