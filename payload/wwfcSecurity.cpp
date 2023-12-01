@@ -141,8 +141,7 @@ WWFC_DEFINE_PATCH = {Patch::BranchWithCTR( //
         // TODO: Check against the actual buffer size to allow mods to expand it
         // TODO: Close the connection on invalid packets
 
-        if (packet->sizes[RACEPacket::HEADER] != 0 &&
-            packet->sizes[RACEPacket::HEADER] != 0x10) {
+        if (packet->sizes[RACEPacket::HEADER] != 0x10) {
             return;
         }
 
