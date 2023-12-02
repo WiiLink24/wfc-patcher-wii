@@ -90,7 +90,7 @@ GCT_STRING(ADDRESS_DWC_AUTH_ADD_CSNUM, AuthStage0Code) // 0x800EE098
 
 #if ADDRESS_SSBB_GET_HEAP_FUNCTION
     // Super Smash Bros. Brawl doesn't have the HBM heap pointer set yet so we need to do it ourselves
-    /* 0x0C */ li      r3, 6
+    /* 0x0C */ li      r3, 5
     /* 0x10 */ HC(GCT_STRING_BL_CALL, ADDRESS_SSBB_GET_HEAP_FUNCTION)
     // TODO: This could be shortened to use r13
     /* 0x14 */ lis     r4, ADDRESS_HBM_ALLOCATOR@ha
