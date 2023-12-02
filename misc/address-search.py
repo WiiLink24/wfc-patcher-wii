@@ -114,6 +114,10 @@ def parse_file(file_path, title_name):
     assert(dol[index-0x88:index-0x84] == b'\x94\x21\xFF\xD0')
     ADDRESS_IOS_Ioctlv = dol_to_real(hdr, index - 0x88)
 
+    index = dol.find(b'\x54\x63\x00\xBE\x7C\x7A\x03\xA6\x7C\x60\x00\xA6\x54\x63\x07\x32\x7C\x7B\x03\xA6\x4C\x00\x00\x64')
+    if index == -1:
+        exit('missing RealMode :( ' + title_name)
+    ADDRESS_RealMode = dol_to_real(hdr, index)
 
 
     # (offset+0x44)
@@ -576,6 +580,15 @@ def parse_file(file_path, title_name):
         assert(dol[index-0x38:index-0x34] == b'\x94\x21\xFF\xD0')
         ADDRESS_SOInetAtoN = dol_to_real(hdr, index - 0x38)
 
+    # find SOGetAddrInfo
+    index = dol.find(b'\x38\x63\x00\x01\x38\x63\x00\x1F\x38\x1D\x00\x1F\x54\x64\x00\x34')
+    ADDRESS_SOGetAddrInfo = 0
+    if index == -1:
+        print('Missing find SOGetAddrInfo ' + title_name)
+    else:
+        assert(dol[index-0x6C:index-0x68] == b'\x94\x21\xFF\xC0')
+        ADDRESS_SOGetAddrInfo = dol_to_real(hdr, index - 0x6C)
+
     old_index = 0
     didskipent = False
     index = -1
@@ -636,6 +649,62 @@ def parse_file(file_path, title_name):
                 exit('Missing find ghiParseURL ' + title_name)
 
             ADDRESS_GHIPARSEURL_HTTPS_PATCH = dol_to_real(hdr, match.start(0)+4)
+
+    # search for the NHTTP force http patch
+    index = -1
+    ADDRESS_NHTTP_HTTPS_PORT_PATCH = 0
+    ADDRESS_NHTTPi_SocSSLConnect = 0
+    if title_name.startswith('RPBJD'):
+        index = dol.find(b'\x40\x82\x00\x10\x38\x00\x01\xBB\xB0\x1F\x00\x20')
+        if index == -1:
+            print('Missing find RPBJ NHTTP https patch ' + title_name)
+            return
+        ADDRESS_NHTTP_HTTPS_PORT_PATCH = dol_to_real(hdr, index+4)
+
+        index = dol.find(b'\x7C\x7D\x1B\x78\x80\x63\x00\xC8\x80\x9D\x00\x18')
+        if index == -1:
+            print('Missing find RPBJ NHTTP https SSL patch ' + title_name)
+            return
+        ADDRESS_NHTTPi_SocSSLConnect = dol_to_real(hdr, index-0x20)
+    else:
+        index = dol.find(b'\x38\x60\x00\x01\x38\x00\x01\xBB\x90\x78\x00\x08\x3B\xA0\x00\x08\x90\x18\x00\x20')
+        if index != -1:
+            index += 4
+
+        if index == -1:
+            index = dol.find(b'\x38\x60\x00\x01\x38\x00\x01\xBB\x90\x77\x00\x08\x3B\xA0\x00\x08\x90\x17\x00\x20')
+            if index != -1:
+                index += 4
+
+        if index == -1:
+            index = dol.find(b'\x38\x00\x00\x01\x90\x17\x00\x08\x38\x00\x01\xBB\x3B\xA0\x00\x08\x90\x17\x00\x20')
+            if index == -1:
+                print('Missing find NHTTP https port patch ' + title_name)
+                return
+            index += 8
+
+        ADDRESS_NHTTP_HTTPS_PORT_PATCH = dol_to_real(hdr, index)
+
+        index = dol.find(b'\x7C\x9B\x23\x78\x80\x65\x00\xCC\x7C\xBC\x2B\x78')
+        if index == -1:
+            print('Missing find NHTTP SSL patch ' + title_name)
+            return
+        assert(dol[index-0x18:index-0x14] == b'\x94\x21\xFF\xE0')
+
+        ADDRESS_NHTTPi_SocSSLConnect = dol_to_real(hdr, index-0x18)
+
+        #index2 = dol[index:index+0x400].find(b'\x54\x63\x0F\xFE\x38\x63\x00\x07')
+        #if index2 == -1:
+            #print('Missing find NHTTP https patch pt 2 ' + title_name)
+            #return
+        #ADDRESS_NHTTP_HTTPS_PATCH_02 = dol_to_real(hdr, index+index2+4)
+
+        #index3 = dol[index:index+0x400].find(b'\x54\x04\x0F\xFE\x38\x04\x00\x07\x7C\x86\x02\x14')
+        #if index3 == -1:
+            #print('Missing find NHTTP https patch pt 3 ' + title_name)
+            #return
+        #ADDRESS_NHTTP_HTTPS_PATCH_03 = dol_to_real(hdr, index+index3+4)
+
 
     # here is the exploit searching
     # Match command exploit, more information in payload/wwfcSecurity.cpp
@@ -738,15 +807,19 @@ def parse_file(file_path, title_name):
         "ADDRESS_SKIP_DNS_CACHE_CONTINUE":   fmthex(ADDRESS_SKIP_DNS_CACHE_CONTINUE),
         "ADDRESS_gethostbyname":             fmthex(ADDRESS_gethostbyname),
         "ADDRESS_SOInetAtoN":                fmthex(ADDRESS_SOInetAtoN),
+        "ADDRESS_SOGetAddrInfo":             fmthex(ADDRESS_SOGetAddrInfo),
         "ADDRESS_DWC_Printf":                fmthex(ADDRESS_DWC_Printf),
         "ADDRESS_OSReport":                  fmthex(ADDRESS_OSReport),
         "ADDRESS_GHIPARSEURL_HTTPS_PATCH":   fmthex(ADDRESS_GHIPARSEURL_HTTPS_PATCH),
+        "ADDRESS_NHTTP_HTTPS_PORT_PATCH":    fmthex(ADDRESS_NHTTP_HTTPS_PORT_PATCH),
+        "ADDRESS_NHTTPi_SocSSLConnect":      fmthex(ADDRESS_NHTTPi_SocSSLConnect),
         "ADDRESS_PATCH_SECURITY_GT2MATCHCOMMAND": fmthex(ADDRESS_PATCH_SECURITY_GT2MATCHCOMMAND),
         "ADDRESS_PATCH_SECURITY_QR2MATCHCOMMAND": fmthex(ADDRESS_PATCH_SECURITY_QR2MATCHCOMMAND),
         "ADDRESS_gpiAppendStringToBuffer":   fmthex(ADDRESS_gpiAppendStringToBuffer),
         "ADDRESS_gpiAppendIntToBuffer":      fmthex(ADDRESS_gpiAppendIntToBuffer),
         "ADDRESS_PATCH_GPISENDLOGIN":        fmthex(ADDRESS_PATCH_GPISENDLOGIN),
         "ADDRESS_DWC_Base64Encode":          fmthex(ADDRESS_DWC_Base64Encode),
+        "ADDRESS_RealMode":                  fmthex(ADDRESS_RealMode),
     }
 
     games.append(game)
@@ -794,15 +867,19 @@ if __name__ == '__main__':
 		"ADDRESS_SKIP_DNS_CACHE_CONTINUE",
 		"ADDRESS_gethostbyname",
 		"ADDRESS_SOInetAtoN",
+		"ADDRESS_SOGetAddrInfo",
         "ADDRESS_DWC_Printf",
         "ADDRESS_OSReport",
         "ADDRESS_GHIPARSEURL_HTTPS_PATCH",
+        "ADDRESS_NHTTP_HTTPS_PORT_PATCH",
+        "ADDRESS_NHTTPi_SocSSLConnect",
         "ADDRESS_PATCH_SECURITY_GT2MATCHCOMMAND",
         "ADDRESS_PATCH_SECURITY_QR2MATCHCOMMAND",
         "ADDRESS_gpiAppendStringToBuffer",
         "ADDRESS_gpiAppendIntToBuffer",
         "ADDRESS_PATCH_GPISENDLOGIN",
         "ADDRESS_DWC_Base64Encode",
+        "ADDRESS_RealMode",
 	]
 
     with open('gamedefs.csv', 'w', newline='') as csvfile:

@@ -108,24 +108,58 @@ WWFC_DEFINE_PATCH = {Patch::BranchWithCTR(
     }
 )};
 
-void ChangeAuthURL()
-{
-    *(const char**) ADDRESS_NASWII_AC_URL_POINTER =
-        "http://naswii." WWFC_DOMAIN "/ac";
+WWFC_DEFINE_CTR_STUB( //
+    ADDRESS_SOGetAddrInfo + 0x10, //
+    u32 SOGetAddrInfo(const char* name, u32 param_2, u32 param_3, u32 param_4),
 
-#if ADDRESS_NASWII_PR_URL_POINTER
-    *(const char**) ADDRESS_NASWII_PR_URL_POINTER =
-        "http://naswii." WWFC_DOMAIN "/pr";
-#endif
-}
+    // clang-format off
+    stwu    sp, -0x40(sp);
+    mflr    r0;
+    stw     r0, 0x44(sp);
+    addi    r11, sp, 0x40;
+    // clang-format on
+)
+
+WWFC_DEFINE_PATCH = {Patch::BranchWithCTR(
+    WWFC_PATCH_LEVEL_SUPPORT, //
+    ADDRESS_SOGetAddrInfo, //
+    [](const char* name, u32 param_2, u32 param_3, u32 param_4) -> u32 {
+        char fixedName[256];
+        return SOGetAddrInfo(
+            FixHostname(name, fixedName), param_2, param_3, param_4
+        );
+    }
+)};
+
+// Disable SSL in NHTTP
+WWFC_DEFINE_PATCH = {
+    Patch::WriteASM(
+        WWFC_PATCH_LEVEL_SUPPORT, //
+        ADDRESS_NHTTP_HTTPS_PORT_PATCH, //
+        1, ASM_LAMBDA(li r0, 80)
+    ),
+    Patch::WriteASM(
+        WWFC_PATCH_LEVEL_SUPPORT, //
+        ADDRESS_NHTTPi_SocSSLConnect, //
+        2, ASM_LAMBDA(li r3, 0; blr)
+    ),
+};
 
 #if ADDRESS_GHIPARSEURL_HTTPS_PATCH
+
 // Disable SSL in GameSpy HTTP
 WWFC_DEFINE_PATCH = {Patch::WriteASM(
     WWFC_PATCH_LEVEL_SUPPORT, //
     ADDRESS_GHIPARSEURL_HTTPS_PATCH, //
     1, ASM_LAMBDA(li r0, 0)
 )};
+
 #endif
+
+void ChangeAuthURL()
+{
+    *reinterpret_cast<const char**>(ADDRESS_NASWII_AC_URL_POINTER) =
+        "http://nas." WWFC_DOMAIN "/ac";
+}
 
 } // namespace wwfc::Support
