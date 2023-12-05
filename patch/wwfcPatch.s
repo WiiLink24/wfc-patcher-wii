@@ -16,8 +16,9 @@
 #define SRR0 26
 #define SRR1 27
 
-#if ST7PD00 || ST7ED00 | ST7JD00
-#  define NEEDS_IBAT_CONFIG
+#if ST7PD00 | ST7ED00 | ST7JD00 | ADDRESS_PES_ALLOC_FUNCTION | DWEPD00 |       \
+    RWEED00 | RWEJD00 | RWEPD00 | R2WED00 | R2WJD00 | R2WPD00 | R2WXD00
+#  define NEEDS_IBAT_CONFIG 1
 #endif
 
 // The stage 1 payload is downloaded from the server and verified using its MD5
@@ -71,14 +72,12 @@ GCT_STRING(ADDRESS_DWC_AUTH_ADD_CSNUM, AuthStage0Code) // 0x800EE098
     /* 0x04 */ HD(GCT_STRING_PTR, r31, LD_Stage1ParamBlock)
 #  endif
 #else
-#  if !ADDRESS_GH_ALLOC_FUNCTION
-#    error Missing HBM allocator
-#  endif
-    // Guitar Hero games don't have the HBM heap at all times
     /* 0x04 */ HD(GCT_STRING_PTR_LWZU, r0, r31, LD_Stage1ParamBlock)
     /* 0x0C */ cmplwi  r0, 0
-    /* 0x10 */ bne-    L_GHAllocDone
+    /* 0x10 */ bne-    L_AllocDone
 
+#  if ADDRESS_GH_ALLOC_FUNCTION
+    // Guitar Hero games
     /* 0x14 */ lis     r3, 0x20000@h
     /* 0x18 */ HC(GCT_STRING_BL_CALL, ADDRESS_GH_ALLOC_FUNCTION)
     /* 0x1C */ stw     r3, 0(r31)
@@ -86,6 +85,19 @@ GCT_STRING(ADDRESS_DWC_AUTH_ADD_CSNUM, AuthStage0Code) // 0x800EE098
     // Adjust offsets from this point:
     // 0x0C -> 0x20
     // 0x58 -> 0x6C
+#  elif ADDRESS_PES_ALLOC_FUNCTION
+    // Pro Evolution Soccer games
+    /* 0x14 */ li      r3, 1
+    /* 0x18 */ lis     r4, 0x20000@h
+    /* 0x1C */ HC(GCT_STRING_BL_CALL, ADDRESS_PES_ALLOC_FUNCTION)
+    /* 0x20 */ stw     r3, 0(r31)
+
+    // Adjust offsets from this point:
+    // 0x0C -> 0x24
+    // 0x58 -> 0x70
+#  else
+#    error Missing HBM allocator
+#  endif
 #endif
 
 #if ADDRESS_SSBB_GET_HEAP_FUNCTION
@@ -101,7 +113,7 @@ GCT_STRING(ADDRESS_DWC_AUTH_ADD_CSNUM, AuthStage0Code) // 0x800EE098
     // 0x58 -> 0x68
 #endif
 
-L_GHAllocDone:
+L_AllocDone:
     // Calculate stage 1 MD5 hash
     /* 0x0C */ lwz     r3, 0xC(sp)
     /* 0x10 */ li      r4, STAGE1_SIZE + 0x2

@@ -385,6 +385,7 @@ def parse_file(file_path, title_name):
         exit('NO AUTH RESPONSE COMPATIBILITY ' + version)
 
     ADDRESS_GH_ALLOC_FUNCTION = 0
+    ADDRESS_PES_ALLOC_FUNCTION = 0
     ADDRESS_HBM_ALLOCATOR = 0
     # --- FIND HBM ALLOCATOR
     # Fortune Street uses an RSO
@@ -415,6 +416,20 @@ def parse_file(file_path, title_name):
             exit('GH MISSING ALLOC FUNCTION ' + title_name)
         ADDRESS_GH_ALLOC_FUNCTION = dol_to_real(hdr, index-0xC)
         ADDRESS_HBM_ALLOCATOR = 0
+    elif title_name.startswith('SUX') or title_name.startswith('SPV') or title_name.startswith('S2P') or title_name.startswith('S3I'):
+        index = dol.find(b'\x7C\x7F\x1B\x78\x40\x82\x00\x40\x2C\x1D\x00\x19\x40\x82\x00\x1C')
+        if index == -1:
+            exit('PES MISSING ALLOC FUNCTION ' + title_name)
+
+        assert(dol[index-0x34:index-0x30] == b'\x94\x21\xFF\xE0')
+        ADDRESS_PES_ALLOC_FUNCTION = dol_to_real(hdr, index-0x34)
+    elif title_name.startswith('DWE') or title_name.startswith('RWE') or title_name.startswith('R2W'):
+        index = dol.find(b'\x7C\x64\x1B\x78\x80\x01\x00\x14\x7C\x83\x23\x78\x7C\x08\x03\xA6\x38\x21\x00\x10\x4E\x80\x00\x20\x94\x21\xFF\xF0')
+        if index == -1:
+            exit('OLD PES MISSING ALLOC FUNCTION ' + title_name)
+
+        # Use the GH alloc function because the caller format is the same
+        ADDRESS_GH_ALLOC_FUNCTION = dol_to_real(hdr, index+0x18)
     else:
         # Other games with HBM in DOL
         index = dol.find('P1_Def.brlyt\0\0\0\0P2'.encode('ascii'))
@@ -802,6 +817,7 @@ def parse_file(file_path, title_name):
         "ADDRESS_DWC_ERROR":                 fmthex(ADDRESS_DWC_ERROR),
         "ADDRESS_HBM_ALLOCATOR":             fmthex(ADDRESS_HBM_ALLOCATOR),
         "ADDRESS_GH_ALLOC_FUNCTION":         fmthex(ADDRESS_GH_ALLOC_FUNCTION),
+        "ADDRESS_PES_ALLOC_FUNCTION":        fmthex(ADDRESS_PES_ALLOC_FUNCTION),
         "ADDRESS_SSBB_GET_HEAP_FUNCTION":    fmthex(ADDRESS_SSBB_GET_HEAP_FUNCTION),
         "ADDRESS_SKIP_DNS_CACHE":            fmthex(ADDRESS_SKIP_DNS_CACHE),
         "ADDRESS_SKIP_DNS_CACHE_CONTINUE":   fmthex(ADDRESS_SKIP_DNS_CACHE_CONTINUE),
@@ -833,41 +849,42 @@ if __name__ == '__main__':
 
     field_names = [
         "Title",
-		"ADDRESS_MD5Digest",
-		"ADDRESS_strcmp",
+        "ADDRESS_MD5Digest",
+        "ADDRESS_strcmp",
         "ADDRESS_DCFlushRange",
         "ADDRESS_ICInvalidateRange",
         "ADDRESS_IOS_Open",
         "ADDRESS_IOS_Close",
         "ADDRESS_IOS_Ioctlv",
-		"ADDRESS_NASWII_AC_URL",
-		"ADDRESS_NASWII_AC_URL_POINTER",
-		"ADDRESS_NASWII_PR_URL",
-		"ADDRESS_NASWII_PR_URL_POINTER",
-		"ADDRESS_AVAILABLE_URL",
-		"ADDRESS_DWCi_Auth_SendRequest",
-		"ADDRESS_DWCi_Auth_HandleResponse",
-		"ADDRESS_DWC_AUTH_ADD_MACADDR",
-		"ADDRESS_DWC_AUTH_ADD_CSNUM",
-		"ADDRESS_AUTH_HANDLERESP_HOOK",
-		"ADDRESS_AUTH_HANDLERESP_CONTINUE",
-		"ADDRESS_AUTH_HANDLERESP_ERROR",
-		"ADDRESS_AUTH_HANDLERESP_OUT",
-		"AUTH_HANDLERESP_UNPATCH",
-		"LOAD_AUTH_REQ_INST_01",
-		"LOAD_AUTH_REQ_INST_02",
-		"ADDRESS_NHTTPCreateRequest",
-		"ADDRESS_NHTTPSendRequestAsync",
-		"ADDRESS_NHTTPDestroyResponse",
-		"ADDRESS_DWC_ERROR",
-		"ADDRESS_HBM_ALLOCATOR",
-		"ADDRESS_GH_ALLOC_FUNCTION",
-		"ADDRESS_SSBB_GET_HEAP_FUNCTION",
-		"ADDRESS_SKIP_DNS_CACHE",
-		"ADDRESS_SKIP_DNS_CACHE_CONTINUE",
-		"ADDRESS_gethostbyname",
-		"ADDRESS_SOInetAtoN",
-		"ADDRESS_SOGetAddrInfo",
+        "ADDRESS_NASWII_AC_URL",
+        "ADDRESS_NASWII_AC_URL_POINTER",
+        "ADDRESS_NASWII_PR_URL",
+        "ADDRESS_NASWII_PR_URL_POINTER",
+        "ADDRESS_AVAILABLE_URL",
+        "ADDRESS_DWCi_Auth_SendRequest",
+        "ADDRESS_DWCi_Auth_HandleResponse",
+        "ADDRESS_DWC_AUTH_ADD_MACADDR",
+        "ADDRESS_DWC_AUTH_ADD_CSNUM",
+        "ADDRESS_AUTH_HANDLERESP_HOOK",
+        "ADDRESS_AUTH_HANDLERESP_CONTINUE",
+        "ADDRESS_AUTH_HANDLERESP_ERROR",
+        "ADDRESS_AUTH_HANDLERESP_OUT",
+        "AUTH_HANDLERESP_UNPATCH",
+        "LOAD_AUTH_REQ_INST_01",
+        "LOAD_AUTH_REQ_INST_02",
+        "ADDRESS_NHTTPCreateRequest",
+        "ADDRESS_NHTTPSendRequestAsync",
+        "ADDRESS_NHTTPDestroyResponse",
+        "ADDRESS_DWC_ERROR",
+        "ADDRESS_HBM_ALLOCATOR",
+        "ADDRESS_GH_ALLOC_FUNCTION",
+        "ADDRESS_PES_ALLOC_FUNCTION",
+        "ADDRESS_SSBB_GET_HEAP_FUNCTION",
+        "ADDRESS_SKIP_DNS_CACHE",
+        "ADDRESS_SKIP_DNS_CACHE_CONTINUE",
+        "ADDRESS_gethostbyname",
+        "ADDRESS_SOInetAtoN",
+        "ADDRESS_SOGetAddrInfo",
         "ADDRESS_DWC_Printf",
         "ADDRESS_OSReport",
         "ADDRESS_GHIPARSEURL_HTTPS_PATCH",
@@ -880,7 +897,7 @@ if __name__ == '__main__':
         "ADDRESS_PATCH_GPISENDLOGIN",
         "ADDRESS_DWC_Base64Encode",
         "ADDRESS_RealMode",
-	]
+    ]
 
     with open('gamedefs.csv', 'w', newline='') as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=field_names, delimiter=',', dialect='excel')
