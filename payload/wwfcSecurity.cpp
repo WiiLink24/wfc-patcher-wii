@@ -93,6 +93,77 @@ WWFC_DEFINE_PATCH = {
 
 #if RMC
 
+static bool IsValidRACEPacket(mkw::Net::RACEPacket* packet, u32 packetSize)
+{
+    using namespace mkw::Net;
+
+    if (packetSize < sizeof(RACEPacket)) {
+        return false;
+    }
+
+    for (u32 expectedPacketSize = 0, i = 0; i < 8; i++) {
+        if (expectedPacketSize + packet->sizes[i] > packetSize) {
+            return false;
+        }
+
+        // Not a better place to check this, the Mii count in USER
+        if (i == RACEPacket::USER && packet->sizes[i] != 0) {
+            if (packet->sizes[i] != 0xC0 ||
+                *(u16*) (u32(packet) + expectedPacketSize + 0x4) != 2) {
+                return false;
+            }
+        }
+
+        expectedPacketSize += packet->sizes[i];
+    }
+
+    // TODO: Check against the actual buffer size to allow mods to expand it
+
+    if (packet->sizes[RACEPacket::HEADER] != 0x10) {
+        return false;
+    }
+
+    if (packet->sizes[RACEPacket::RACEHEADER_1] != 0 &&
+        packet->sizes[RACEPacket::RACEHEADER_1] != 0x28) {
+        return false;
+    }
+
+    if (packet->sizes[RACEPacket::RACEHEADER_2] != 0 &&
+        packet->sizes[RACEPacket::RACEHEADER_2] != 0x28) {
+        return false;
+    }
+
+    if (packet->sizes[RACEPacket::ROOM_SELECT] != 0 &&
+        packet->sizes[RACEPacket::ROOM_SELECT] != 0x4 &&
+        packet->sizes[RACEPacket::ROOM_SELECT] != 0x38) {
+        return false;
+    }
+
+    if (packet->sizes[RACEPacket::RACEDATA] != 0 &&
+        packet->sizes[RACEPacket::RACEDATA] != 0x40 &&
+        packet->sizes[RACEPacket::RACEDATA] != 0x80) {
+        return false;
+    }
+
+    // The size of the 'USER' portion of the packet was previously validated
+
+    if (packet->sizes[RACEPacket::ITEM] != 0 &&
+        packet->sizes[RACEPacket::ITEM] != 0x8 &&
+        packet->sizes[RACEPacket::ITEM] != 0x10) {
+        return false;
+    }
+
+    // SECURITY TODO: There is some kind of (harmless?) overflow in EVENT,
+    // not patched by Wiimmfi or CTGP
+    if (packet->sizes[RACEPacket::EVENT] != 0 &&
+        (packet->sizes[RACEPacket::EVENT] < 0x18 ||
+         packet->sizes[RACEPacket::EVENT] >= 0xF9)) {
+        return false;
+    }
+
+    return true;
+}
+
 // CLIENT TO CLIENT VULNERABILITY
 // Patch for Mario Kart Wii RACE exploit. This was the first RCE exploit
 // discovered in a Wii game. Originally discovered by XeR, but then rediscovered
@@ -105,97 +176,23 @@ WWFC_DEFINE_PATCH = {Patch::BranchWithCTR( //
     RMCXD_PORT(0x80658604, 0x8065417C, 0x80657C70, 0x8064691C), //
 
     [](void* rkNetController, mkw::Net::RACEPacket* packet, u32 packetSize,
-       u32 _, u32 playerIndex) -> void {
-        using namespace mkw::Net;
+       u32 _, u8 playerAid) -> void {
+        if (!IsValidRACEPacket(packet, packetSize)) {
+            LONGCALL int DWC_CloseConnectionHard(u8 playerAid)
+                AT(RMCXD_PORT(0x800D2000, 0x800D1F60, 0x800D1F20, 0x800D2060));
 
-        if (packetSize < sizeof(RACEPacket)) {
-            return;
-        }
+            DWC_CloseConnectionHard(playerAid);
 
-        LONGCALL u32 NETCalcCRC32(const void* data, u32 size)
-            AT(RMCXD_PORT(0x801D1CA0, 0x801D1C00, 0x801D1BC0, 0x801D1FFC));
-
-        u32 savedChecksum = packet->checksum;
-        packet->checksum = 0;
-        u32 realChecksum = NETCalcCRC32(packet, packetSize);
-        packet->checksum = savedChecksum;
-
-        if (realChecksum != savedChecksum) {
-            return;
-        }
-
-        for (u32 expectedPacketSize = 0, i = 0; i < 8; i++) {
-            if (expectedPacketSize + packet->sizes[i] > packetSize) {
-                return;
-            }
-
-            // Not a better place to check this, the Mii count in USER
-            if (i == RACEPacket::USER && packet->sizes[i] != 0) {
-                if (packet->sizes[i] != 0xC0 ||
-                    *(u16*) (u32(packet) + expectedPacketSize + 0x4) != 2) {
-                    return;
-                }
-            }
-
-            expectedPacketSize += packet->sizes[i];
-        }
-
-        // TODO: Check against the actual buffer size to allow mods to expand it
-        // TODO: Close the connection on invalid packets
-
-        if (packet->sizes[RACEPacket::HEADER] != 0x10) {
-            return;
-        }
-
-        if (packet->sizes[RACEPacket::RACEHEADER_1] != 0 &&
-            packet->sizes[RACEPacket::RACEHEADER_1] != 0x28) {
-            return;
-        }
-
-        if (packet->sizes[RACEPacket::RACEHEADER_2] != 0 &&
-            packet->sizes[RACEPacket::RACEHEADER_2] != 0x28) {
-            return;
-        }
-
-        if (packet->sizes[RACEPacket::ROOM_SELECT] != 0 &&
-            packet->sizes[RACEPacket::ROOM_SELECT] != 0x38 &&
-            packet->sizes[RACEPacket::ROOM_SELECT] != 0x4) {
-            return;
-        }
-
-        if (packet->sizes[RACEPacket::RACEDATA] != 0 &&
-            (packet->sizes[RACEPacket::RACEDATA] < 0x40 ||
-             packet->sizes[RACEPacket::RACEDATA] & 0x3F)) {
-            return;
-        }
-
-        // Already checked earlier but for redundancy:
-        if (packet->sizes[RACEPacket::USER] != 0 &&
-            packet->sizes[RACEPacket::USER] != 0xC0) {
-            return;
-        }
-
-        if (packet->sizes[RACEPacket::ITEM] != 0 &&
-            (packet->sizes[RACEPacket::ITEM] < 0x8 ||
-             packet->sizes[RACEPacket::ITEM] & 0x7)) {
-            return;
-        }
-
-        // SECURITY TODO: There is some kind of (harmless?) overflow in EVENT,
-        // not patched by Wiimmfi or CTGP
-        if (packet->sizes[RACEPacket::EVENT] != 0 &&
-            (packet->sizes[RACEPacket::EVENT] < 0x18 ||
-             packet->sizes[RACEPacket::EVENT] >= 0xF9)) {
             return;
         }
 
         LONGCALL void RKNetController_ProcessRACEPacket(
-            void* rkNetController, u32 playerIndex, RACEPacket* packet,
+            void* rkNetController, u8 playerAid, mkw::Net::RACEPacket* packet,
             u32 packetSize
         ) AT(RMCXD_PORT(0x80659A84, 0x806555FC, 0x806590F0, 0x80647D9C));
 
         RKNetController_ProcessRACEPacket(
-            rkNetController, playerIndex, packet, packetSize
+            rkNetController, playerAid, packet, packetSize
         );
     }
 )};
