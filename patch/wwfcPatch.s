@@ -1,6 +1,15 @@
 #include "gct.h"
 #include <wwfcError.h>
 
+// The stage 1 payload is downloaded from the server and verified using its MD5
+// hash, preventing it from ever being updated, essentially making it an
+// extension of this code. Security note: I'm aware that MD5 has been
+// catastrophically broken in terms of collision attacks in the past, but from
+// what I can tell of my research, it's still heavily resistant against
+// pre-image and second pre-image attacks. It's generally not a good idea to
+// rely on it anyway, but it's the only thing that's really universally shared
+// across every game.
+
 #ifndef WWFC_DOMAIN
 
 #  ifdef PROD
@@ -16,19 +25,22 @@
 #define SRR0 26
 #define SRR1 27
 
-#if ST7PD00 | ST7ED00 | ST7JD00 | ADDRESS_PES_ALLOC_FUNCTION | DWEPD00 |       \
-    RWEED00 | RWEJD00 | RWEPD00 | R2WED00 | R2WJD00 | R2WPD00 | R2WXD00
+#ifndef NEEDS_IBAT_CONFIG
+
+// #if ST7PD00 | ST7ED00 | ST7JD00 | ADDRESS_PES_ALLOC_FUNCTION | DWEPD00 |       \
+//     RWEED00 | RWEJD00 | RWEPD00 | R2WED00 | R2WJD00 | R2WPD00 | R2WXD00 |      \
+//     RENED00 | RENJD00 | RENPD00 | SNCED00 | SNCJD00 | SNCPD00
+
+// Actually just blacklist known working games
+#if RMCED00 | RMCJD00 | RMCKD00 | RMCPD00 | \
+    RSBED01 | RSBED02 | RSBJD00 | RSBJD01 | RSBPD00 | RSBPD01 | \
+    RTYPD00 | WASJN0001
+#  define NEEDS_IBAT_CONFIG 0
+#else
 #  define NEEDS_IBAT_CONFIG 1
 #endif
 
-// The stage 1 payload is downloaded from the server and verified using its MD5
-// hash, preventing it from ever being updated, essentially making it an
-// extension of this code. Security note: I'm aware that MD5 has been
-// catastrophically broken in terms of collision attacks in the past, but from
-// what I can tell of my research, it's still heavily resistant against
-// pre-image and second pre-image attacks. It's generally not a good idea to
-// rely on it anyway, but it's the only thing that's really universally shared
-// across every game.
+#endif
 
 // Only patch once
 GCT_IF_NOT_EQUAL_INST(ADDRESS_DWC_AUTH_ADD_MACADDR, b 0x7C)
@@ -134,7 +146,7 @@ L_AllocDone:
 
 L_HashMatched:
     // Hash matched, call stage 1
-#ifdef NEEDS_IBAT_CONFIG
+#if NEEDS_IBAT_CONFIG
     /* 0x38 */ addi    r3, r31, L_ConfigMEM2IBAT - LD_Stage1ParamBlock
     /* 0x3C */ HC(GCT_STRING_BL_CALL, ADDRESS_RealMode) // 0x801A7C94
 
@@ -181,7 +193,7 @@ LD_Stage1ParamBlock:
 // LD_Stage1Param end
     /* 0x4C */ .balign 4
 
-#ifdef NEEDS_IBAT_CONFIG
+#if NEEDS_IBAT_CONFIG
 L_ConfigMEM2IBAT:
     /* 0x4C */ lis     r5, 0x1000
     /* 0x50 */ ori     r5, r5, 0x0002
