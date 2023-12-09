@@ -105,7 +105,8 @@ static bool IsValidRACEPacket(mkw::Net::RACEPacket* packet, u32 packetSize)
         RMCXD_PORT(0x8089A194, 0x80895AC4, 0x808992F4, 0x808885CC)
     );
 
-    // Allow for packet sizes to be increased
+    // Check packet sizes against the actual buffer sizes, allowing game mods to
+    // expand them
 
     u8 headerSize = packet->sizes[RACEPacket::HEADER];
     if (headerSize < 0x10 ||
@@ -145,7 +146,8 @@ static bool IsValidRACEPacket(mkw::Net::RACEPacket* packet, u32 packetSize)
     u8 raceDataSize = packet->sizes[RACEPacket::RACEDATA];
     if (raceDataSize != 0 &&
         (raceDataSize < 0x40 ||
-         raceDataSize > packetBufferSizes[RACEPacket::RACEDATA])) {
+         raceDataSize > packetBufferSizes[RACEPacket::RACEDATA] ||
+         raceDataSize % 0x40)) {
         return false;
     }
 
@@ -153,8 +155,15 @@ static bool IsValidRACEPacket(mkw::Net::RACEPacket* packet, u32 packetSize)
 
     u8 userSize = packet->sizes[RACEPacket::USER];
     if (userSize != 0) {
-        if (userSize < 0xC0 || userSize > packetBufferSizes[RACEPacket::USER] ||
-            *(u16*) (u32(packet) + expectedPacketSize + 0x04) != 2) {
+        if (userSize < 0xC0 || userSize > packetBufferSizes[RACEPacket::USER]) {
+            return false;
+        }
+
+        // Mii count must be 2
+        auto userPacket = reinterpret_cast<mkw::Net::USERPacket*>(
+            u32(packet) + expectedPacketSize
+        );
+        if (userPacket->miiGroupCount != 2) {
             return false;
         }
     }
@@ -163,7 +172,8 @@ static bool IsValidRACEPacket(mkw::Net::RACEPacket* packet, u32 packetSize)
 
     u8 itemSize = packet->sizes[RACEPacket::ITEM];
     if (itemSize != 0 &&
-        (itemSize < 0x08 || itemSize > packetBufferSizes[RACEPacket::ITEM])) {
+        (itemSize < 0x08 || itemSize > packetBufferSizes[RACEPacket::ITEM] ||
+         itemSize % 0x08)) {
         return false;
     }
 
