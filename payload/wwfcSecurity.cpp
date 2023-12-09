@@ -101,67 +101,85 @@ static bool IsValidRACEPacket(mkw::Net::RACEPacket* packet, u32 packetSize)
         return false;
     }
 
-    for (u32 expectedPacketSize = 0, i = 0; i < 8; i++) {
-        if (expectedPacketSize + packet->sizes[i] > packetSize) {
+    extern u32 packetBufferSizes[sizeof(RACEPacket::sizes)] AT(
+        RMCXD_PORT(0x8089A194, 0x80895AC4, 0x808992F4, 0x808885CC)
+    );
+
+    // Allow for packet sizes to be increased
+
+    u8 headerSize = packet->sizes[RACEPacket::HEADER];
+    if (headerSize < 0x10 ||
+        headerSize > packetBufferSizes[RACEPacket::HEADER]) {
+        return false;
+    }
+
+    u32 expectedPacketSize = headerSize;
+
+    u8 raceHeader1Size = packet->sizes[RACEPacket::RACEHEADER_1];
+    if (raceHeader1Size != 0 &&
+        (raceHeader1Size < 0x28 ||
+         raceHeader1Size > packetBufferSizes[RACEPacket::RACEHEADER_1])) {
+        return false;
+    }
+
+    expectedPacketSize += raceHeader1Size;
+
+    u8 raceHeader2Size = packet->sizes[RACEPacket::RACEHEADER_2];
+    if (raceHeader2Size != 0 &&
+        (raceHeader2Size < 0x28 ||
+         raceHeader2Size > packetBufferSizes[RACEPacket::RACEHEADER_2])) {
+        return false;
+    }
+
+    expectedPacketSize += raceHeader2Size;
+
+    u8 roomSelectSize = packet->sizes[RACEPacket::ROOM_SELECT];
+    if (roomSelectSize != 0 &&
+        (roomSelectSize < 0x04 ||
+         roomSelectSize > packetBufferSizes[RACEPacket::ROOM_SELECT])) {
+        return false;
+    }
+
+    expectedPacketSize += roomSelectSize;
+
+    u8 raceDataSize = packet->sizes[RACEPacket::RACEDATA];
+    if (raceDataSize != 0 &&
+        (raceDataSize < 0x40 ||
+         raceDataSize > packetBufferSizes[RACEPacket::RACEDATA])) {
+        return false;
+    }
+
+    expectedPacketSize += raceDataSize;
+
+    u8 userSize = packet->sizes[RACEPacket::USER];
+    if (userSize != 0) {
+        if (userSize < 0xC0 || userSize > packetBufferSizes[RACEPacket::USER] ||
+            *(u16*) (u32(packet) + expectedPacketSize + 0x04) != 2) {
             return false;
         }
-
-        // Not a better place to check this, the Mii count in USER
-        if (i == RACEPacket::USER && packet->sizes[i] != 0) {
-            if (packet->sizes[i] != 0xC0 ||
-                *(u16*) (u32(packet) + expectedPacketSize + 0x4) != 2) {
-                return false;
-            }
-        }
-
-        expectedPacketSize += packet->sizes[i];
     }
 
-    // TODO: Check against the actual buffer size to allow mods to expand it
+    expectedPacketSize += userSize;
 
-    if (packet->sizes[RACEPacket::HEADER] != 0x10) {
+    u8 itemSize = packet->sizes[RACEPacket::ITEM];
+    if (itemSize != 0 &&
+        (itemSize < 0x08 || itemSize > packetBufferSizes[RACEPacket::ITEM])) {
         return false;
     }
 
-    if (packet->sizes[RACEPacket::RACEHEADER_1] != 0 &&
-        packet->sizes[RACEPacket::RACEHEADER_1] != 0x28) {
-        return false;
-    }
-
-    if (packet->sizes[RACEPacket::RACEHEADER_2] != 0 &&
-        packet->sizes[RACEPacket::RACEHEADER_2] != 0x28) {
-        return false;
-    }
-
-    if (packet->sizes[RACEPacket::ROOM_SELECT] != 0 &&
-        packet->sizes[RACEPacket::ROOM_SELECT] != 0x4 &&
-        packet->sizes[RACEPacket::ROOM_SELECT] != 0x38) {
-        return false;
-    }
-
-    if (packet->sizes[RACEPacket::RACEDATA] != 0 &&
-        packet->sizes[RACEPacket::RACEDATA] != 0x40 &&
-        packet->sizes[RACEPacket::RACEDATA] != 0x80) {
-        return false;
-    }
-
-    // The size of the 'USER' portion of the packet was previously validated
-
-    if (packet->sizes[RACEPacket::ITEM] != 0 &&
-        packet->sizes[RACEPacket::ITEM] != 0x8 &&
-        packet->sizes[RACEPacket::ITEM] != 0x10) {
-        return false;
-    }
+    expectedPacketSize += itemSize;
 
     // SECURITY TODO: There is some kind of (harmless?) overflow in EVENT,
     // not patched by Wiimmfi or CTGP
-    if (packet->sizes[RACEPacket::EVENT] != 0 &&
-        (packet->sizes[RACEPacket::EVENT] < 0x18 ||
-         packet->sizes[RACEPacket::EVENT] >= 0xF9)) {
+    u8 eventSize = packet->sizes[RACEPacket::EVENT];
+    if (eventSize != 0 && (eventSize < 0x18 ||
+                           eventSize > packetBufferSizes[RACEPacket::EVENT])) {
         return false;
     }
 
-    return true;
+    expectedPacketSize += eventSize;
+
+    return expectedPacketSize == packetSize;
 }
 
 // CLIENT TO CLIENT VULNERABILITY
