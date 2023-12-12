@@ -1,9 +1,33 @@
+#include "import/mkwSystem.hpp"
 #include "wwfcPatch.hpp"
 
 namespace wwfc::AntiFreeze
 {
 
 #if RMC
+
+static const mkw::system::MapdataItemPoint::Data s_mapdataItemPointData = {
+    egg::Vector3f{0.0f, 0.0f, 0.0f},
+    0.0f,
+    {0, 0},
+};
+static mkw::system::MapdataItemPoint s_mapdataItemPoint(&s_mapdataItemPointData
+);
+
+// Prevent the game from crashing if a Bullet Bill is used during a Battle
+WWFC_DEFINE_PATCH = {
+    Patch::WriteASM(
+        WWFC_PATCH_LEVEL_BUGFIX,
+        RMCXD_PORT(0x80514D58, 0x805108E4, 0x805146D8, 0x80502D78), //
+        1, ASM_LAMBDA(bge + 0x20)
+    ),
+    Patch::BranchWithCTR(
+        WWFC_PATCH_LEVEL_BUGFIX,
+        RMCXD_PORT(0x80514D78, 0x80510904, 0x805146F8, 0x80502D98), //
+        [](void* /* mapdataItemPointAccessor */
+        ) -> mkw::system::MapdataItemPoint* { return &s_mapdataItemPoint; }
+    ),
+};
 
 // Prevent invalid profile identifiers from crashing the game
 WWFC_DEFINE_PATCH = {

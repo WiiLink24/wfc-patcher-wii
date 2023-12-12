@@ -30,6 +30,10 @@ SECTIONS
 		*(.data*)
 		*(.bss*)
 
+		__CTORS_START__ = .;
+		KEEP(*(.ctors*))
+		__CTORS_END__ = .;
+
 		__SDATA_START__ = .;
 		*(.sdata*)
 		__SDATA_END__ = .;
