@@ -50,6 +50,12 @@ int SendExtendedLogin(
         }
     }
 
+    DWCUserData* userData = DWCi_GetUserData();
+    if (userData != nullptr && userData->profileId != 0) {
+        gpiAppendStringToBuffer(connection, outputBuffer, "\\profileid\\");
+        gpiAppendIntToBuffer(connection, outputBuffer, userData->profileId);
+    }
+
     gpiAppendStringToBuffer(connection, outputBuffer, "\\final\\");
 
     return 0;
