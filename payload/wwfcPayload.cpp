@@ -28,6 +28,8 @@ extern u32 FixupStart asm("_G_FixupStart");
 extern u32 FixupEnd asm("_G_FixupEnd");
 extern wwfc_patch PatchStart asm("_G_WWFCPatchStart");
 extern wwfc_patch PatchEnd asm("_G_WWFCPatchEnd");
+extern u32 CTORSStart asm("__CTORS_START__");
+extern u32 CTORSEnd asm("__CTORS_END__");
 extern u8 PayloadEnd asm("_G_End");
 
 SECTION("wwfc_header")
@@ -100,6 +102,24 @@ extern struct LoMem {
     u8 discVersion;
 } g_LoMem AT(0x80000000);
 
+static void CallCtors(const wwfc_payload* const payload)
+{
+    void (*ctor)();
+
+    for (const u32* ctorAddress = &CTORSStart; ctorAddress < &CTORSEnd;
+         ++ctorAddress) {
+        u32 ctorOffset = *ctorAddress;
+
+        if (ctorOffset == 0x00000000 || ctorOffset == 0xFFFFFFFF) {
+            continue;
+        }
+
+        ctor = (decltype(ctor)
+        ) (reinterpret_cast<const char*>(payload) + ctorOffset);
+        (*ctor)();
+    }
+}
+
 /**
  * Payload entry point. Does not apply global offset table and fixup
  * relocations. Automatically called by wwfc_payload_entry.
@@ -116,6 +136,8 @@ s32 EntryAfterGOT(wwfc_payload* payload)
         return WL_ERROR_PAYLOAD_GAME_MISMATCH;
     }
 #endif
+
+    CallCtors(payload);
 
     Patch::ApplyPatchList(
         reinterpret_cast<u32>(payload), &PatchStart,
