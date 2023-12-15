@@ -29,6 +29,30 @@ WWFC_DEFINE_PATCH = {
     ),
 };
 
+static const mkw::system::MapdataCannonPoint::Data s_mapdataCannonPointData = {
+    egg::Vector3f{0.0f, 0.0f, 0.0f},
+    egg::Vector3f{0.0f, 0.0f, 0.0f},
+    0,
+    mkw::system::MapdataCannonPoint::CannonType::Default,
+};
+static mkw::system::MapdataCannonPoint
+    s_mapdataCannonPoint(&s_mapdataCannonPointData);
+
+// Prevent the game from crashing if a cannon is entered on a course without one
+WWFC_DEFINE_PATCH = {
+    Patch::WriteASM(
+        WWFC_PATCH_LEVEL_BUGFIX,
+        RMCXD_PORT(0x80518AFC, 0x80514688, 0x8051847C, 0x80506B1C), //
+        1, ASM_LAMBDA(bge + 0x20)
+    ),
+    Patch::BranchWithCTR(
+        WWFC_PATCH_LEVEL_BUGFIX,
+        RMCXD_PORT(0x80518B1C, 0x805146A8, 0x8051849C, 0x80506B3C), //
+        [](void* /* mapdataCannonPointAccessor */
+        ) -> mkw::system::MapdataCannonPoint* { return &s_mapdataCannonPoint; }
+    ),
+};
+
 // Prevent invalid profile identifiers from crashing the game
 WWFC_DEFINE_PATCH = {
     Patch::WriteASM(
