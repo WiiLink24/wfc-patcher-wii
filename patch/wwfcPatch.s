@@ -225,7 +225,7 @@ GCT_ENDIF(1)
 
 
 GCT_STRING(ADDRESS_AVAILABLE_URL + 0xD, AvailableURLOverride)
-    .ascii  WWFC_DOMAIN "\0"
+    .ascii  "gs." WWFC_DOMAIN "\0"
 GCT_STRING_END(AvailableURLOverride)
 
 
