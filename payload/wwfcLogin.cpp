@@ -238,4 +238,27 @@ static void SendAuthTokenSignature(
     gpiAppendStringToBuffer(connection, outputBuffer, b64AuthSig);
 }
 
+#if RMC
+
+// Always check if the SAKE server has the latest friend info, as it can get
+// outdated when switching between servers (such as Wiimmfi)
+WWFC_DEFINE_PATCH = {Patch::WriteASM(
+    WWFC_PATCH_LEVEL_CRITICAL, //
+    RMCXD_PORT(0x80672FCC, 0x8066B868, 0x80672638, 0x80661324), //
+    1, ASM_LAMBDA(b 0x70)
+)};
+
+#endif
+
+#if RMCN
+
+// Same patch as above but for the Mario Kart Channel
+WWFC_DEFINE_PATCH = {Patch::WriteASM(
+    WWFC_PATCH_LEVEL_CRITICAL, //
+    RMCXN_PORT(0x801FD08C, 0x801FCFEC, 0x801FCE24, 0x801FD87C), //
+    1, ASM_LAMBDA(b 0x6C)
+)};
+
+#endif
+
 } // namespace wwfc::Login
