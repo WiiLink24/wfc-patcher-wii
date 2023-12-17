@@ -189,7 +189,7 @@ static bool IsValidRACEPacket(mkw::Net::RACEPacket* packet, u32 packetSize)
 
     expectedPacketSize += eventSize;
 
-    return expectedPacketSize == packetSize;
+    return packetSize >= expectedPacketSize;
 }
 
 // CLIENT TO CLIENT VULNERABILITY
