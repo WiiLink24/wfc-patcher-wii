@@ -6,12 +6,36 @@
 namespace wwfc::Security
 {
 
+WWFC_DEFINE_PATCH = {
+#if ADDRESS_DWCi_GetGPBuddyAdditionalMsg
+    // SERVER TO CLIENT VULNERABILITY
+    // CVE-ID: CVE-2023-45887
+    // https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2023-45887
+    Patch::CallWithCTR(
+        WWFC_PATCH_LEVEL_CRITICAL, //
+        ADDRESS_DWCi_GetGPBuddyAdditionalMsg + 0x90, //
+        ASM_LAMBDA(
+            // clang-format off
+            cmplwi    r31, 0xF; // The destination buffer is of size 0x10; leave room for the null terminator
+            mflr      r9;
+            mr        r5, r31;
+            mr        r4, r28;
+            mr        r3, r27;
+            ble+      L_ValidLength;
+            addi      r9, r9, -0x1C; // return -1
+            mtctr     r9;
+            bctr;
+
+        L_ValidLength:
+            b         memcpy;
+            // clang-format on
+        )
+    ),
+#endif
+};
+
 // SERVER|CLIENT TO CLIENT VULNERABILITY
 // Match command stack buffer overflow. This exists in nearly every Wii game.
-// SECURITY TODO: Patch the server to client one in GPCM that only exists
-// in DS games and early Wii games (such as Super Smash Bros. Brawl). This will
-// allow us to lift the length restriction on the server.
-
 WWFC_DEFINE_PATCH = {
 #if ADDRESS_PATCH_SECURITY_GT2MATCHCOMMAND
     // CLIENT TO CLIENT VULNERABILITY
@@ -202,7 +226,6 @@ static bool IsValidRACEPacket(mkw::Net::RACEPacket* packet, u32 packetSize)
 WWFC_DEFINE_PATCH = {Patch::BranchWithCTR( //
     WWFC_PATCH_LEVEL_CRITICAL, //
     RMCXD_PORT(0x80658604, 0x8065417C, 0x80657C70, 0x8064691C), //
-
     [](void* rkNetController, mkw::Net::RACEPacket* packet, u32 packetSize,
        u32 _, u8 playerAid) -> void {
         if (!IsValidRACEPacket(packet, packetSize)) {

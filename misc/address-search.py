@@ -66,7 +66,7 @@ def parse_file(file_path, title_name):
     if index == -1:
         exit('missing naswii url :( ' + title_name)
     ADDRESS_NASWII_AC_URL = dol_to_real(hdr, index)
-    if dol[index+0x50:index+0x54] != ADDRESS_NASWII_AC_URL.to_bytes(4):
+    if dol[index+0x50:index+0x54] != ADDRESS_NASWII_AC_URL.to_bytes(4, byteorder='big'):
         exit('missing naswii url pointer :( ' + title_name)
     ADDRESS_NASWII_AC_URL_POINTER = dol_to_real(hdr, index+0x50)
 
@@ -75,7 +75,7 @@ def parse_file(file_path, title_name):
     ADDRESS_NASWII_PR_URL_POINTER = 0
     if index != -1:
         ADDRESS_NASWII_PR_URL = dol_to_real(hdr, index)
-        if dol[index+0x50:index+0x54] != ADDRESS_NASWII_PR_URL.to_bytes(4):
+        if dol[index+0x50:index+0x54] != ADDRESS_NASWII_PR_URL.to_bytes(4, byteorder='big'):
             exit('missing naswii pr url pointer :( ' + title_name)
         ADDRESS_NASWII_PR_URL_POINTER = dol_to_real(hdr, index+0x50)
 
@@ -402,6 +402,12 @@ def parse_file(file_path, title_name):
         ADDRESS_HBM_ALLOCATOR = 0x900AC6FC
     elif title_name == 'SIIKD00':
         ADDRESS_HBM_ALLOCATOR = 0x900B483C
+    # Sonic and the Black Knight
+    elif title_name.startswith('REN'):
+        ADDRESS_HBM_ALLOCATOR = 0x9006875C
+    # Sonic Colors
+    elif title_name.startswith('SNC'):
+        ADDRESS_HBM_ALLOCATOR = 0x9015AA34
     # Guitar Hero Legends of Rock only allocates when the HBM is opened, so we need our own allocator
     elif title_name.startswith('RGH'):
         index = dol.find(b'\x38\xA0\x00\x00\x90\x01\x00\x14\x38\xC0\x00\x00\x93\xE1\x00\x0C\x7C\x7F\x1B\x78\x80\x64')
@@ -430,6 +436,10 @@ def parse_file(file_path, title_name):
 
         # Use the GH alloc function because the caller format is the same
         ADDRESS_GH_ALLOC_FUNCTION = dol_to_real(hdr, index+0x18)
+    # Tales of Graces
+    elif title_name == "STGJD00":
+        # Use the GH alloc function because the caller format is the same
+        ADDRESS_GH_ALLOC_FUNCTION = 0x802CF974
     else:
         # Other games with HBM in DOL
         index = dol.find('P1_Def.brlyt\0\0\0\0P2'.encode('ascii'))
@@ -782,6 +792,41 @@ def parse_file(file_path, title_name):
     d = real_to_dol(hdr, ADDRESS_DWC_AUTH_ADD_MACADDR)
     ADDRESS_DWC_Base64Encode = decode_bl(dol, d + 0x48)
 
+    ADDRESS_DWCi_GetUserData = 0
+    index = 0
+    while True:
+        index2 = dol[index:].find(b'\x2C\x03\x00\x00\x41\x82\x00\x0C\x80\x63\x00\x1C\x4E\x80\x00\x20\x38\x60\x00\x00\x4E\x80\x00\x20')
+        if index2 == -1:
+            if ADDRESS_DWCi_GetUserData != 0:
+                break
+            exit('Missing DWCi_GetUserData ' + title_name)
+
+        index = index2 + index
+
+        if dol[index+0x18:index+0x1C] != b'\x94\x21\xFF\xF0':
+            if dol[index+0x18:index+0x20] != b'\x00\x00\x00\x00\x94\x21\xFF\xF0':
+                index += 1
+                continue
+
+        if dol[index-0x4:index-0x2] == b'\x80\x6D':
+            if ADDRESS_DWCi_GetUserData != 0:
+                exit('Duplicate DWCi_GetUserData ' + title_name)
+
+            ADDRESS_DWCi_GetUserData = dol_to_real(hdr, index-4)
+        elif dol[index-0x8:index-0x6] == b'\x3C\x60' and dol[index-0x4:index-0x2] == b'\x80\x63':
+            if ADDRESS_DWCi_GetUserData != 0:
+                exit('Duplicate DWCi_GetUserData ' + title_name)
+
+            ADDRESS_DWCi_GetUserData = dol_to_real(hdr, index-8)
+
+        index += 1
+
+    ADDRESS_DWCi_GetGPBuddyAdditionalMsg = 0
+    index = dol.find(b'\x7F\xFC\x18\x50\x7F\x63\xDB\x78\x7F\x84\xE3\x78\x7F\xE5\xFB\x78')
+    if index != -1:
+        assert(dol[index-0x8C:index-0x88] == b'\x94\x21\xFF\xE0')
+        ADDRESS_DWCi_GetGPBuddyAdditionalMsg = dol_to_real(hdr, index-0x8C)
+
 
     def fmthex(v):
         return "0x{:08X}".format(v)
@@ -835,6 +880,8 @@ def parse_file(file_path, title_name):
         "ADDRESS_gpiAppendIntToBuffer":      fmthex(ADDRESS_gpiAppendIntToBuffer),
         "ADDRESS_PATCH_GPISENDLOGIN":        fmthex(ADDRESS_PATCH_GPISENDLOGIN),
         "ADDRESS_DWC_Base64Encode":          fmthex(ADDRESS_DWC_Base64Encode),
+        "ADDRESS_DWCi_GetUserData":          fmthex(ADDRESS_DWCi_GetUserData),
+        "ADDRESS_DWCi_GetGPBuddyAdditionalMsg": fmthex(ADDRESS_DWCi_GetGPBuddyAdditionalMsg),
         "ADDRESS_RealMode":                  fmthex(ADDRESS_RealMode),
     }
 
@@ -896,6 +943,8 @@ if __name__ == '__main__':
         "ADDRESS_gpiAppendIntToBuffer",
         "ADDRESS_PATCH_GPISENDLOGIN",
         "ADDRESS_DWC_Base64Encode",
+        "ADDRESS_DWCi_GetUserData",
+        "ADDRESS_DWCi_GetGPBuddyAdditionalMsg",
         "ADDRESS_RealMode",
     ]
 
