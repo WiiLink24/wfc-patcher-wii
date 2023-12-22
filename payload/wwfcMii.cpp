@@ -11,7 +11,7 @@ void ClearUSERMiiInfo(mkw::Net::USERPacket* packet) asm("ClearUSERMiiInfo");
 
 WWFC_DEFINE_PATCH = {Patch::CallWithCTR(
     WWFC_PATCH_LEVEL_FEATURE, //
-    RMCXD_PORT(0x80663178, 0x8065A820, 0x806627E4, 0x80651490), //
+    RMCXD_PORT(0x80663178, 0x80661094, 0x806627E4, 0x80651490), //
     ASM_LAMBDA(
         // clang-format off
         mflr    r30;
