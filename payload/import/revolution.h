@@ -4,6 +4,9 @@
 
 #ifdef __cplusplus
 extern "C" {
+
+namespace RVL
+{
 #endif
 
 LONGCALL void OSReport( //
@@ -36,5 +39,6 @@ LONGCALL s32 IOS_Ioctlv( //
 ) AT(ADDRESS_IOS_Ioctlv);
 
 #ifdef __cplusplus
+}
 }
 #endif

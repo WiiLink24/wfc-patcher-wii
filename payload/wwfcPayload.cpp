@@ -1,3 +1,4 @@
+#include "wwfcLogin.hpp"
 #include "wwfcPatch.hpp"
 #include "wwfcSupport.hpp"
 #include "wwfcUtil.h"
@@ -114,8 +115,8 @@ static void CallCtors(const wwfc_payload* const payload)
             continue;
         }
 
-        ctor = (decltype(ctor)
-        ) (reinterpret_cast<const char*>(payload) + ctorOffset);
+        ctor = (decltype(ctor)) (reinterpret_cast<const char*>(payload) +
+                                 ctorOffset);
         (*ctor)();
     }
 }
@@ -145,6 +146,7 @@ s32 EntryAfterGOT(wwfc_payload* payload)
     );
 
     Support::ChangeAuthURL();
+    Login::Init();
 
     return WL_ERROR_PAYLOAD_OK;
 }

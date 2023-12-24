@@ -4,6 +4,15 @@
 
 #define NOINLINE __attribute__((noinline))
 #define PACKED __attribute__((packed))
+#define LONGCALL __attribute__((__longcall__))
+#define SECTION(_SECTION) __attribute__((__section__(_SECTION)))
+
+#define FILL(_START, _END) u8 _##_START[_END - _START]
+
+#define _STRIFY1(_VAL) #_VAL
+#define STRIFY(_VAL) _STRIFY1(_VAL)
+
+#define AT(_ADDRESS) asm(STRIFY(_ADDRESS))
 
 extern "C" {
 
@@ -67,6 +76,7 @@ public:
     };
 
     struct Stage1Param {
+#if !STAGE1_SBCM
         void* block;
 
         void* (*const NHTTPCreateRequest)(
@@ -80,6 +90,40 @@ public:
         s32* const dwcError;
 
         const char title[9];
+#else
+        static void OSYieldThread( //
+            void
+        ) asm("OSYieldThread");
+
+        static s32 NHTTPStartup( //
+            void* alloc, void* free, u32 param_3
+        ) asm("NHTTPStartup");
+
+        static void* NHTTPCreateRequest( //
+            const char* url, int param_2, void* buffer, u32 length,
+            void* callback, void* userdata
+        ) asm("NHTTPCreateRequest");
+
+        static s32 NHTTPSendRequestAsync( //
+            void* request
+        ) asm("NHTTPSendRequestAsync");
+
+        static s32 NHTTPDestroyResponse( //
+            void* response
+        ) asm("NHTTPDestroyResponse");
+
+        static s32 DWCi_HandleGPError( //
+            s32 error
+        ) asm("DWCi_HandleGPError");
+
+        static s32 DWCi_SetError( //
+            s32 errorClass, s32 errorCode
+        ) asm("DWCi_SetError");
+
+        static MEMAllocator* const allocator AT(ADDRESS_HBM_ALLOCATOR);
+
+        static constexpr char title[10] = PAYLOAD;
+#endif
     };
 
 private:
@@ -98,6 +142,10 @@ private:
             Stage1Param* m_param;
         };
     };
+
+#if STAGE1_SBCM
+    void* m_block = nullptr;
+#endif
 
     // FIPS 180-2 SHA-256 implementation
     // Last update: 02/02/2007
@@ -214,10 +262,11 @@ private:
         0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
         0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a,
         0x5b9cca4f, 0x682e6ff3, 0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208,
-        0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2};
+        0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
+    };
 
     NOINLINE
-    void SHA256Init(SHA256Context* ctx) const
+    void SHA256Init(SHA256Context* ctx)
     {
         int i;
 
@@ -228,8 +277,7 @@ private:
         ctx->tot_len = 0;
     }
 
-    void
-    SHA256Transform(SHA256Context* ctx, const u8* message, u32 block_nb) const
+    void SHA256Transform(SHA256Context* ctx, const u8* message, u32 block_nb)
     {
         /* Note: this function requires a considerable amount of stack */
         u32 w[64];
@@ -269,7 +317,7 @@ private:
         }
     }
 
-    void SHA256Update(SHA256Context* ctx, const void* data, u32 len) const
+    void SHA256Update(SHA256Context* ctx, const void* data, u32 len)
     {
         u32 block_nb;
         u32 new_len, rem_len, tmp_len;
@@ -301,7 +349,7 @@ private:
         ctx->tot_len += (block_nb + 1) << 6;
     }
 
-    u8* SHA256Final(SHA256Context* ctx) const
+    u8* SHA256Final(SHA256Context* ctx)
     {
         u32 block_nb;
         u32 pm_len;
@@ -520,7 +568,7 @@ private:
      * @param sha           SHA-256 digest of the content to verify
      * @return True on success.
      */
-    bool RSAVerify(const RSAPublicKey* key, u8* signature, const u8* sha) const
+    bool RSAVerify(const RSAPublicKey* key, u8* signature, const u8* sha)
     {
         ModPow(key, (u32*) signature); // In-place exponentiation
 
@@ -560,7 +608,7 @@ public:
 
     static constexpr u32 PAYLOAD_BLOCK_SIZE = 0x20000;
 
-    s32 HandleResponse(void* block) const
+    s32 HandleResponse(void* block)
     {
         wwfc_payload* __restrict payload =
             reinterpret_cast<wwfc_payload*>(block);
@@ -604,10 +652,41 @@ public:
                          : "r"(i), "r"(payload));
         }
 
-        s32 result = entryFunction(payload);
-        return result;
+        return entryFunction(payload);
     }
 
+#if STAGE1_SBCM
+#  define param (reinterpret_cast<Stage1::Stage1Param*>(0))
+
+    s32 m_error = WL_ERROR_PAYLOAD_STAGE1_WAITING;
+
+    static void* Alloc(u32 size)
+    {
+        return param->allocator->func->alloc(param->allocator, size);
+    }
+
+    static void Free(void* block)
+    {
+        param->allocator->func->free(param->allocator, block);
+    }
+
+    // HTTPCallback for SBCM
+    static s32 HTTPCallback(s32 result, void* response, void* userData)
+    {
+        Stage1* __restrict stage1 = reinterpret_cast<Stage1*>(userData);
+        param->NHTTPDestroyResponse(response);
+
+        if (result != 0) {
+            result = WL_ERROR_PAYLOAD_STAGE1_RESPONSE;
+        } else {
+            result = stage1->HandleResponse(stage1->m_block);
+        }
+        stage1->m_error = result;
+
+        return 0;
+    }
+#else
+    // HTTPCallback for regular request
     static s32 HTTPCallback(s32 result, void* response, void* userData)
     {
         Stage1* __restrict stage1 = reinterpret_cast<Stage1*>(userData);
@@ -625,16 +704,30 @@ public:
             // Success! This error code will retry auth.
             *param->dwcError = -1;
         }
-
         return 0;
     }
+#endif
 
-    inline s32
-    Download(Stage1Param* param, s32* authRequest, void* httpCallback)
+    inline s32 Download(
+#if !STAGE1_SBCM
+        Stage1Param* param, s32* authRequest,
+#endif
+        void* httpCallback
+    )
     {
+#if STAGE1_SBCM
+        if (param->NHTTPStartup(
+                reinterpret_cast<void*>(Alloc), reinterpret_cast<void*>(Free),
+                0x11
+            ) != 0) {
+            return WL_ERROR_PAYLOAD_STAGE1_MAKE_REQUEST;
+        }
+#endif
+
         char url[128];
         memcpy(url, m_baseUrl, sizeof(m_baseUrl));
 
+#if !STAGE1_SBCM
         void* block = param->block;
         if (block == nullptr) {
             if (param->allocator == nullptr) {
@@ -658,6 +751,9 @@ public:
 
             block = allocFunc(allocator, PAYLOAD_BLOCK_SIZE + 32);
         }
+#else
+        void* block = Alloc(PAYLOAD_BLOCK_SIZE + 32);
+#endif
 
         if (block == nullptr) {
             return WL_ERROR_PAYLOAD_STAGE1_ALLOC;
@@ -666,7 +762,11 @@ public:
         // Align up block
         block = (void*) ((u32(block) + 31) & ~31);
         memset(block, 0, PAYLOAD_BLOCK_SIZE);
+#if !STAGE1_SBCM
         param->block = block;
+#else
+        m_block = block;
+#endif
 
         int cur = sizeof(BASE_URL) - 1;
 
@@ -735,6 +835,7 @@ public:
 
         url[cur] = '\0';
 
+#if !STAGE1_SBCM
         m_param = param;
 
         void* request = param->NHTTPCreateRequest(
@@ -745,14 +846,36 @@ public:
         }
 
         *authRequest = param->NHTTPSendRequestAsync(request);
+
         return WL_ERROR_PAYLOAD_OK;
+#else
+        void* request = param->NHTTPCreateRequest(
+            url, 0, block, PAYLOAD_BLOCK_SIZE - 32, httpCallback, this
+        );
+        if (request == nullptr) {
+            return WL_ERROR_PAYLOAD_STAGE1_MAKE_REQUEST;
+        }
+
+        param->NHTTPSendRequestAsync(request);
+
+        while (m_error == WL_ERROR_PAYLOAD_STAGE1_WAITING) {
+            // TODO: Add request timeout
+#  if ADDRESS_OSYieldThread
+            param->OSYieldThread();
+#  endif
+        }
+
+        return m_error;
+#endif
     }
 };
 
 static Stage1 s_stage1;
 
-extern "C" __attribute__((section(".start"))) void
-wwfcStage1Entry(u8* stage1CodePtr, Stage1::Stage1Param* param, s32* authRequest)
+#if !STAGE1_SBCM
+extern "C" SECTION(".start") void wwfcStage1Entry(
+    u8* stage1CodePtr, Stage1::Stage1Param* param, s32* authRequest
+)
 {
     void* httpCallback;
     asm volatile("addi %0, %1, %2\n"
@@ -770,5 +893,16 @@ wwfcStage1Entry(u8* stage1CodePtr, Stage1::Stage1Param* param, s32* authRequest)
     }
     // Else don't do anything
 }
+#else
+extern "C" void wwfcStage1Entry()
+{
+    s32 ret = s_stage1.Download(reinterpret_cast<void*>(&Stage1::HTTPCallback));
+    if (ret != WL_ERROR_PAYLOAD_OK) {
+        param->DWCi_HandleGPError(3);
+        param->DWCi_SetError(3, ret);
+    }
+    // Else don't do anything
+}
+#endif
 
 } // namespace wwfc

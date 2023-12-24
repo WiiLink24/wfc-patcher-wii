@@ -34,6 +34,8 @@ stage1/build
 patch/build
 payload/build
 payload/binary
+exploit/build
+exploit/sbcm
 *.elf
 *.out
 *.dol

@@ -10,55 +10,126 @@
 namespace wwfc::Login
 {
 
-int SendExtendedLogin(
-    void* connection, GPIConnectData* data, void* outputBuffer
-) asm("SendExtendedLogin");
+int gpiSendLoginHook( //
+    void* connection, GameSpy::GPIConnectData* data, void* outputBuffer
+) asm("gpiSendLoginHook");
 
-static void SendAuthTokenSignature(
-    void* connection, GPIConnectData* data, void* outputBuffer, s32 esFd
+int gpiAddLocalInfoHook( //
+    void* connection, void* outputBuffer
+) asm("gpiAddLocalInfoHook");
+
+static void SendExtendedLogin( //
+    void* connection, const char* authToken, void* outputBuffer,
+    bool sendProfileId
 );
 
-WWFC_DEFINE_PATCH = {Patch::CallWithCTR(
-    WWFC_PATCH_LEVEL_CRITICAL, //
-    ADDRESS_PATCH_GPISENDLOGIN, // 0x801007B0
-    ASM_LAMBDA(
-        // clang-format off
-        mr      r3, r28;
-        mr      r4, r29;
-        addi    r5, r30, 0x210;
-        b       SendExtendedLogin;
-        // clang-format on
-    )
-)};
+static void SendAuthTokenSignature( //
+    void* connection, const char* authToken, void* outputBuffer, s32 esFd
+);
 
-int SendExtendedLogin(
-    void* connection, GPIConnectData* data, void* outputBuffer
+static bool g_sendExLogin = false;
+
+void Init()
+{
+    if (DWC::stpFriendCnt != nullptr) {
+        // If the friend context already exists when the payload is initialized,
+        // then the extended login parameters wouldn't have been sent on login.
+        g_sendExLogin = true;
+    }
+}
+
+WWFC_DEFINE_PATCH = {
+    Patch::CallWithCTR(
+        WWFC_PATCH_LEVEL_CRITICAL, //
+        ADDRESS_PATCH_GPISENDLOGIN, // 0x801007B0
+        ASM_LAMBDA(
+            // clang-format off
+            mr      r3, r28;
+            mr      r4, r29;
+            addi    r5, r30, 0x210;
+            b       gpiSendLoginHook;
+            // clang-format on
+        )
+    ),
+    Patch::CallWithCTR(
+        // For the DNS patch method
+        WWFC_PATCH_LEVEL_SUPPORT,
+        ADDRESS_PATCH_GPIADDLOCALINFO, // 0x801021C0
+        ASM_LAMBDA(
+            // clang-format off
+            mr      r3, r28;
+            mr      r4, r29;
+            mflr    r31;
+            bl      gpiAddLocalInfoHook;
+            mtlr    r31;
+            lwz     r31, 0x1C(sp);
+            lwz     r30, 0x18(sp);
+            lwz     r29, 0x14(sp);
+            blr;
+            // clang-format on
+        )
+    ),
+};
+
+int gpiSendLoginHook(
+    void* connection, GameSpy::GPIConnectData* data, void* outputBuffer
 )
 {
-    gpiAppendStringToBuffer(connection, outputBuffer, "\\payload_ver\\");
-    gpiAppendIntToBuffer(
+    SendExtendedLogin(connection, data->authtoken, outputBuffer, true);
+    return 0;
+}
+
+int gpiAddLocalInfoHook(void* connection, void* outputBuffer)
+{
+    if (g_sendExLogin) {
+        GameSpy::gpiAppendStringToBuffer(
+            connection, outputBuffer, "\\wwfc_exlogin\\"
+        );
+
+        SendExtendedLogin(
+            connection, DWC::s_auth_result.authToken, outputBuffer, false
+        );
+    }
+    return 0;
+}
+
+void SendExtendedLogin(
+    void* connection, const char* authToken, void* outputBuffer,
+    bool sendProfileId
+)
+{
+    g_sendExLogin = false;
+
+    GameSpy::gpiAppendStringToBuffer(
+        connection, outputBuffer, "\\payload_ver\\"
+    );
+    GameSpy::gpiAppendIntToBuffer(
         connection, outputBuffer, Payload::Header.info.version
     );
 
-    if (data->authtoken[0] != '\0') {
-        s32 fd = IOS_Open("/dev/es", 0);
+    if (authToken[0] != '\0') {
+        s32 fd = RVL::IOS_Open("/dev/es", 0);
         if (fd >= 0) {
-            SendAuthTokenSignature(connection, data, outputBuffer, fd);
-            IOS_Close(fd);
+            SendAuthTokenSignature(connection, authToken, outputBuffer, fd);
+            RVL::IOS_Close(fd);
         } else {
             LOG_ERROR_FMT("Failed to open ES: %d", fd);
         }
     }
 
-    DWCUserData* userData = DWCi_GetUserData();
-    if (userData != nullptr && userData->profileId != 0) {
-        gpiAppendStringToBuffer(connection, outputBuffer, "\\profileid\\");
-        gpiAppendIntToBuffer(connection, outputBuffer, userData->profileId);
+    if (sendProfileId) {
+        DWC::DWCUserData* userData = DWC::DWCi_GetUserData();
+        if (userData != nullptr && userData->profileId != 0) {
+            GameSpy::gpiAppendStringToBuffer(
+                connection, outputBuffer, "\\profileid\\"
+            );
+            GameSpy::gpiAppendIntToBuffer(
+                connection, outputBuffer, userData->profileId
+            );
+        }
     }
 
-    gpiAppendStringToBuffer(connection, outputBuffer, "\\final\\");
-
-    return 0;
+    GameSpy::gpiAppendStringToBuffer(connection, outputBuffer, "\\final\\");
 }
 
 static u64 DecodeUintString(const char* str, u32 bitCount)
@@ -95,7 +166,7 @@ static bool IsZeroBlock(const void* block, u32 size)
 }
 
 static void SendAuthTokenSignature(
-    void* connection, GPIConnectData* data, void* outputBuffer, s32 esFd
+    void* connection, const char* authToken, void* outputBuffer, s32 esFd
 )
 {
     struct IOSCECCCert {
@@ -133,11 +204,11 @@ static void SendAuthTokenSignature(
     static constexpr u32 ES_IOCTL_SIGN = 0x30;
 
     IOSCECCCert eccCert alignas(32) = {};
-    IOVector vec[3 + 1] alignas(32) = {};
+    RVL::IOVector vec[3 + 1] alignas(32) = {};
 
     vec[0].data = &eccCert;
     vec[0].size = sizeof(IOSCECCCert);
-    s32 ret = IOS_Ioctlv(esFd, ES_IOCTL_GET_DEVICE_CERT, 0, 1, vec);
+    s32 ret = RVL::IOS_Ioctlv(esFd, ES_IOCTL_GET_DEVICE_CERT, 0, 1, vec);
     if (ret != 0) {
         LOG_ERROR_FMT("Failed to get device certificate: %d", ret);
         return;
@@ -179,22 +250,22 @@ static void SendAuthTokenSignature(
 
     // Now call ES sign
     u8 eccSignature[0x3C + 0x4] alignas(32) = {};
-    char authToken[GP_AUTHTOKEN_LEN] alignas(64) = {};
+    char authTokenAligned[GP_AUTHTOKEN_LEN] alignas(64) = {};
 
-    s32 authTokenSize = std::strlen(data->authtoken);
+    s32 authTokenSize = std::strlen(authToken);
     if (authTokenSize > GP_AUTHTOKEN_LEN) {
         authTokenSize = GP_AUTHTOKEN_LEN;
     }
-    std::memcpy(authToken, data->authtoken, authTokenSize);
+    std::memcpy(authTokenAligned, authToken, authTokenSize);
 
-    vec[0].data = &authToken;
+    vec[0].data = &authTokenAligned;
     vec[0].size = authTokenSize;
     vec[1].data = eccSignature;
     vec[1].size = 0x3C;
     vec[2].data = &eccCert;
     vec[2].size = sizeof(IOSCECCCert);
 
-    ret = IOS_Ioctlv(esFd, ES_IOCTL_SIGN, 1, 2, vec);
+    ret = RVL::IOS_Ioctlv(esFd, ES_IOCTL_SIGN, 1, 2, vec);
     if (ret != 0) {
         LOG_ERROR_FMT("Failed to sign auth token: %d", ret);
         return;
@@ -223,7 +294,7 @@ static void SendAuthTokenSignature(
 
     // Done signing, now base64 encode the result
     char b64AuthSig[0x400];
-    s32 b64Len = DWC_Base64Encode(
+    s32 b64Len = DWC::DWC_Base64Encode(
         &authSig, sizeof(authSig), b64AuthSig, sizeof(b64AuthSig)
     );
     if (b64Len < 0 || b64Len >= 0x400) {
@@ -234,8 +305,8 @@ static void SendAuthTokenSignature(
     // Add null terminator
     b64AuthSig[b64Len] = '\0';
 
-    gpiAppendStringToBuffer(connection, outputBuffer, "\\wwfc_sig\\");
-    gpiAppendStringToBuffer(connection, outputBuffer, b64AuthSig);
+    GameSpy::gpiAppendStringToBuffer(connection, outputBuffer, "\\wwfc_sig\\");
+    GameSpy::gpiAppendStringToBuffer(connection, outputBuffer, b64AuthSig);
 }
 
 #if RMC

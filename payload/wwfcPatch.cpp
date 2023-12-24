@@ -53,8 +53,8 @@ void ApplyPatch(u32 base, wwfc_patch& patch)
         flushSize = sizeof(u32);
 
         *arg1Ptr = 0x48000000 | (((patch.address + 4) - baseArg1) & 0x3FFFFFC);
-        DCFlushRange(arg1Ptr, sizeof(u32));
-        ICInvalidateRange(arg1Ptr, sizeof(u32));
+        RVL::DCFlushRange(arg1Ptr, sizeof(u32));
+        RVL::ICInvalidateRange(arg1Ptr, sizeof(u32));
         break;
 
     /**
@@ -114,8 +114,8 @@ void ApplyPatch(u32 base, wwfc_patch& patch)
         break;
     }
 
-    DCFlushRange(address, flushSize);
-    ICInvalidateRange(address, flushSize);
+    RVL::DCFlushRange(address, flushSize);
+    RVL::ICInvalidateRange(address, flushSize);
 
     // Disable the patch for completion
     patch.level |= WWFC_PATCH_LEVEL_DISABLED;

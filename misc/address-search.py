@@ -55,6 +55,18 @@ def parse_file(file_path, title_name):
         return
     ADDRESS_MD5Digest = dol_to_real(hdr, index - 0x14)
 
+    if dol[0xE0:0xE4] != bytes([0x00,0x00,0x00,0x00]):
+        # get r2 and r13
+        init_registers = real_to_dol(hdr, decode_bl(dol, real_to_dol(hdr, int.from_bytes(dol[0xE0:0xE4], byteorder='big'))))
+
+        hi = struct.unpack('>H', dol[init_registers+0x7E:init_registers+0x80])[0]
+        lo = struct.unpack('>H', dol[init_registers+0x82:init_registers+0x84])[0]
+        ADDRESS_R2_BASE = (hi << 16) | lo
+
+        hi = struct.unpack('>H', dol[init_registers+0x86:init_registers+0x88])[0]
+        lo = struct.unpack('>H', dol[init_registers+0x8A:init_registers+0x8C])[0]
+        ADDRESS_R13_BASE = (hi << 16) | lo
+
     index = dol.find(bytes([0x7C,0x03,0x03,0x78,0x4E,0x80,0x00,0x20,0x54,0x80,0x07,0xBE]))
     if index == -1:
         exit('missing strcmp :( ' + title_name)
@@ -337,6 +349,41 @@ def parse_file(file_path, title_name):
         hi -= 1
     ADDRESS_DWC_ERROR = (hi << 16) | lo
 
+    # find DWCi_SetError
+    ADDRESS_DWCi_SetError = 0
+    index = dol.find(b'\x2C\x00\x00\x09\x4D\x82\x00\x20\x90\x6D')
+    if index != -1:
+        ADDRESS_DWCi_SetError = dol_to_real(hdr, index - 0x4)
+
+    if index == -1:
+        index = dol.find(b'\x2C\x03\x00\x09\x4C\x82\x00\x20\x3C\x80')
+        if index != -1:
+            ADDRESS_DWCi_HandleGPError = dol_to_real(hdr, index - 0x14)
+
+    if index == -1:
+        index = dol.find(b'\x2C\x00\x00\x09\x4D\x82\x00\x20\x3C\xA0\x80')
+        if index != -1:
+            ADDRESS_DWCi_SetError = dol_to_real(hdr, index - 0x8)
+
+    if index == -1:
+        print('missing DWCi_SetError :( ' + title_name)
+
+    # find DWCi_HandleGPError
+    ADDRESS_DWCi_HandleGPError = 0
+    index = dol.find(b'\x2C\x1D\x00\x03\x41\x82\x00\x3C\x40\x80\x00\x14\x2C\x1D\x00\x01\x41\x82\x00\x18')
+    if index != -1:
+        ADDRESS_DWCi_HandleGPError = dol_to_real(hdr, index - 0x44)
+
+    if index == -1:
+        index = dol.find(b'\x2C\x1D\x00\x01\x41\x82\x00\x20\x2C\x1D\x00\x02\x41\x82\x00\x24\x2C\x1D\x00\x03\x41\x82\x00\x28\x2C\x1D\x00\x04\x41\x82\x00\x2C\x48\x00\x00\x30\x3B\xC0\x00\x09')
+        if index != -1:
+            ADDRESS_DWCi_HandleGPError = dol_to_real(hdr, index - 0x44)
+
+    if index == -1:
+        print('missing DWCi_HandleGPError :( ' + title_name)
+
+        
+
     if version == 'A':
         addrOf = real_to_dol(hdr, ADDRESS_DWCi_Auth_SendRequest)
         addr = struct.unpack('>H', dol[addrOf+0x90A:addrOf+0x90C])[0]
@@ -504,6 +551,30 @@ def parse_file(file_path, title_name):
         ADDRESS_NHTTPDestroyResponse = decode_bl(dol, d+index+0x10)
 
     # print("{} 0x{:08X} 0x{:08X} 0x{:08X}".format(title_name, ADDRESS_NHTTPCreateRequest, ADDRESS_NHTTPSendRequestAsync, ADDRESS_NHTTPDestroyResponse))
+
+    # Search NHTTPStartup
+    ADDRESS_NHTTPStartup = 0
+    index = dol.find(b'\x7C\x60\x00\x34\x83\xE1\x00\x1C\x54\x00\xD9\x7E\x83\xC1\x00\x18\x83\xA1\x00\x14\x7C\x60\x00\xD0')
+    if index != -1:
+        assert(dol[index-0x60:index-0x5C] == b'\x94\x21\xFF\xE0')
+        ADDRESS_NHTTPStartup = dol_to_real(hdr, index-0x60)
+
+    if index == -1:
+        index = dol.find(b'\x7C\x60\x00\x34\x83\xE1\x00\x1C\x54\x00\xD9\x7E\x83\xC1\x00\x18\x7C\x60\x00\xD0')
+        if index != -1:
+            assert(dol[index-0x38:index-0x34] == b'\x94\x21\xFF\xE0')
+            ADDRESS_NHTTPStartup = dol_to_real(hdr, index-0x34)
+
+    # RPBJ only
+    if index == -1:
+        index = dol.find(b'\x7C\x60\x00\x34\x54\x00\xD9\x7E\x7C\x60\x00\xD0\x80\x01\x00\x14\x7C\x08\x03\xA6\x38\x21\x00\x10')
+        if index != -1:
+            assert(dol[index-0x10:index-0xC] == b'\x94\x21\xFF\xF0')
+            ADDRESS_NHTTPStartup = dol_to_real(hdr, index-0x10)
+
+    if index == -1:
+        exit("NHTTPStartup not found " + title_name)
+        
 
     ADDRESS_gethostbyname = 0
     ADDRESS_SKIP_DNS_CACHE = 0
@@ -789,6 +860,25 @@ def parse_file(file_path, title_name):
     else:
         exit(title_name + " GPISENDLOGIN " + dol[match.start(0)-0x34:match.start(0)-0x10].hex())
 
+    # find gpiAddLocalInfo hook
+    ADDRESS_gpiAddLocalInfo = 0
+    index = dol.find(b'\x38\x00\x00\x00\x90\x1E\x05\xFC\x83\xE1\x00\x1C\x38\x60\x00\x00\x83\xC1\x00\x18')
+    if index != -1:
+        ADDRESS_PATCH_GPIADDLOCALINFO = dol_to_real(hdr, index + 8)
+
+    if index == -1:
+        index = dol.find(b'\x38\x00\x00\x00\x90\x1E\x05\xF8\x83\xE1\x00\x1C\x38\x60\x00\x00\x83\xC1\x00\x18')
+        if index != -1:
+            ADDRESS_PATCH_GPIADDLOCALINFO = dol_to_real(hdr, index + 8)
+
+    if index == -1:
+        index = dol.find(b'\x38\x00\x00\x00\x90\x1E\x04\x74\x83\xE1\x00\x1C\x38\x60\x00\x00\x83\xC1\x00\x18')
+        if index != -1:
+            ADDRESS_PATCH_GPIADDLOCALINFO = dol_to_real(hdr, index + 8)
+
+    if index == -1:
+        print('No find gpiAddLocalInfo ' + title_name)
+
     d = real_to_dol(hdr, ADDRESS_DWC_AUTH_ADD_MACADDR)
     ADDRESS_DWC_Base64Encode = decode_bl(dol, d + 0x48)
 
@@ -827,6 +917,141 @@ def parse_file(file_path, title_name):
         assert(dol[index-0x8C:index-0x88] == b'\x94\x21\xFF\xE0')
         ADDRESS_DWCi_GetGPBuddyAdditionalMsg = dol_to_real(hdr, index-0x8C)
 
+    # find OSInitSystemCall
+    index = dol.find(b'\x7C\x00\x04\xAC\x38\x7F\x0C\x00\x38\x80\x01\x00')
+    if index == -1:
+        exit('Missing find OSInitSystemCall tail ' + title_name)
+
+    ADDRESS_OSInitSystemCall_Tail = dol_to_real(hdr, index-0xC)
+
+    # find gti2ReceiveMessages buffer
+    ADDRESS_GTI2_BUFFER = 0
+
+    # example jaderevo.elf (i think that's RGW? i don't actually remember)
+    index = dol.find(b'\x3F\xA0\x00\x01\x48\x00\x01\xE4\x93\x61\x00\x08\x38\x9C')
+    ha = 0
+    lo = 0
+    if index != -1:
+        ha = struct.unpack('>H', dol[index-0x2:index])[0]
+        lo = struct.unpack('>H', dol[index+0xE:index+0x10])[0]
+
+    if index == -1:
+        # example HDME
+        index = dol.find(b'\x3F\x80\x00\x01\x48\x00\x01\xDC\x93\x41\x00\x08\x38\x9B')
+        if index != -1:
+            ha = struct.unpack('>H', dol[index-0x2:index])[0]
+            lo = struct.unpack('>H', dol[index+0xE:index+0x10])[0]
+
+    if index == -1:
+        # example WL2EN0002
+        index = dol.find(b'\x3F\xE0\x00\x01\x48\x00\x03\xA4\x93\xA1\x00\x08\x38\x9E')
+        if index != -1:
+            ha = struct.unpack('>H', dol[index-0x2:index])[0]
+            lo = struct.unpack('>H', dol[index+0xE:index+0x10])[0]
+
+    if index == -1:
+        # example RUUED00
+        index = dol.find(b'\x48\x00\x01\xE4\x93\x81\x00\x08\x38\x9D')
+        if index != -1:
+            assert(dol[index+0xC:index+0x10] == b'\x38\xE1\x00\x10')
+            ha = struct.unpack('>H', dol[index-0x2:index])[0]
+            lo = struct.unpack('>H', dol[index+0xA:index+0xC])[0]
+
+    if index == -1:
+        # example Mario Kart Wii (RMC)
+        index = dol.find(b'\x48\x00\x01\xF4\x93\x81\x00\x08\x38\x9D')
+        if index != -1:
+            assert(dol[index+0xC:index+0x10] == b'\x38\xBC\xFF\xFF' or dol[index+0xC:index+0x10] == b'\x38\xE1\x00\x10')
+            ha = struct.unpack('>H', dol[index-0x2:index])[0]
+            lo = struct.unpack('>H', dol[index+0xA:index+0xC])[0]
+
+    if index == -1:
+        # example E5XJN0000
+        index = dol.find(b'\x48\x00\x03\xA4\x93\xC1\x00\x08\x38\x9F')
+        if index != -1:
+            assert(dol[index+0xC:index+0x10] == b'\x38\xE1\x00\x10')
+            ha = struct.unpack('>H', dol[index-0x2:index])[0]
+            lo = struct.unpack('>H', dol[index+0xA:index+0xC])[0]
+
+    if index == -1:
+        # example HCFKN0200
+        index = dol.find(b'\x48\x00\x03\xAC\x93\xC1\x00\x08\x38\x9F')
+        if index != -1:
+            assert(dol[index+0xC:index+0x10] == b'\x38\xE1\x00\x10')
+            ha = struct.unpack('>H', dol[index-0x2:index])[0]
+            lo = struct.unpack('>H', dol[index+0xA:index+0xC])[0]
+
+    if index == -1:
+        exit('Missing find gti2ReceiveMessages buffer ' + title_name)
+
+    if lo & 0x8000:
+        ha -= 1
+    ADDRESS_GTI2_BUFFER = (ha << 16) | lo
+
+    # find qr_process_client_message end
+    index = dol.find(b'\x4E\x80\x04\x21\x48\x00\x00\x24\x81\x83\x00\xA4\x2C\x0C\x00\x00\x41\x82\x00\x18\x7C\x83\x23\x78\x7C\xA4\x2B\x78\x80\xBF\x01')
+    if index == -1:
+        print('Missing find qr_process_client_message end ' + title_name)
+        ADDRESS_SBCM_RETURN = 0
+    else:
+        ADDRESS_SBCM_RETURN = dol_to_real(hdr, index+0x28)
+
+    # find OSYieldThread
+    index = dol.find(b'\x7C\x7F\x1B\x78\x38\x60\x00\x01\x4B\xFF\xFD\xA5\x7F\xE3\xFB\x78\x4B\xFF')
+    if index == -1:
+        # print('No find OSYieldThread ' + title_name)
+        ADDRESS_OSYieldThread = 0
+    else:
+        assert(dol[index-0x14:index-0x10] == b'\x94\x21\xFF\xF0')
+        ADDRESS_OSYieldThread = dol_to_real(hdr, index - 0x14)
+
+    # find sendto
+    index = dol.find(b'\x7C\xDE\x33\x78\x7C\xE4\x3B\x78\x7D\x1F\x43\x78\x38\x61\x00\x08\x38\xA0\x00\x08')
+    if index == -1:
+        print('No find sendto ' + title_name)
+        ADDRESS_sendto = 0
+    else:
+        assert(dol[index-0x20:index-0x1C] == b'\x94\x21\xFF\xD0')
+        ADDRESS_sendto = dol_to_real(hdr, index - 0x20)
+
+    # find stpFriendCnt
+    ADDRESS_stpFriendCnt = 0
+    index = dol.find(b'\x48\x00\x00\x0C\x3B\xE0\x00\x06\x38\x60\xFF\xEC\x80\x0D')
+    if index != -1:
+        offset = struct.unpack('>H', dol[index+0x0E:index+0x10])[0]
+        if offset & 0x8000:
+            offset -= 0x10000
+        ADDRESS_stpFriendCnt = ADDRESS_R13_BASE + offset
+
+    if index == -1:
+        index = dol.find(b'\x48\x00\x00\x0C\x3B\xA0\x00\x06\x38\x60\xFF\xEC\x3F\xC0\x80')
+        if index != -1:
+            ha = struct.unpack('>H', dol[index+0x0E:index+0x10])[0]
+            lo = struct.unpack('>H', dol[index+0x12:index+0x14])[0]
+            if lo & 0x8000:
+                ha -= 1
+            ADDRESS_stpFriendCnt = (ha << 16) | lo
+
+    if index == -1:
+        exit('No find stpFriendCnt ' + title_name)
+
+    # get s_auth_result
+    ADDRESS_AUTH_RESULT = 0
+    d = real_to_dol(hdr, ADDRESS_DWCi_Auth_HandleResponse)
+    if (dol[d+0x14:d+0x16] == b'\x3F\x40' and dol[d+0x1C:d+0x1E] == b'\x3B\x5A') or (dol[d+0x14:d+0x16] == b'\x3E\xC0' and dol[d+0x1C:d+0x1E] == b'\x3A\xD6'):
+        ha = struct.unpack('>H', dol[d+0x16:d+0x18])[0]
+        lo = struct.unpack('>H', dol[d+0x1E:d+0x20])[0]
+        if lo & 0x8000:
+            ha -= 1
+        ADDRESS_AUTH_RESULT = (ha << 16) | lo
+    elif title_name.startswith('RPBJD'):
+        ha = struct.unpack('>H', dol[d+0x112:d+0x114])[0]
+        lo = struct.unpack('>H', dol[d+0x122:d+0x124])[0]
+        if lo & 0x8000:
+            ha -= 1
+        ADDRESS_AUTH_RESULT = (ha << 16) | lo
+    else:
+        print('bad s_auth_result access ' + title_name)
 
     def fmthex(v):
         return "0x{:08X}".format(v)
@@ -859,7 +1084,10 @@ def parse_file(file_path, title_name):
         "ADDRESS_NHTTPCreateRequest":        fmthex(ADDRESS_NHTTPCreateRequest),
         "ADDRESS_NHTTPSendRequestAsync":     fmthex(ADDRESS_NHTTPSendRequestAsync),
         "ADDRESS_NHTTPDestroyResponse":      fmthex(ADDRESS_NHTTPDestroyResponse),
+        "ADDRESS_NHTTPStartup":              fmthex(ADDRESS_NHTTPStartup),
         "ADDRESS_DWC_ERROR":                 fmthex(ADDRESS_DWC_ERROR),
+        "ADDRESS_DWCi_SetError":             fmthex(ADDRESS_DWCi_SetError),
+        "ADDRESS_DWCi_HandleGPError":        fmthex(ADDRESS_DWCi_HandleGPError),
         "ADDRESS_HBM_ALLOCATOR":             fmthex(ADDRESS_HBM_ALLOCATOR),
         "ADDRESS_GH_ALLOC_FUNCTION":         fmthex(ADDRESS_GH_ALLOC_FUNCTION),
         "ADDRESS_PES_ALLOC_FUNCTION":        fmthex(ADDRESS_PES_ALLOC_FUNCTION),
@@ -879,10 +1107,18 @@ def parse_file(file_path, title_name):
         "ADDRESS_gpiAppendStringToBuffer":   fmthex(ADDRESS_gpiAppendStringToBuffer),
         "ADDRESS_gpiAppendIntToBuffer":      fmthex(ADDRESS_gpiAppendIntToBuffer),
         "ADDRESS_PATCH_GPISENDLOGIN":        fmthex(ADDRESS_PATCH_GPISENDLOGIN),
+        "ADDRESS_PATCH_GPIADDLOCALINFO":     fmthex(ADDRESS_PATCH_GPIADDLOCALINFO),
         "ADDRESS_DWC_Base64Encode":          fmthex(ADDRESS_DWC_Base64Encode),
         "ADDRESS_DWCi_GetUserData":          fmthex(ADDRESS_DWCi_GetUserData),
         "ADDRESS_DWCi_GetGPBuddyAdditionalMsg": fmthex(ADDRESS_DWCi_GetGPBuddyAdditionalMsg),
         "ADDRESS_RealMode":                  fmthex(ADDRESS_RealMode),
+        "ADDRESS_OSInitSystemCall_Tail":     fmthex(ADDRESS_OSInitSystemCall_Tail),
+        "ADDRESS_GTI2_BUFFER":               fmthex(ADDRESS_GTI2_BUFFER),
+        "ADDRESS_SBCM_RETURN":               fmthex(ADDRESS_SBCM_RETURN),
+        "ADDRESS_OSYieldThread":             fmthex(ADDRESS_OSYieldThread),
+        "ADDRESS_sendto":                    fmthex(ADDRESS_sendto),
+        "ADDRESS_stpFriendCnt":              fmthex(ADDRESS_stpFriendCnt),
+        "ADDRESS_AUTH_RESULT":               fmthex(ADDRESS_AUTH_RESULT),
     }
 
     games.append(game)
@@ -922,7 +1158,10 @@ if __name__ == '__main__':
         "ADDRESS_NHTTPCreateRequest",
         "ADDRESS_NHTTPSendRequestAsync",
         "ADDRESS_NHTTPDestroyResponse",
+        "ADDRESS_NHTTPStartup",
         "ADDRESS_DWC_ERROR",
+        "ADDRESS_DWCi_SetError",
+        "ADDRESS_DWCi_HandleGPError",
         "ADDRESS_HBM_ALLOCATOR",
         "ADDRESS_GH_ALLOC_FUNCTION",
         "ADDRESS_PES_ALLOC_FUNCTION",
@@ -942,10 +1181,18 @@ if __name__ == '__main__':
         "ADDRESS_gpiAppendStringToBuffer",
         "ADDRESS_gpiAppendIntToBuffer",
         "ADDRESS_PATCH_GPISENDLOGIN",
+        "ADDRESS_PATCH_GPIADDLOCALINFO",
         "ADDRESS_DWC_Base64Encode",
         "ADDRESS_DWCi_GetUserData",
         "ADDRESS_DWCi_GetGPBuddyAdditionalMsg",
         "ADDRESS_RealMode",
+        "ADDRESS_OSInitSystemCall_Tail",
+        "ADDRESS_GTI2_BUFFER",
+        "ADDRESS_SBCM_RETURN",
+        "ADDRESS_OSYieldThread",
+        "ADDRESS_sendto",
+        "ADDRESS_stpFriendCnt",
+        "ADDRESS_AUTH_RESULT",
     ]
 
     with open('gamedefs.csv', 'w', newline='') as csvfile:

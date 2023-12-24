@@ -4,6 +4,9 @@
 
 #ifdef __cplusplus
 extern "C" {
+
+namespace GameSpy
+{
 #endif
 
 #define GP_AUTHTOKEN_LEN 256
@@ -42,5 +45,6 @@ LONGCALL int gpiAppendIntToBuffer( //
 ) AT(ADDRESS_gpiAppendIntToBuffer);
 
 #ifdef __cplusplus
+}
 }
 #endif
