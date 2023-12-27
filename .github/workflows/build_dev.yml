@@ -10,14 +10,14 @@ jobs:
           runs-on: ubuntu-latest
           container: devkitpro/devkitppc:latest
           steps:
-              - uses: actions/checkout@v3
+              - uses: actions/checkout@v4
               - name: Build Exploit
                 run: |
                   cd ./exploit
                   python3 make-sbcm-patch.py -j
                   cd ..
               - name: Upload Exploit
-                uses: actions/upload-artifact@v3
+                uses: actions/upload-artifact@v4.0.0
                 with:
                     name: exploit
                     path: ./exploit/sbcm
@@ -26,7 +26,7 @@ jobs:
         runs-on: ubuntu-latest
         container: devkitpro/devkitppc:latest
         steps:
-            - uses: actions/checkout@v3
+            - uses: actions/checkout@v4
             - name: Build Payload
               run: |
                 cd ./payload
@@ -34,12 +34,12 @@ jobs:
                 mv ./binary ./payload
                 cd ..
             - name: Upload Payload Files
-              uses: actions/upload-artifact@v3
+              uses: actions/upload-artifact@v4.0.0
               with:
                   name: payload
                   path: ./payload/payload
             - name: Upload Payload .ELF Files
-              uses: actions/upload-artifact@v3
+              uses: actions/upload-artifact@v4.0.0
               with:
                   name: payload-elf
                   path: ./payload/build
@@ -48,14 +48,14 @@ jobs:
         runs-on: ubuntu-latest
         container: devkitpro/devkitppc:latest
         steps:
-            - uses: actions/checkout@v3
+            - uses: actions/checkout@v4
             - name: Build Stage 1
               run: |
                 cd ./stage1
                 python3 make-stage1.py -j
                 cd ..
             - name: Upload Stage 1
-              uses: actions/upload-artifact@v3 
+              uses: actions/upload-artifact@v4.0.0 
               with:
                   name: stage1
                   path: ./stage1/build/stage1.bin
@@ -65,12 +65,12 @@ jobs:
                 python3 make-patch.py -j
                 cd ..
             - name: Upload Stage 0
-              uses: actions/upload-artifact@v3
+              uses: actions/upload-artifact@v4.0.0
               with:
                   name: stage0
                   path: ./patch/build/*.txt
             - name: Upload Development Private key
-              uses: actions/upload-artifact@v3
+              uses: actions/upload-artifact@v4.0.0
               with:
                   name: private-key.pem
                   path: ./misc/private-key-dev.pem
@@ -80,26 +80,26 @@ jobs:
         runs-on: ubuntu-latest
         container: devkitpro/devkitppc:latest
         steps:
-            - uses: actions/download-artifact@v3
+            - uses: actions/download-artifact@v4.1.0
               with:
                   name: exploit
                   path: ./payload/binary/sbcm
-            - uses: actions/download-artifact@v3
+            - uses: actions/download-artifact@v4.1.0
               with:
                   name: payload
                   path: ./payload/binary
-            - uses: actions/download-artifact@v3
+            - uses: actions/download-artifact@v4.1.0
               with:
                   name: stage1
                   path: ./payload
-            - uses: actions/download-artifact@v3
+            - uses: actions/download-artifact@v4.1.0
               with:
                   name: private-key.pem
                   path: ./payload
             - name: Arrange naming
               run: |
                 mv ./payload/private-key-dev.pem ./payload/private-key.pem
-            - uses: actions/upload-artifact@v3
+            - uses: actions/upload-artifact@v4.0.0
               with:
                   name: packaged-payload-dev
                   path: ./payload
