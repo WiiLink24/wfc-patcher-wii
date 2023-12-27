@@ -5,6 +5,22 @@ on:
     pull_request:
 
 jobs:
+    exploit:
+        name: Exploit
+        runs-on: ubuntu-latest
+        container: devkitpro/devkitppc:latest
+        steps:
+            - uses: actions/checkout@v3
+            - name: Build Exploit
+              run: |
+                cd ./exploit
+                python3 make-sbcm-patch.py -DPROD -j
+                cd ..
+            - name: Upload Exploit
+              uses: actions/upload-artifact@v3
+              with:
+                  name: exploit
+                  path: ./exploit/sbcm
     payload:
         name: Payloads
         runs-on: ubuntu-latest
@@ -55,10 +71,14 @@ jobs:
                   path: ./patch/build/*.txt
     package:
         name: Package
-        needs: [payload, stage1]
+        needs: [exploit, payload, stage1]
         runs-on: ubuntu-latest
         container: devkitpro/devkitppc:latest
         steps:
+            - uses: actions/download-artifact@v3
+              with:
+                  name: exploit
+                  path: ./payload/sbcm
             - uses: actions/download-artifact@v3
               with:
                   name: payload
