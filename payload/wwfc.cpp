@@ -1,6 +1,6 @@
 #include "game/RMC.h"
 
-#include "wwfcAntiFreeze.cpp"
+#include "wwfcBugFix.cpp"
 #include "wwfcLibC.cpp"
 #include "wwfcLogin.cpp"
 #include "wwfcMii.cpp"

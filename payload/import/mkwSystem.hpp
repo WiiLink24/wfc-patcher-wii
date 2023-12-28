@@ -2,7 +2,7 @@
 
 #include "eggVector.hpp"
 
-namespace mkw::system
+namespace mkw::System
 {
 
 #if RMC
@@ -20,8 +20,8 @@ public:
     };
 
     struct Data {
-        egg::Vector3f position;
-        egg::Vector3f rotation;
+        EGG::Vector3f position;
+        EGG::Vector3f rotation;
         u16 id;
         CannonType cannonType;
     };
@@ -42,7 +42,7 @@ class MapdataItemPoint
 {
 public:
     struct Data {
-        egg::Vector3f position;
+        EGG::Vector3f position;
         f32 deviation;
         u16 parameters[2];
     };
@@ -61,4 +61,4 @@ static_assert(sizeof(MapdataItemPoint) == 0x14);
 
 #endif
 
-} // namespace mkw::system
+} // namespace mkw::System

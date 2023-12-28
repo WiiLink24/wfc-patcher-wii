@@ -1,17 +1,17 @@
 #include "import/mkwSystem.hpp"
 #include "wwfcPatch.hpp"
 
-namespace wwfc::AntiFreeze
+namespace wwfc::BugFix
 {
 
 #if RMC
 
-static const mkw::system::MapdataItemPoint::Data s_mapdataItemPointData = {
-    egg::Vector3f{0.0f, 0.0f, 0.0f},
+static const mkw::System::MapdataItemPoint::Data s_mapdataItemPointData = {
+    EGG::Vector3f{0.0f, 0.0f, 0.0f},
     0.0f,
     {0, 0},
 };
-static mkw::system::MapdataItemPoint s_mapdataItemPoint(&s_mapdataItemPointData
+static mkw::System::MapdataItemPoint s_mapdataItemPoint(&s_mapdataItemPointData
 );
 
 // Prevent the game from crashing if a Bullet Bill is used during a Battle
@@ -25,17 +25,17 @@ WWFC_DEFINE_PATCH = {
         WWFC_PATCH_LEVEL_BUGFIX,
         RMCXD_PORT(0x80514D78, 0x80510904, 0x805146F8, 0x80502D98), //
         [](void* /* mapdataItemPointAccessor */
-        ) -> mkw::system::MapdataItemPoint* { return &s_mapdataItemPoint; }
+        ) -> mkw::System::MapdataItemPoint* { return &s_mapdataItemPoint; }
     ),
 };
 
-static const mkw::system::MapdataCannonPoint::Data s_mapdataCannonPointData = {
-    egg::Vector3f{0.0f, 0.0f, 0.0f},
-    egg::Vector3f{0.0f, 0.0f, 0.0f},
+static const mkw::System::MapdataCannonPoint::Data s_mapdataCannonPointData = {
+    EGG::Vector3f{0.0f, 0.0f, 0.0f},
+    EGG::Vector3f{0.0f, 0.0f, 0.0f},
     0,
-    mkw::system::MapdataCannonPoint::CannonType::Default,
+    mkw::System::MapdataCannonPoint::CannonType::Default,
 };
-static mkw::system::MapdataCannonPoint
+static mkw::System::MapdataCannonPoint
     s_mapdataCannonPoint(&s_mapdataCannonPointData);
 
 // Prevent the game from crashing if a cannon is entered on a course without one
@@ -49,7 +49,7 @@ WWFC_DEFINE_PATCH = {
         WWFC_PATCH_LEVEL_BUGFIX,
         RMCXD_PORT(0x80518B1C, 0x805146A8, 0x8051849C, 0x80506B3C), //
         [](void* /* mapdataCannonPointAccessor */
-        ) -> mkw::system::MapdataCannonPoint* { return &s_mapdataCannonPoint; }
+        ) -> mkw::System::MapdataCannonPoint* { return &s_mapdataCannonPoint; }
     ),
 };
 
@@ -69,4 +69,4 @@ WWFC_DEFINE_PATCH = {
 
 #endif
 
-} // namespace wwfc::AntiFreeze
+} // namespace wwfc::BugFix
