@@ -222,29 +222,21 @@ static bool IsValidRACEPacket(mkw::Net::RACEPacket* packet, u32 packetSize)
 // by Star, who reported the exploit and then released it.
 // CVE-ID: CVE-2023-35856
 // https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2023-35856
-
 WWFC_DEFINE_PATCH = {Patch::BranchWithCTR( //
     WWFC_PATCH_LEVEL_CRITICAL, //
     RMCXD_PORT(0x80658604, 0x8065417C, 0x80657C70, 0x8064691C), //
-    [](void* rkNetController, mkw::Net::RACEPacket* packet, u32 packetSize,
-       u32 _, u8 playerAid) -> void {
-        if (!IsValidRACEPacket(packet, packetSize)) {
+    [](mkw::Net::RKNetController* rkNetController,
+       mkw::Net::RACEPacket* racePacket, u32 packetSize, u32 _,
+       u8 playerAid) -> void {
+        if (!IsValidRACEPacket(racePacket, packetSize)) {
             LONGCALL int DWC_CloseConnectionHard(u8 playerAid)
                 AT(RMCXD_PORT(0x800D2000, 0x800D1F60, 0x800D1F20, 0x800D2060));
-
             DWC_CloseConnectionHard(playerAid);
 
             return;
         }
 
-        LONGCALL void RKNetController_ProcessRACEPacket(
-            void* rkNetController, u8 playerAid, mkw::Net::RACEPacket* packet,
-            u32 packetSize
-        ) AT(RMCXD_PORT(0x80659A84, 0x806555FC, 0x806590F0, 0x80647D9C));
-
-        RKNetController_ProcessRACEPacket(
-            rkNetController, playerAid, packet, packetSize
-        );
+        rkNetController->processRACEPacket(playerAid, racePacket, packetSize);
     }
 )};
 
