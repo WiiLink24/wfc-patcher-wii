@@ -2,7 +2,7 @@
 
 #include <wwfcCommon.h>
 
-namespace egg
+namespace EGG
 {
 
 struct Vector3f {
@@ -18,4 +18,4 @@ struct Vector3f {
     f32 z;
 };
 
-} // namespace egg
+} // namespace EGG
