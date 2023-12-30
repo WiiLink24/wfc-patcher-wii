@@ -12,27 +12,30 @@ SECTIONS
 	.text : {
 		KEEP (*(wwfc_header))
 
+		. = ALIGN(4);
 		_G_GOTStart = .;
 		*(.got2)
 		_G_GOTEnd = .;
 
+		. = ALIGN(4);
 		_G_FixupStart = .;
 		KEEP(*(.fixup))
 		_G_FixupEnd = .;
 
+		. = ALIGN(4);
 		_G_WWFCPatchStart = .;
 		KEEP(*(.wwfc_patch))
 		_G_WWFCPatchEnd = .;
+
+		. = ALIGN(4);
+		__CTORS_START__ = .;
+		KEEP(*(.ctors*))
+		__CTORS_END__ = .;
 
 		*(.text*)
 		*(.insert*)
 		*(.rodata*)
 		*(.data*)
-		*(.bss*)
-
-		__CTORS_START__ = .;
-		KEEP(*(.ctors*))
-		__CTORS_END__ = .;
 
 		__SDATA_START__ = .;
 		*(.sdata*)
@@ -41,6 +44,8 @@ SECTIONS
 		__SDATA2_START__ = .;
 		*(.sdata2*)
 		__SDATA2_END__ = .;
+
+		*(.bss*)
 
 		__SBSS_START__ = .;
 		*(.sbss*)
