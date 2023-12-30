@@ -48,6 +48,17 @@ extern DWCAuthResult s_auth_result AT(ADDRESS_AUTH_RESULT);
 extern DWCSvcLocResult s_svl_result AT(ADDRESS_AUTH_RESULT + 0x1D0);
 extern DWCProfResult s_prof_result AT(ADDRESS_AUTH_RESULT + 0x1D0 + 0x178);
 
+// 0x803862D0
+extern void* stpFriendCnt AT(ADDRESS_stpFriendCnt);
+
+typedef struct {
+    /* 0x0 */ u32 pad_0x0;
+    /* 0x4 */ u32 state;
+} DWCLoginContext;
+
+// 0x803862E8
+extern DWCLoginContext* stpLoginCnt AT(ADDRESS_stpLoginCnt);
+
 LONGCALL DWCUserData* DWCi_GetUserData( //
     void
 ) AT(ADDRESS_DWCi_GetUserData);
@@ -55,8 +66,6 @@ LONGCALL DWCUserData* DWCi_GetUserData( //
 LONGCALL s32 DWC_Base64Encode( //
     const void* in, u32 inSize, char* out, u32 outMaxSize
 ) AT(ADDRESS_DWC_Base64Encode);
-
-extern void* stpFriendCnt AT(ADDRESS_stpFriendCnt);
 
 #ifdef __cplusplus
 }

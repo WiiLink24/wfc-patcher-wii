@@ -31,9 +31,7 @@ static bool g_sendExLogin = false;
 
 void Init()
 {
-    if (DWC::stpFriendCnt != nullptr) {
-        // If the friend context already exists when the payload is initialized,
-        // then the extended login parameters wouldn't have been sent on login.
+    if (DWC::stpLoginCnt != nullptr && DWC::stpLoginCnt->state == 5) {
         g_sendExLogin = true;
     }
 }
