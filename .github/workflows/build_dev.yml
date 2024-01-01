@@ -83,7 +83,7 @@ jobs:
             - uses: actions/download-artifact@v4.1.0
               with:
                   name: exploit
-                  path: ./payload/binary/sbcm
+                  path: ./payload/sbcm
             - uses: actions/download-artifact@v4.1.0
               with:
                   name: payload
