@@ -10,14 +10,13 @@ static void DecideEngineClass(mkw::Net::SELECTHandler* selectHandler)
 {
     using namespace mkw::Net;
 
-    SELECTHandler::SELECTPacket* sendPacket = selectHandler->sendPacket();
+    SELECTHandler::Packet& sendPacket = selectHandler->sendPacket();
 
     if (__builtin_ppc_mftb() & 1) {
-        sendPacket->engineClass =
-            SELECTHandler::SELECTPacket::EngineClass::e150cc;
+        sendPacket.engineClass = SELECTHandler::Packet::EngineClass::e150cc;
     } else {
-        sendPacket->engineClass =
-            SELECTHandler::SELECTPacket::EngineClass::eMirrorMode;
+        sendPacket.engineClass =
+            SELECTHandler::Packet::EngineClass::eMirrorMode;
     }
 }
 
@@ -31,11 +30,8 @@ WWFC_DEFINE_PATCH = {
 
             using namespace mkw::Net;
 
-            RKNetController::MatchType matchType =
-                RKNetController::Instance()->matchType();
             SELECTHandler* selectHandler = SELECTHandler::Instance();
-
-            if (matchType == RKNetController::MatchType::WorldwideVersusRace) {
+            if (RKNetController::Instance()->inWorldwideVersusRace()) {
                 DecideEngineClass(selectHandler);
             } else {
                 selectHandler->decideEngineClass();

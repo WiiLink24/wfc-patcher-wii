@@ -1,6 +1,6 @@
 #pragma once
 
-#include <wwfcCommon.h>
+#include "mkwHostSystem.hpp"
 #include <wwfcMii.hpp>
 
 namespace mkw::Net
@@ -27,21 +27,43 @@ struct RACEPacket {
 
 static_assert(sizeof(RACEPacket) == 0x10);
 
+// https://github.com/SeekyCt/mkw-structures/blob/master/selecthandler.h
 class SELECTHandler
 {
 public:
-    struct SELECTPacket {
-        enum EngineClass : u8 {
+    struct Packet {
+        enum class CourseVote : u8 {
+            None = 0x43,
+            Random = 0xFF,
+        };
+
+        enum class SelectedCourse : u8 {
+            None = 0xFF,
+        };
+
+        enum class EngineClass : u8 {
             e100cc = 1,
             e150cc = 2,
             eMirrorMode = 3,
         };
 
-        /* 0x00 */ u8 _00[0x37 - 0x00];
+        struct Player {
+            /* 0x00 */ u8 _00[0x06 - 0x00];
+            /* 0x06 */ CourseVote courseVote;
+            /* 0x07 */ u8 _07[0x08 - 0x07];
+        };
+
+        static_assert(sizeof(Player) == 0x08);
+
+        /* 0x00 */ u8 _00[0x10 - 0x00];
+        /* 0x10 */ Player player[2];
+        /* 0x20 */ u8 _20[0x34 - 0x20];
+        /* 0x34 */ SelectedCourse selectedCourse;
+        /* 0x35 */ u8 _35[0x37 - 0x35];
         /* 0x37 */ EngineClass engineClass;
     };
 
-    static_assert(sizeof(SELECTPacket) == 0x38);
+    static_assert(sizeof(Packet) == 0x38);
 
     void decideEngineClass()
     {
@@ -51,9 +73,9 @@ public:
         decideEngineClass(s_instance);
     }
 
-    SELECTPacket* sendPacket()
+    Packet& sendPacket()
     {
-        return &m_sendPacket;
+        return m_sendPacket;
     }
 
     static SELECTHandler* Instance()
@@ -63,7 +85,7 @@ public:
 
 private:
     /* 0x000 */ u8 _000[0x008 - 0x000];
-    /* 0x008 */ SELECTPacket m_sendPacket;
+    /* 0x008 */ Packet m_sendPacket;
     /* 0x040 */ u8 _040[0x3F8 - 0x040];
 
     static SELECTHandler* s_instance
@@ -93,16 +115,22 @@ struct USERPacket {
 
 static_assert(sizeof(USERPacket) == 0xC0);
 
+// https://github.com/SeekyCt/mkw-structures/blob/master/rknetcontroller.h
 class RKNetController
 {
 public:
-    enum MatchType {
-        NotPlaying = 0,
+    enum JoinType {
+        NotJoining = 0,
         WorldwideVersusRace = 1,
         ContinentalVersusRace = 2,
         WorldwideBattle = 3,
         ContinentalBattle = 4,
-        Room = 5,
+        RoomHost = 5,
+        RoomGuest = 6,
+        FriendWorldwideVersusRace = 7,
+        FriendContinentalVersusRace = 8,
+        FriendWorldwideBattle = 9,
+        FriendContinentalBattle = 10,
     };
 
     void
@@ -116,9 +144,45 @@ public:
         processRACEPacket(s_instance, playerAid, racePacket, packetSize);
     }
 
-    MatchType matchType()
+    JoinType joinType() const
     {
-        return m_matchType;
+        return m_joinType;
+    }
+
+    bool inWorldwideVersusRace()
+    {
+        return m_joinType == JoinType::WorldwideVersusRace ||
+               m_joinType == JoinType::FriendWorldwideVersusRace;
+    }
+
+    bool inVanillaMatch()
+    {
+        switch (m_joinType) {
+        case JoinType::WorldwideVersusRace:
+        case JoinType::WorldwideBattle:
+        case JoinType::FriendWorldwideVersusRace:
+        case JoinType::FriendWorldwideBattle: {
+            return true;
+        }
+        case JoinType::ContinentalVersusRace:
+        case JoinType::ContinentalBattle:
+        case JoinType::FriendContinentalVersusRace:
+        case JoinType::FriendContinentalBattle: {
+            auto matchingArea =
+                mkw::HostSystem::SystemManager::Instance()->matchingArea();
+
+            return matchingArea >=
+                       mkw::HostSystem::SystemManager::MatchingArea::Japan &&
+                   matchingArea <=
+                       mkw::HostSystem::SystemManager::MatchingArea::China;
+        }
+        case JoinType::RoomHost:
+        case JoinType::RoomGuest: {
+            return false;
+        }
+        default:
+            return false;
+        }
     }
 
     static RKNetController* Instance()
@@ -128,7 +192,7 @@ public:
 
 private:
     /* 0x0000 */ u8 _0000[0x00E8 - 0x0000];
-    /* 0x00E8 */ MatchType m_matchType;
+    /* 0x00E8 */ JoinType m_joinType;
     /* 0x00EC */ u8 _00EC[0x29C8 - 0x00EC];
 
     static RKNetController* s_instance
