@@ -133,9 +133,14 @@ s32 EntryAfterGOT(wwfc_payload* payload)
         return WL_ERROR_PAYLOAD_GAME_MISMATCH;
     }
 
+    // Check that the disc version matches
+    // Don't check for Brawl US or JP because they are identical except for one
+    // byte
+#  if !RSBED01 && !RSBED02 && !RSBJD00 && !RSBJD01
     if (g_LoMem.discVersion != TITLE_VERSION) {
         return WL_ERROR_PAYLOAD_GAME_MISMATCH;
     }
+#  endif
 #endif
 
     CallCtors(payload);
