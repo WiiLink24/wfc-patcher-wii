@@ -1,6 +1,6 @@
 #pragma once
 
-#include <wwfcCommon.h>
+#include <wwfcUtil.h>
 
 namespace mkw::Util
 {
