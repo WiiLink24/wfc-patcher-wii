@@ -67,7 +67,7 @@ GCT_STRING(ADDRESS_DWC_AUTH_ADD_CSNUM, AuthStage0Code) // 0x800EE098
     // These addresses are region-independent, much like other SEGA games
     /* 0x04 */ HD(GCT_STRING_PTR_LWZU, r0, r31, LD_Stage1ParamBlock)
     /* 0x0C */ cmplwi  r0, 0
-    /* 0x10 */ bne-    L_GHAllocDone
+    /* 0x10 */ bne-    L_AllocDone
 
     /* 0x14 */ lis     r3, 0x805BA418@h
     /* 0x18 */ ori     r3, r3, 0x805BA418@l
