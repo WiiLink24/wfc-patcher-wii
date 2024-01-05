@@ -252,16 +252,43 @@ static bool IsPacketDataValid(
                     scenario = &RaceConfig::Instance()->menuScenario();
                 }
 
-                // Ensure that a valid course was voted for
                 const SELECTHandler::Packet* selectPacket =
                     reinterpret_cast<const SELECTHandler::Packet*>(packet);
                 for (size_t n = 0;
                      n < sizeof(SELECTHandler::Packet::player) /
                              sizeof(SELECTHandler::Packet::Player);
                      n++) {
+                    SELECTHandler::Packet::Player player =
+                        selectPacket->player[n];
+
+                    // Ensure that a valid combination is being used
+                    SELECTHandler::Packet::Character selectedCharacter =
+                        player.character;
+                    SELECTHandler::Packet::Vehicle selectedVehicle =
+                        player.vehicle;
+                    if (selectedCharacter !=
+                            SELECTHandler::Packet::Character::NotSelected ||
+                        selectedVehicle !=
+                            SELECTHandler::Packet::Vehicle::NotSelected) {
+                        Character character =
+                            static_cast<Character>(selectedCharacter);
+                        Vehicle vehicle = static_cast<Vehicle>(selectedVehicle);
+                        if (scenario->isOnlineVersusRace()) {
+                            if (!IsCombinationValidVS(character, vehicle)) {
+                                return false;
+                            }
+                        } else /* if (scenario->isOnlineBattle()) */ {
+                            if (!IsCombinationValidBT(character, vehicle)) {
+                                return false;
+                            }
+                        }
+                    }
+
+                    // Ensure that a valid course was voted for
                     SELECTHandler::Packet::CourseVote courseVote =
                         selectPacket->player[n].courseVote;
-                    if (courseVote == SELECTHandler::Packet::CourseVote::None ||
+                    if (courseVote ==
+                            SELECTHandler::Packet::CourseVote::NotSelected ||
                         courseVote ==
                             SELECTHandler::Packet::CourseVote::Random) {
                         continue;
@@ -281,7 +308,7 @@ static bool IsPacketDataValid(
 
                 // Ensure that a valid course was selected
                 if (selectPacket->selectedCourse !=
-                    SELECTHandler::Packet::SelectedCourse::None) {
+                    SELECTHandler::Packet::SelectedCourse::NotSelected) {
                     Course course =
                         static_cast<Course>(selectPacket->selectedCourse);
                     if (scenario->isOnlineVersusRace()) {
