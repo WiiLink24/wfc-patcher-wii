@@ -32,13 +32,21 @@ class SELECTHandler
 {
 public:
     struct Packet {
+        enum class Character : u8 {
+            NotSelected = 0x30,
+        };
+
+        enum class Vehicle : u8 {
+            NotSelected = 0x24,
+        };
+
         enum class CourseVote : u8 {
-            None = 0x43,
+            NotSelected = 0x43,
             Random = 0xFF,
         };
 
         enum class SelectedCourse : u8 {
-            None = 0xFF,
+            NotSelected = 0xFF,
         };
 
         enum class EngineClass : u8 {
@@ -48,9 +56,11 @@ public:
         };
 
         struct Player {
-            /* 0x00 */ u8 _00[0x06 - 0x00];
+            /* 0x00 */ u8 _00[0x04 - 0x00];
+            /* 0x04 */ Character character;
+            /* 0x05 */ Vehicle vehicle;
             /* 0x06 */ CourseVote courseVote;
-            /* 0x07 */ u8 _07[0x08 - 0x07];
+            /* 0x07 */ u8 _07;
         };
 
         static_assert(sizeof(Player) == 0x08);
