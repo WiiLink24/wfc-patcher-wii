@@ -6,13 +6,15 @@ namespace wwfc::Feature
 
 #if RMC
 
-static void DecideEngineClass(mkw::Net::SELECTHandler* selectHandler)
+static void DecideEngineClass(
+    mkw::Net::SELECTHandler* selectHandler, mkw::Util::Random* random
+)
 {
     using namespace mkw::Net;
 
     SELECTHandler::Packet& sendPacket = selectHandler->sendPacket();
 
-    if (__builtin_ppc_mftb() & 1) {
+    if (random->nextInt(100) < 65) {
         sendPacket.engineClass = SELECTHandler::Packet::EngineClass::e150cc;
     } else {
         sendPacket.engineClass =
@@ -26,16 +28,16 @@ WWFC_DEFINE_PATCH = {
         WWFC_PATCH_LEVEL_PARITY, //
         RMCXD_PORT(0x806613F8, 0x806594BC, 0x80660A64, 0x8064F710), //
         [](mkw::Util::Random* random) -> void {
-            random->dt(random, -1);
-
             using namespace mkw::Net;
 
             SELECTHandler* selectHandler = SELECTHandler::Instance();
             if (RKNetController::Instance()->inVanillaMatch()) {
-                DecideEngineClass(selectHandler);
+                DecideEngineClass(selectHandler, random);
             } else {
                 selectHandler->decideEngineClass();
             }
+
+            random->dt(random, -1);
         }
     ),
 };
