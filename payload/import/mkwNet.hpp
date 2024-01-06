@@ -1,6 +1,7 @@
 #pragma once
 
 #include "mkwHostSystem.hpp"
+#include "mkwItem.hpp"
 #include <wwfcMii.hpp>
 
 namespace mkw::Net
@@ -124,6 +125,164 @@ struct USERPacket {
 };
 
 static_assert(sizeof(USERPacket) == 0xC0);
+
+// https://github.com/SeekyCt/mkw-structures/blob/master/rknetcontroller.h
+class ITEMHandler
+{
+public:
+    struct Packet {
+        enum class Item : u8 {
+            GreenShell = 0x00,
+            RedShell = 0x01,
+            Banana = 0x02,
+            FakeItemBox = 0x03,
+            Mushroom = 0x04,
+            TripleMushrooms = 0x05,
+            Bob_omb = 0x06,
+            BlueShell = 0x07,
+            Lightning = 0x08,
+            Star = 0x09,
+            GoldenMushroom = 0x0A,
+            MegaMushroom = 0x0B,
+            Blooper = 0x0C,
+            POWBlock = 0x0D,
+            ThunderCloud = 0x0E,
+            BulletBill = 0x0F,
+            TripleGreenShells = 0x10,
+            TripleRedShells = 0x11,
+            TripleBananas = 0x12,
+            NoItem = 0x14,
+        };
+
+        constexpr bool isHeldItemValidVS() const
+        {
+            return isItemValidVS(heldItem);
+        }
+
+        constexpr bool isTrailedItemValidVS() const
+        {
+            if (trailedItem == Item::NoItem) {
+                return true;
+            }
+
+            if (!isItemValidVS(trailedItem)) {
+                return false;
+            }
+
+            return canTrailItem(trailedItem);
+        }
+
+        constexpr bool isHeldItemValidBB() const
+        {
+            return isItemValidBB(heldItem);
+        }
+
+        constexpr bool isTrailedItemValidBB() const
+        {
+            if (trailedItem == Item::NoItem) {
+                return true;
+            }
+
+            if (!isItemValidBB(trailedItem)) {
+                return false;
+            }
+
+            return canTrailItem(trailedItem);
+        }
+
+        constexpr bool isHeldItemValidCR() const
+        {
+            return isItemValidCR(heldItem);
+        }
+
+        constexpr bool isTrailedItemValidCR() const
+        {
+            if (trailedItem == Item::NoItem) {
+                return true;
+            }
+
+            if (!isItemValidCR(trailedItem)) {
+                return false;
+            }
+
+            return canTrailItem(trailedItem);
+        }
+
+        /* 0x00 */ u8 _00;
+        /* 0x01 */ Item heldItem;
+        /* 0x02 */ Item trailedItem;
+        /* 0x03 */ u8 _03[0x08 - 0x03];
+
+    private:
+        constexpr bool isItemValidVS(Item item) const
+        {
+            switch (item) {
+            case Item::GreenShell... Item::TripleBananas:
+            case Item::NoItem: {
+                return true;
+            }
+            default: {
+                return false;
+            }
+            }
+        }
+
+        constexpr bool isItemValidBB(Item item) const
+        {
+            switch (item) {
+            case Item::GreenShell... Item::Star:
+            case Item::MegaMushroom... Item::Blooper:
+            case Item::TripleGreenShells... Item::TripleBananas:
+            case Item::NoItem: {
+                return true;
+            }
+            default: {
+                return false;
+            }
+            }
+        }
+
+        constexpr bool isItemValidCR(Item item) const
+        {
+            switch (item) {
+            case Item::GreenShell... Item::BlueShell:
+            case Item::Star... Item::POWBlock:
+            case Item::TripleGreenShells... Item::TripleBananas:
+            case Item::NoItem: {
+                return true;
+            }
+            default: {
+                return false;
+            }
+            }
+        }
+
+        constexpr bool canTrailItem(Item item) const
+        {
+            u8 trailedItem = static_cast<u8>(item);
+
+            const mkw::Item::ItemBehaviourEntry& itemBehaviourEntry =
+                mkw::Item::itemBehaviourTable[trailedItem];
+
+            return !itemBehaviourEntry.useFunction;
+        }
+    };
+
+    static_assert(sizeof(Packet) == 0x08);
+
+    static ITEMHandler* Instance()
+    {
+        return s_instance;
+    }
+
+private:
+    u8 _000[0x184 - 0x000];
+
+    static ITEMHandler* s_instance
+        AT(RMCXD_PORT(0x809C20F8, 0x809BD950, 0x809C1158, 0x809B0738));
+};
+
+static_assert(sizeof(ITEMHandler) == 0x184);
 
 // https://github.com/SeekyCt/mkw-structures/blob/master/rknetcontroller.h
 class RKNetController
