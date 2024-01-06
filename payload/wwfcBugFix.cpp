@@ -17,7 +17,7 @@ WWFC_DEFINE_PATCH = {
     // This patch is implemented weirdly to be compatible with the existing
     // Ultra UnCut code.
     Patch::CallWithCTR(
-        WWFC_PATCH_LEVEL_BUGFIX, //
+        WWFC_PATCH_LEVEL_BUGFIX | WWFC_PATCH_LEVEL_PARITY, //
         RMCXD_PORT(0x80535120, 0x805305D8, 0x80534AA0, 0x80523178), //
         ASM_LAMBDA(
             // clang-format off

@@ -23,7 +23,7 @@ static void DecideEngineClass(mkw::Net::SELECTHandler* selectHandler)
 // Remove the 100cc engine class from Worldwide Versus Races
 WWFC_DEFINE_PATCH = {
     Patch::CallWithCTR( //
-        WWFC_PATCH_LEVEL_FEATURE, //
+        WWFC_PATCH_LEVEL_PARITY, //
         RMCXD_PORT(0x806613F8, 0x806594BC, 0x80660A64, 0x8064F710), //
         [](mkw::Util::Random* random) -> void {
             random->dt(random, -1);
@@ -31,7 +31,7 @@ WWFC_DEFINE_PATCH = {
             using namespace mkw::Net;
 
             SELECTHandler* selectHandler = SELECTHandler::Instance();
-            if (RKNetController::Instance()->inWorldwideVersusRace()) {
+            if (RKNetController::Instance()->inVanillaMatch()) {
                 DecideEngineClass(selectHandler);
             } else {
                 selectHandler->decideEngineClass();
