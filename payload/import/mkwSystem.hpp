@@ -110,25 +110,42 @@ public:
         PrivateBattle = 10,
     };
 
+    enum BattleType {
+        BalloonBattle = 0,
+        CoinRunners = 1,
+    };
+
     class Scenario
     {
     public:
-        bool isOnlineVersusRace() const
+        constexpr bool isOnlineVersusRace() const
         {
             return m_gameMode == GameMode::PrivateVersusRace ||
                    m_gameMode == GameMode::PublicVersusRace;
         }
 
-        bool isOnlineBattle() const
+        constexpr bool isOnlineBattle() const
         {
             return m_gameMode == GameMode::PublicBattle ||
                    m_gameMode == GameMode::PrivateBattle;
         }
 
+        constexpr bool isBalloonBattle() const
+        {
+            return m_battleType == BattleType::BalloonBattle;
+        }
+
+        constexpr bool isCoinRunners() const
+        {
+            return m_battleType == BattleType::CoinRunners;
+        }
+
     private:
         /* 0x000 */ u8 _000[0xB50 - 0x000];
         /* 0xB50 */ GameMode m_gameMode;
-        /* 0xB54 */ u8 _B54[0xBF0 - 0xB54];
+        /* 0xB54 */ u8 _B54[0xB58 - 0xB54];
+        /* 0xB58 */ BattleType m_battleType;
+        /* 0xB5C */ u8 _B5C[0xBF0 - 0xB5C];
     };
 
     static_assert(sizeof(Scenario) == 0xBF0);

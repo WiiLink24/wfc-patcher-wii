@@ -223,6 +223,10 @@ static bool IsPacketDataValid(
     using namespace mkw::Registry;
     using namespace mkw::System;
 
+    RKNetController* rkNetController = RKNetController::Instance();
+    EGG::SceneManager* sceneManager = RKSystem::Instance().sceneManager();
+    RaceConfig::Scenario* scenario;
+
     switch (packetType) {
     case RACEPacket::HEADER: {
         return true;
@@ -239,11 +243,7 @@ static bool IsPacketDataValid(
         }
         // 'SELECT' packet
         else {
-            RKNetController* rkNetController = RKNetController::Instance();
             if (rkNetController->inVanillaMatch()) {
-                RaceConfig::Scenario* scenario;
-                EGG::SceneManager* sceneManager =
-                    RKSystem::Instance().sceneManager();
                 if (static_cast<RKScene::SceneID>(
                         sceneManager->getCurrentSceneID()
                     ) == RKScene::SceneID::Race) {
@@ -293,7 +293,6 @@ static bool IsPacketDataValid(
                             SELECTHandler::Packet::CourseVote::Random) {
                         continue;
                     }
-
                     Course course = static_cast<Course>(courseVote);
                     if (scenario->isOnlineVersusRace()) {
                         if (!IsRaceCourse(course)) {
@@ -341,6 +340,45 @@ static bool IsPacketDataValid(
         return true;
     }
     case RACEPacket::ITEM: {
+        if (rkNetController->inVanillaMatch()) {
+            if (static_cast<RKScene::SceneID>(sceneManager->getCurrentSceneID()
+                ) == RKScene::SceneID::Race) {
+                scenario = &RaceConfig::Instance()->raceScenario();
+
+                for (u8 n = 0; n < (packetSize >> 3); n++) {
+                    const ITEMHandler::Packet* itemPacket =
+                        reinterpret_cast<const ITEMHandler::Packet*>(
+                            reinterpret_cast<const char*>(packet) +
+                            (sizeof(ITEMHandler::Packet) * n)
+                        );
+                    if (scenario->isOnlineVersusRace()) {
+                        if (!itemPacket->isHeldItemValidVS()) {
+                            return false;
+                        }
+                        if (!itemPacket->isTrailedItemValidVS()) {
+                            return false;
+                        }
+                    } else /* if (scenario->isOnlineBattle()) */ {
+                        if (scenario->isBalloonBattle()) {
+                            if (!itemPacket->isHeldItemValidBB()) {
+                                return false;
+                            }
+                            if (!itemPacket->isTrailedItemValidBB()) {
+                                return false;
+                            }
+                        } else /* if (scenario->isCoinRunners()) */ {
+                            if (!itemPacket->isHeldItemValidCR()) {
+                                return false;
+                            }
+                            if (!itemPacket->isTrailedItemValidCR()) {
+                                return false;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         return true;
     }
     case RACEPacket::EVENT: {
