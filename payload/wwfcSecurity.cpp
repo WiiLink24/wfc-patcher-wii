@@ -191,9 +191,9 @@ IsPacketSizeValid(mkw::Net::RACEPacket::EType packetType, u8 packetSize)
         return true;
     }
     case RACEPacket::ITEM: {
-        if (packetSize < 0x08 ||
+        if (packetSize < sizeof(ITEMHandler::Packet) ||
             packetSize > packetBufferSizes[RACEPacket::ITEM] ||
-            packetSize % 0x08) {
+            packetSize % sizeof(ITEMHandler::Packet)) {
             return false;
         }
 
@@ -215,180 +215,201 @@ IsPacketSizeValid(mkw::Net::RACEPacket::EType packetType, u8 packetSize)
     }
 }
 
-static bool IsPacketDataValid(
-    mkw::Net::RACEPacket::EType packetType, const void* packet, u8 packetSize
-)
+static bool
+IsHEADERPacketDataValid(const void* /* packet */, u8 /* packetSize */)
+{
+    return true;
+}
+
+static bool
+IsRACEHEADER1PacketDataValid(const void* /* packet */, u8 /* packetSize */)
+{
+    return true;
+}
+
+static bool
+IsRACEHEADER2PacketDataValid(const void* /* packet */, u8 /* packetSize */)
+{
+    return true;
+}
+
+static bool IsROOMSELECTPacketDataValid(const void* packet, u8 packetSize)
 {
     using namespace mkw::Net;
     using namespace mkw::Registry;
     using namespace mkw::System;
 
-    RKNetController* rkNetController = RKNetController::Instance();
-    EGG::SceneManager* sceneManager = RKSystem::Instance().sceneManager();
-    RaceConfig::Scenario* scenario;
-
-    switch (packetType) {
-    case RACEPacket::HEADER: {
-        return true;
+    // 'ROOM' packet
+    if (packetSize == 0x04) {
     }
-    case RACEPacket::RACEHEADER_1: {
-        return true;
-    }
-    case RACEPacket::RACEHEADER_2: {
-        return true;
-    }
-    case RACEPacket::ROOM_SELECT: {
-        // 'ROOM' packet
-        if (packetSize == 0x04) {
+    // 'SELECT' packet
+    else {
+        if (!RKNetController::Instance()->inVanillaMatch()) {
+            return true;
         }
-        // 'SELECT' packet
-        else {
-            if (rkNetController->inVanillaMatch()) {
-                if (static_cast<RKScene::SceneID>(
-                        sceneManager->getCurrentSceneID()
-                    ) == RKScene::SceneID::Race) {
-                    scenario = &RaceConfig::Instance()->raceScenario();
-                } else {
-                    scenario = &RaceConfig::Instance()->menuScenario();
-                }
 
-                const SELECTHandler::Packet* selectPacket =
-                    reinterpret_cast<const SELECTHandler::Packet*>(packet);
-                for (size_t n = 0;
-                     n < sizeof(SELECTHandler::Packet::player) /
-                             sizeof(SELECTHandler::Packet::Player);
-                     n++) {
-                    SELECTHandler::Packet::Player player =
-                        selectPacket->player[n];
+        RaceConfig::Scenario* scenario;
+        if (static_cast<RKScene::SceneID>(
+                RKSystem::Instance().sceneManager()->getCurrentSceneID()
+            ) == RKScene::SceneID::Race) {
+            scenario = &RaceConfig::Instance()->raceScenario();
+        } else {
+            scenario = &RaceConfig::Instance()->menuScenario();
+        }
 
-                    // Ensure that a valid combination is being used
-                    SELECTHandler::Packet::Character selectedCharacter =
-                        player.character;
-                    SELECTHandler::Packet::Vehicle selectedVehicle =
-                        player.vehicle;
-                    if (selectedCharacter !=
-                            SELECTHandler::Packet::Character::NotSelected ||
-                        selectedVehicle !=
-                            SELECTHandler::Packet::Vehicle::NotSelected) {
-                        Character character =
-                            static_cast<Character>(selectedCharacter);
-                        Vehicle vehicle = static_cast<Vehicle>(selectedVehicle);
-                        if (scenario->isOnlineVersusRace()) {
-                            if (!IsCombinationValidVS(character, vehicle)) {
-                                return false;
-                            }
-                        } else /* if (scenario->isOnlineBattle()) */ {
-                            if (!IsCombinationValidBT(character, vehicle)) {
-                                return false;
-                            }
-                        }
+        const SELECTHandler::Packet* selectPacket =
+            reinterpret_cast<const SELECTHandler::Packet*>(packet);
+        for (size_t n = 0; n < sizeof(SELECTHandler::Packet::player) /
+                                   sizeof(SELECTHandler::Packet::Player);
+             n++) {
+            SELECTHandler::Packet::Player player = selectPacket->player[n];
+
+            // Ensure that a valid combination is being used
+            SELECTHandler::Packet::Character selectedCharacter =
+                player.character;
+            SELECTHandler::Packet::Vehicle selectedVehicle = player.vehicle;
+            if (selectedCharacter !=
+                    SELECTHandler::Packet::Character::NotSelected ||
+                selectedVehicle !=
+                    SELECTHandler::Packet::Vehicle::NotSelected) {
+                Character character = static_cast<Character>(selectedCharacter);
+                Vehicle vehicle = static_cast<Vehicle>(selectedVehicle);
+                if (scenario->isOnlineVersusRace()) {
+                    if (!IsCombinationValidVS(character, vehicle)) {
+                        return false;
                     }
-
-                    // Ensure that a valid course was voted for
-                    SELECTHandler::Packet::CourseVote courseVote =
-                        selectPacket->player[n].courseVote;
-                    if (courseVote ==
-                            SELECTHandler::Packet::CourseVote::NotSelected ||
-                        courseVote ==
-                            SELECTHandler::Packet::CourseVote::Random) {
-                        continue;
-                    }
-                    Course course = static_cast<Course>(courseVote);
-                    if (scenario->isOnlineVersusRace()) {
-                        if (!IsRaceCourse(course)) {
-                            return false;
-                        }
-                    } else /* if (scenario->isOnlineBattle()) */ {
-                        if (!IsBattleCourse(course)) {
-                            return false;
-                        }
+                } else /* if (scenario->isOnlineBattle()) */ {
+                    if (!IsCombinationValidBT(character, vehicle)) {
+                        return false;
                     }
                 }
+            }
 
-                // Ensure that a valid course was selected
-                if (selectPacket->selectedCourse !=
-                    SELECTHandler::Packet::SelectedCourse::NotSelected) {
-                    Course course =
-                        static_cast<Course>(selectPacket->selectedCourse);
-                    if (scenario->isOnlineVersusRace()) {
-                        if (!IsRaceCourse(course)) {
-                            return false;
-                        }
-                    } else /* if (scenario->isOnlineBattle()) */ {
-                        if (!IsBattleCourse(course)) {
-                            return false;
-                        }
-                    }
+            // Ensure that a valid course was voted for
+            SELECTHandler::Packet::CourseVote courseVote =
+                selectPacket->player[n].courseVote;
+            if (courseVote == SELECTHandler::Packet::CourseVote::NotSelected ||
+                courseVote == SELECTHandler::Packet::CourseVote::Random) {
+                continue;
+            }
+            Course course = static_cast<Course>(courseVote);
+            if (scenario->isOnlineVersusRace()) {
+                if (!IsRaceCourse(course)) {
+                    return false;
+                }
+            } else /* if (scenario->isOnlineBattle()) */ {
+                if (!IsBattleCourse(course)) {
+                    return false;
                 }
             }
         }
 
-        return true;
-    }
-    case RACEPacket::RACEDATA: {
-        return true;
-    }
-    case RACEPacket::USER: {
-        const USERPacket* userPacket =
-            reinterpret_cast<const USERPacket*>(packet);
-
-        // Mii count must be 2
-        if (userPacket->miiGroupCount != 2) {
-            return false;
-        }
-
-        return true;
-    }
-    case RACEPacket::ITEM: {
-        if (rkNetController->inVanillaMatch()) {
-            if (static_cast<RKScene::SceneID>(sceneManager->getCurrentSceneID()
-                ) == RKScene::SceneID::Race) {
-                scenario = &RaceConfig::Instance()->raceScenario();
-
-                for (u8 n = 0; n < (packetSize >> 3); n++) {
-                    const ITEMHandler::Packet* itemPacket =
-                        reinterpret_cast<const ITEMHandler::Packet*>(
-                            reinterpret_cast<const char*>(packet) +
-                            (sizeof(ITEMHandler::Packet) * n)
-                        );
-                    if (scenario->isOnlineVersusRace()) {
-                        if (!itemPacket->isHeldItemValidVS()) {
-                            return false;
-                        }
-                        if (!itemPacket->isTrailedItemValidVS()) {
-                            return false;
-                        }
-                    } else /* if (scenario->isOnlineBattle()) */ {
-                        if (scenario->isBalloonBattle()) {
-                            if (!itemPacket->isHeldItemValidBB()) {
-                                return false;
-                            }
-                            if (!itemPacket->isTrailedItemValidBB()) {
-                                return false;
-                            }
-                        } else /* if (scenario->isCoinRunners()) */ {
-                            if (!itemPacket->isHeldItemValidCR()) {
-                                return false;
-                            }
-                            if (!itemPacket->isTrailedItemValidCR()) {
-                                return false;
-                            }
-                        }
-                    }
+        // Ensure that a valid course was selected
+        if (selectPacket->selectedCourse !=
+            SELECTHandler::Packet::SelectedCourse::NotSelected) {
+            Course course = static_cast<Course>(selectPacket->selectedCourse);
+            if (scenario->isOnlineVersusRace()) {
+                if (!IsRaceCourse(course)) {
+                    return false;
+                }
+            } else /* if (scenario->isOnlineBattle()) */ {
+                if (!IsBattleCourse(course)) {
+                    return false;
                 }
             }
         }
+    }
 
-        return true;
-    }
-    case RACEPacket::EVENT: {
-        return true;
-    }
-    default: {
+    return true;
+}
+
+static bool
+IsRACEDATAPacketDataValid(const void* /* packet */, u8 /* packetSize */)
+{
+    return true;
+}
+
+static bool IsUSERPacketDataValid(const void* packet, u8 /* packetSize */)
+{
+    using namespace mkw::Net;
+
+    const USERPacket* userPacket = reinterpret_cast<const USERPacket*>(packet);
+
+    // Mii count must be 2
+    if (userPacket->miiGroupCount != 2) {
         return false;
     }
-    }
+
+    return true;
 }
+
+static bool IsITEMPacketDataValid(const void* packet, u8 packetSize)
+{
+    using namespace mkw::Net;
+    using namespace mkw::System;
+
+    if (!RKNetController::Instance()->inVanillaMatch()) {
+        return true;
+    }
+
+    if (static_cast<RKScene::SceneID>(
+            RKSystem::Instance().sceneManager()->getCurrentSceneID()
+        ) != RKScene::SceneID::Race) {
+        return true;
+    }
+
+    RaceConfig::Scenario* scenario = &RaceConfig::Instance()->raceScenario();
+
+    for (u8 n = 0; n < (packetSize >> 3); n++) {
+        const ITEMHandler::Packet* itemPacket =
+            reinterpret_cast<const ITEMHandler::Packet*>(
+                reinterpret_cast<const char*>(packet) +
+                (sizeof(ITEMHandler::Packet) * n)
+            );
+        if (scenario->isOnlineVersusRace()) {
+            if (!itemPacket->isHeldItemValidVS()) {
+                return false;
+            }
+            if (!itemPacket->isTrailedItemValidVS()) {
+                return false;
+            }
+        } else /* if (scenario->isOnlineBattle()) */ {
+            if (scenario->isBalloonBattle()) {
+                if (!itemPacket->isHeldItemValidBB()) {
+                    return false;
+                }
+                if (!itemPacket->isTrailedItemValidBB()) {
+                    return false;
+                }
+            } else /* if (scenario->isCoinRunners()) */ {
+                if (!itemPacket->isHeldItemValidCR()) {
+                    return false;
+                }
+                if (!itemPacket->isTrailedItemValidCR()) {
+                    return false;
+                }
+            }
+        }
+    }
+
+    return true;
+}
+
+static bool
+IsEVENTPacketDataValid(const void* /* packet */, u8 /* packetSize */)
+{
+    return true;
+}
+
+typedef bool (*IsPacketDataValid)(const void* packet, u8 packetSize);
+
+static std::array<IsPacketDataValid, sizeof(mkw::Net::RACEPacket::sizes)>
+    s_isPacketDataValid{
+        IsHEADERPacketDataValid,      IsRACEHEADER1PacketDataValid,
+        IsRACEHEADER2PacketDataValid, IsROOMSELECTPacketDataValid,
+        IsRACEDATAPacketDataValid,    IsUSERPacketDataValid,
+        IsITEMPacketDataValid,        IsEVENTPacketDataValid,
+    };
 
 // CLIENT TO CLIENT VULNERABILITY
 // Patch for Mario Kart Wii RACE exploit. This was the first RCE exploit
@@ -426,13 +447,12 @@ IsRACEPacketValid(const mkw::Net::RACEPacket* racePacket, u32 racePacketSize)
     // Validate the data of each packet
     expectedPacketSize = 0;
     for (size_t n = 0; n < sizeof(RACEPacket::sizes); n++) {
-        RACEPacket::EType packetType = static_cast<RACEPacket::EType>(n);
+        const IsPacketDataValid isPacketDataValid = s_isPacketDataValid[n];
         const void* packet =
             reinterpret_cast<const char*>(racePacket) + expectedPacketSize;
         u8 packetSize = racePacket->sizes[n];
 
-        if (packetSize != 0 &&
-            !IsPacketDataValid(packetType, packet, packetSize)) {
+        if (packetSize != 0 && !isPacketDataValid(packet, packetSize)) {
             return false;
         }
 
