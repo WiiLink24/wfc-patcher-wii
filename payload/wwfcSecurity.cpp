@@ -340,6 +340,18 @@ static bool IsUSERPacketDataValid(const void* packet, u8 /* packetSize */)
         return false;
     }
 
+    constexpr u16 minRating = 1;
+    constexpr u16 maxRating = 9999;
+
+    // Ensure that players have a valid Versus Rating
+    if (userPacket->vr < minRating || userPacket->vr > maxRating) {
+        return false;
+    }
+    // Ensure that players have a valid Battle Rating
+    if (userPacket->br < minRating || userPacket->br > maxRating) {
+        return false;
+    }
+
     return true;
 }
 
