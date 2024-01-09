@@ -215,25 +215,29 @@ IsPacketSizeValid(mkw::Net::RACEPacket::EType packetType, u8 packetSize)
     }
 }
 
-static bool
-IsHEADERPacketDataValid(const void* /* packet */, u8 /* packetSize */)
+static bool IsHEADERPacketDataValid(
+    const void* /* packet */, u8 /* packetSize */, u8 /* playerAid */
+)
+{
+    return true;
+}
+
+static bool IsRACEHEADER1PacketDataValid(
+    const void* /* packet */, u8 /* packetSize */, u8 /* playerAid */
+)
+{
+    return true;
+}
+
+static bool IsRACEHEADER2PacketDataValid(
+    const void* /* packet */, u8 /* packetSize */, u8 /* playerAid */
+)
 {
     return true;
 }
 
 static bool
-IsRACEHEADER1PacketDataValid(const void* /* packet */, u8 /* packetSize */)
-{
-    return true;
-}
-
-static bool
-IsRACEHEADER2PacketDataValid(const void* /* packet */, u8 /* packetSize */)
-{
-    return true;
-}
-
-static bool IsROOMSELECTPacketDataValid(const void* packet, u8 packetSize)
+IsROOMSELECTPacketDataValid(const void* packet, u8 packetSize, u8 playerAid)
 {
     using namespace mkw::Net;
     using namespace mkw::Registry;
@@ -241,6 +245,18 @@ static bool IsROOMSELECTPacketDataValid(const void* packet, u8 packetSize)
 
     // 'ROOM' packet
     if (packetSize == 0x04) {
+        const ROOMHandler::Packet* roomPacket =
+            reinterpret_cast<const ROOMHandler::Packet*>(packet);
+
+        if (roomPacket->event == ROOMHandler::Packet::Event::StartRoom) {
+            RKNetController::ConnectionInfo& connectionInfo =
+                RKNetController::Instance()->currentConnectionInfo();
+
+            // Ensure that guests can't start rooms
+            if (playerAid != connectionInfo.hostAid) {
+                return false;
+            }
+        }
     }
     // 'SELECT' packet
     else {
@@ -323,13 +339,16 @@ static bool IsROOMSELECTPacketDataValid(const void* packet, u8 packetSize)
     return true;
 }
 
-static bool
-IsRACEDATAPacketDataValid(const void* /* packet */, u8 /* packetSize */)
+static bool IsRACEDATAPacketDataValid(
+    const void* /* packet */, u8 /* packetSize */, u8 /* playerAid */
+)
 {
     return true;
 }
 
-static bool IsUSERPacketDataValid(const void* packet, u8 /* packetSize */)
+static bool IsUSERPacketDataValid(
+    const void* packet, u8 /* packetSize */, u8 /* playerAid */
+)
 {
     using namespace mkw::Net;
 
@@ -355,7 +374,8 @@ static bool IsUSERPacketDataValid(const void* packet, u8 /* packetSize */)
     return true;
 }
 
-static bool IsITEMPacketDataValid(const void* packet, u8 packetSize)
+static bool
+IsITEMPacketDataValid(const void* packet, u8 packetSize, u8 /* playerAid */)
 {
     using namespace mkw::Net;
     using namespace mkw::System;
@@ -407,13 +427,15 @@ static bool IsITEMPacketDataValid(const void* packet, u8 packetSize)
     return true;
 }
 
-static bool
-IsEVENTPacketDataValid(const void* /* packet */, u8 /* packetSize */)
+static bool IsEVENTPacketDataValid(
+    const void* /* packet */, u8 /* packetSize */, u8 /* playerAid */
+)
 {
     return true;
 }
 
-typedef bool (*IsPacketDataValid)(const void* packet, u8 packetSize);
+typedef bool (*IsPacketDataValid
+)(const void* packet, u8 packetSize, u8 playerAid);
 
 static std::array<IsPacketDataValid, sizeof(mkw::Net::RACEPacket::sizes)>
     s_isPacketDataValid{
@@ -429,8 +451,9 @@ static std::array<IsPacketDataValid, sizeof(mkw::Net::RACEPacket::sizes)>
 // rediscovered by Star, who reported the exploit and then released it.
 // CVE-ID: CVE-2023-35856
 // https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2023-35856
-static bool
-IsRACEPacketValid(const mkw::Net::RACEPacket* racePacket, u32 racePacketSize)
+static bool IsRACEPacketValid(
+    const mkw::Net::RACEPacket* racePacket, u32 racePacketSize, u8 playerAid
+)
 {
     using namespace mkw::Net;
 
@@ -464,7 +487,8 @@ IsRACEPacketValid(const mkw::Net::RACEPacket* racePacket, u32 racePacketSize)
             reinterpret_cast<const char*>(racePacket) + expectedPacketSize;
         u8 packetSize = racePacket->sizes[n];
 
-        if (packetSize != 0 && !isPacketDataValid(packet, packetSize)) {
+        if (packetSize != 0 &&
+            !isPacketDataValid(packet, packetSize, playerAid)) {
             return false;
         }
 
@@ -480,7 +504,7 @@ WWFC_DEFINE_PATCH = {Patch::BranchWithCTR( //
     [](mkw::Net::RKNetController* rkNetController,
        mkw::Net::RACEPacket* racePacket, u32 packetSize, u32 _,
        u8 playerAid) -> void {
-        if (!IsRACEPacketValid(racePacket, packetSize)) {
+        if (!IsRACEPacketValid(racePacket, packetSize, playerAid)) {
             LONGCALL int DWC_CloseConnectionHard(u8 playerAid)
                 AT(RMCXD_PORT(0x800D2000, 0x800D1F60, 0x800D1F20, 0x800D2060));
             DWC_CloseConnectionHard(playerAid);
