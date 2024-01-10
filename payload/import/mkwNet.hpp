@@ -28,6 +28,38 @@ struct RACEPacket {
 
 static_assert(sizeof(RACEPacket) == 0x10);
 
+// https://github.com/SeekyCt/mkw-structures/blob/master/roomhandler.h
+class ROOMHandler
+{
+public:
+    struct Packet {
+        enum class Event : u8 {
+            StartRoom = 1,
+            RegisterFriend = 2,
+            JoinMessage = 3,
+            ChatMessage = 4,
+        };
+
+        /* 0x00 */ Event event;
+        /* 0x01 */ u8 _01[0x04 - 0x01];
+    };
+
+    static_assert(sizeof(Packet) == 0x04);
+
+    static ROOMHandler* Instance()
+    {
+        return s_instance;
+    }
+
+private:
+    /* 0x00 */ u8 _00[0x80 - 0x00];
+
+    static ROOMHandler* s_instance
+        AT(RMCXD_PORT(0x809C20E0, 0x809BD920, 0x809C1140, 0x809B0720));
+};
+
+static_assert(sizeof(ROOMHandler) == 0x80);
+
 // https://github.com/SeekyCt/mkw-structures/blob/master/selecthandler.h
 class SELECTHandler
 {
@@ -81,7 +113,7 @@ public:
         LONGCALL void decideEngineClass(SELECTHandler * selectHandler)
             AT(RMCXD_PORT(0x80661A5C, 0x80659B20, 0x806610C8, 0x8064FD74));
 
-        decideEngineClass(s_instance);
+        decideEngineClass(this);
     }
 
     Packet& sendPacket()
@@ -302,6 +334,14 @@ public:
         FriendContinentalBattle = 10,
     };
 
+    struct ConnectionInfo {
+        /* 0x00 */ u8 _00[0x22 - 0x00];
+        /* 0x22 */ u8 hostAid;
+        /* 0x23 */ u8 _23[0x58 - 0x23];
+    };
+
+    static_assert(sizeof(ConnectionInfo) == 0x58);
+
     void
     processRACEPacket(u32 playerAid, RACEPacket* racePacket, u32 packetSize)
     {
@@ -310,21 +350,20 @@ public:
             RACEPacket * racePacket, u32 packetSize
         ) AT(RMCXD_PORT(0x80659A84, 0x806555FC, 0x806590F0, 0x80647D9C));
 
-        processRACEPacket(s_instance, playerAid, racePacket, packetSize);
+        processRACEPacket(this, playerAid, racePacket, packetSize);
     }
 
-    JoinType joinType() const
+    ConnectionInfo& currentConnectionInfo()
+    {
+        return m_connectionInfo[m_currentConnectionInfoIndex];
+    }
+
+    constexpr JoinType joinType() const
     {
         return m_joinType;
     }
 
-    bool inWorldwideVersusRace()
-    {
-        return m_joinType == JoinType::WorldwideVersusRace ||
-               m_joinType == JoinType::FriendWorldwideVersusRace;
-    }
-
-    bool inVanillaMatch()
+    constexpr bool inVanillaMatch() const
     {
         switch (m_joinType) {
         case JoinType::WorldwideVersusRace:
@@ -360,9 +399,12 @@ public:
     }
 
 private:
-    /* 0x0000 */ u8 _0000[0x00E8 - 0x0000];
+    /* 0x0000 */ u8 _0000[0x0038 - 0x0000];
+    /* 0x0038 */ ConnectionInfo m_connectionInfo[2];
     /* 0x00E8 */ JoinType m_joinType;
-    /* 0x00EC */ u8 _00EC[0x29C8 - 0x00EC];
+    /* 0x00EC */ u8 _00EC[0x291C - 0x00EC];
+    /* 0x291C */ int m_currentConnectionInfoIndex;
+    /* 0x2920 */ u8 _2920[0x29C8 - 0x2920];
 
     static RKNetController* s_instance
         AT(RMCXD_PORT(0x809C20D8, 0x809BD918, 0x809C1138, 0x809B0718));
