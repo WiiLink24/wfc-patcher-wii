@@ -2,7 +2,9 @@
 
 #include "wwfcAntiFreeze.cpp"
 #include "wwfcBugFix.cpp"
+#include "wwfcError.cpp"
 #include "wwfcFeature.cpp"
+#include "wwfcHostPlatform.cpp"
 #include "wwfcLibC.cpp"
 #include "wwfcLogin.cpp"
 #include "wwfcMii.cpp"

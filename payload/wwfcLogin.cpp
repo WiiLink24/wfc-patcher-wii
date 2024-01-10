@@ -1,6 +1,7 @@
 #include "import/dwc.h"
 #include "import/gamespy.h"
 #include "import/revolution.h"
+#include "wwfcHostPlatform.hpp"
 #include "wwfcLog.hpp"
 #include "wwfcPatch.hpp"
 #include "wwfcPayload.hpp"
@@ -98,6 +99,18 @@ void SendExtendedLogin(
 {
     g_sendExLogin = false;
 
+    if (sendProfileId) {
+        DWC::DWCUserData* userData = DWC::DWCi_GetUserData();
+        if (userData != nullptr && userData->profileId != 0) {
+            GameSpy::gpiAppendStringToBuffer(
+                connection, outputBuffer, "\\profileid\\"
+            );
+            GameSpy::gpiAppendIntToBuffer(
+                connection, outputBuffer, userData->profileId
+            );
+        }
+    }
+
     GameSpy::gpiAppendStringToBuffer(
         connection, outputBuffer, "\\payload_ver\\"
     );
@@ -115,17 +128,11 @@ void SendExtendedLogin(
         }
     }
 
-    if (sendProfileId) {
-        DWC::DWCUserData* userData = DWC::DWCi_GetUserData();
-        if (userData != nullptr && userData->profileId != 0) {
-            GameSpy::gpiAppendStringToBuffer(
-                connection, outputBuffer, "\\profileid\\"
-            );
-            GameSpy::gpiAppendIntToBuffer(
-                connection, outputBuffer, userData->profileId
-            );
-        }
-    }
+    // TODO: Add more detailed information
+    GameSpy::gpiAppendStringToBuffer(connection, outputBuffer, "\\wwfc_host\\");
+    GameSpy::gpiAppendStringToBuffer(
+        connection, outputBuffer, HostPlatform::IsDolphin() ? "Dolphin" : "Wii"
+    );
 
     GameSpy::gpiAppendStringToBuffer(connection, outputBuffer, "\\final\\");
 }
