@@ -6,6 +6,8 @@
 namespace wwfc::GPReport
 {
 
+#if RMC
+
 void ReportUSER(mkw::Net::USERPacket* packet)
 {
     auto connection = DWC::stpMatchCnt->connection;
@@ -38,5 +40,7 @@ void ReportUSER(mkw::Net::USERPacket* packet)
         connection, &iconnection->outputBuffer, "\\final\\"
     );
 }
+
+#endif
 
 } // namespace wwfc::GPReport
