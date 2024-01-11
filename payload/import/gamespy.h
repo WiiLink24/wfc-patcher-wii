@@ -36,6 +36,11 @@ typedef struct {
 static_assert(sizeof(GPIConnectData) == 0x308);
 #endif
 
+typedef struct {
+    FILL(0x000, 0x210);
+    u32 outputBuffer;
+} GPIConnection;
+
 LONGCALL int gpiAppendStringToBuffer( //
     void* connection, void* outputBuffer, const char* buffer
 ) AT(ADDRESS_gpiAppendStringToBuffer);
@@ -43,6 +48,8 @@ LONGCALL int gpiAppendStringToBuffer( //
 LONGCALL int gpiAppendIntToBuffer( //
     void* connection, void* outputBuffer, int num
 ) AT(ADDRESS_gpiAppendIntToBuffer);
+
+typedef void* GPConnection;
 
 #ifdef __cplusplus
 }

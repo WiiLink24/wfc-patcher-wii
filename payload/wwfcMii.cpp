@@ -1,6 +1,7 @@
 #include "wwfcMii.hpp"
 #include "import/mkwNet.hpp"
 #include "wwfcPatch.hpp"
+#include "wwfcGPReport.hpp"
 
 namespace wwfc::Mii
 {
@@ -84,6 +85,9 @@ void ClearUSERMiiInfo(mkw::Net::USERPacket* packet)
     for (u32 i = 0; i < packet->miiGroupCount; i++) {
         ClearMiiInfo(&packet->miiData[i]);
     }
+
+    // Send Mii data to the server
+    wwfc::GPReport::ReportUSER(packet);
 }
 
 #endif

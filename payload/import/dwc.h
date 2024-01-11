@@ -1,6 +1,7 @@
 #pragma once
 
 #include <wwfcUtil.h>
+#include "gamespy.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -27,7 +28,9 @@ typedef struct {
     /* 0x1CC / 0x802F1E74 */ u32 unk_0x1CC;
 } DWCAuthResult;
 
+#ifdef __cplusplus
 static_assert(sizeof(DWCAuthResult) == 0x1D0);
+#endif
 
 typedef struct {
     /* 0x000 / 0x802F1E88 */ u32 statusData;
@@ -35,14 +38,18 @@ typedef struct {
     /* 0x045 / 0x802F1ECD */ char serviceToken[0x12F];
 } DWCSvcLocResult;
 
+#ifdef __cplusplus
 static_assert(sizeof(DWCSvcLocResult) == 0x174);
+#endif
 
 typedef struct {
     /* 0x000 / 0x802F2000 */ char prWords[0x34];
     /* 0x034 / 0x802F2034 */ s32 result;
 } DWCProfResult;
 
+#ifdef __cplusplus
 static_assert(sizeof(DWCProfResult) == 0x38);
+#endif
 
 extern DWCAuthResult s_auth_result AT(ADDRESS_AUTH_RESULT);
 extern DWCSvcLocResult s_svl_result AT(ADDRESS_AUTH_RESULT + 0x1D0);
@@ -58,6 +65,17 @@ typedef struct {
 
 // 0x803862E8
 extern DWCLoginContext* stpLoginCnt AT(ADDRESS_stpLoginCnt);
+
+#if RMC
+
+typedef struct {
+    /* 0x0 */ GameSpy::GPConnection* connection;
+} DWCMatchContext;
+
+// 0x8038630C
+extern DWCMatchContext* stpMatchCnt AT(RMCXD_PORT(0x8038630C, 0x80381F8C, 0x80385C8C, 0x8037432C));
+
+#endif
 
 LONGCALL DWCUserData* DWCi_GetUserData( //
     void

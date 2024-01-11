@@ -4,6 +4,7 @@
 #include "wwfcBugFix.cpp"
 #include "wwfcError.cpp"
 #include "wwfcFeature.cpp"
+#include "wwfcGPReport.cpp"
 #include "wwfcHostPlatform.cpp"
 #include "wwfcLibC.cpp"
 #include "wwfcLogin.cpp"
