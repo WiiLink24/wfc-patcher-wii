@@ -8,7 +8,7 @@ namespace wwfc::GPReport
 
 #if RMC
 
-void ReportUSER(mkw::Net::USERPacket* packet)
+void ReportUSER(mkw::Net::USERHandler::Packet* packet)
 {
     auto connection = DWC::stpMatchCnt->connection;
     if (connection == nullptr) {
@@ -19,7 +19,7 @@ void ReportUSER(mkw::Net::USERPacket* packet)
 
     char b64UserPacket[0x400];
     s32 b64Len = DWC::DWC_Base64Encode(
-        packet, sizeof(mkw::Net::USERPacket), b64UserPacket,
+        packet, sizeof(mkw::Net::USERHandler::Packet), b64UserPacket,
         sizeof(b64UserPacket)
     );
     if (b64Len < 0 || b64Len >= 0x400) {

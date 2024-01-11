@@ -7,7 +7,7 @@ namespace wwfc::GPReport
 
 #if RMC
 
-void ReportUSER(mkw::Net::USERPacket* packet);
+void ReportUSER(mkw::Net::USERHandler::Packet* packet);
 
 #endif
 

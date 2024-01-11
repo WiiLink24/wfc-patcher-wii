@@ -133,7 +133,7 @@ LONGCALL int GetVehicleWeightClass(Vehicle vehicle)
 LONGCALL int GetCharacterWeightClass(Character character)
     AT(RMCXD_PORT(0x8081CD3C, 0x80809F90, 0x8081C3A8, 0x8080B0FC));
 
-static constexpr bool IsCharacterValid(Character character)
+static bool IsCharacterValid(Character character)
 {
     switch (character) {
     case Character::Mario... Character::SmallMiiOutfitBFemale:
@@ -145,12 +145,12 @@ static constexpr bool IsCharacterValid(Character character)
     }
 }
 
-static constexpr bool IsVehicleValidVS(Vehicle vehicle)
+static bool IsVehicleValidVS(Vehicle vehicle)
 {
     return vehicle >= Vehicle::StandardKartSmall && vehicle <= Vehicle::Phantom;
 }
 
-static constexpr bool IsVehicleValidBT(Vehicle vehicle)
+static bool IsVehicleValidBT(Vehicle vehicle)
 {
     switch (vehicle) {
     case Vehicle::StandardKartSmall... Vehicle::StandardKartLarge:
@@ -185,12 +185,12 @@ static bool IsCombinationValidBT(Character character, Vehicle vehicle)
     return GetCharacterWeightClass(character) == GetVehicleWeightClass(vehicle);
 }
 
-static constexpr bool IsRaceCourse(Course course)
+static bool IsRaceCourse(Course course)
 {
     return course >= Course::MarioCircuit && course <= Course::GBAShyGuyBeach;
 }
 
-static constexpr bool IsBattleCourse(Course course)
+static bool IsBattleCourse(Course course)
 {
     return course >= Course::DelfinoPier && course <= Course::N64Skyscraper;
 }
