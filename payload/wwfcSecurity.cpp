@@ -163,7 +163,7 @@ IsPacketSizeValid(mkw::Net::RACEPacket::EType packetType, u8 packetSize)
     case RACEPacket::ROOM_SELECT: {
         // 'ROOM' packet
         if (packetSize < sizeof(SELECTHandler::Packet)) {
-            return packetSize == 0x04;
+            return packetSize == sizeof(ROOMHandler::Packet);
         }
 
         // 'SELECT' packet
@@ -183,7 +183,7 @@ IsPacketSizeValid(mkw::Net::RACEPacket::EType packetType, u8 packetSize)
         return true;
     }
     case RACEPacket::USER: {
-        if (packetSize < sizeof(USERPacket) ||
+        if (packetSize < sizeof(USERHandler::Packet) ||
             packetSize > packetBufferSizes[RACEPacket::USER]) {
             return false;
         }
@@ -200,8 +200,6 @@ IsPacketSizeValid(mkw::Net::RACEPacket::EType packetType, u8 packetSize)
         return true;
     }
     case RACEPacket::EVENT: {
-        // SECURITY TODO: There is some kind of (harmless?) overflow in EVENT,
-        // not patched by Wiimmfi or CTGP
         if (packetSize < 0x18 ||
             packetSize > packetBufferSizes[RACEPacket::EVENT]) {
             return false;
@@ -244,7 +242,7 @@ IsROOMSELECTPacketDataValid(const void* packet, u8 packetSize, u8 playerAid)
     using namespace mkw::System;
 
     // 'ROOM' packet
-    if (packetSize == 0x04) {
+    if (packetSize == sizeof(ROOMHandler::Packet)) {
         const ROOMHandler::Packet* roomPacket =
             reinterpret_cast<const ROOMHandler::Packet*>(packet);
 
@@ -280,7 +278,6 @@ IsROOMSELECTPacketDataValid(const void* packet, u8 packetSize, u8 playerAid)
              n++) {
             SELECTHandler::Packet::Player player = selectPacket->player[n];
 
-            // Ensure that a valid combination is being used
             SELECTHandler::Packet::Character selectedCharacter =
                 player.character;
             SELECTHandler::Packet::Vehicle selectedVehicle = player.vehicle;
@@ -301,7 +298,6 @@ IsROOMSELECTPacketDataValid(const void* packet, u8 packetSize, u8 playerAid)
                 }
             }
 
-            // Ensure that a valid course was voted for
             SELECTHandler::Packet::CourseVote courseVote =
                 selectPacket->player[n].courseVote;
             if (courseVote == SELECTHandler::Packet::CourseVote::NotSelected ||
@@ -320,7 +316,6 @@ IsROOMSELECTPacketDataValid(const void* packet, u8 packetSize, u8 playerAid)
             }
         }
 
-        // Ensure that a valid course was selected
         if (selectPacket->selectedCourse !=
             SELECTHandler::Packet::SelectedCourse::NotSelected) {
             Course course = static_cast<Course>(selectPacket->selectedCourse);
@@ -352,22 +347,18 @@ static bool IsUSERPacketDataValid(
 {
     using namespace mkw::Net;
 
-    const USERPacket* userPacket = reinterpret_cast<const USERPacket*>(packet);
+    const USERHandler::Packet* userPacket =
+        reinterpret_cast<const USERHandler::Packet*>(packet);
 
-    // Mii count must be 2
-    if (userPacket->miiGroupCount != 2) {
+    if (!userPacket->isMiiGroupCountValid()) {
         return false;
     }
 
-    constexpr u16 minRating = 1;
-    constexpr u16 maxRating = 9999;
-
-    // Ensure that players have a valid Versus Rating
-    if (userPacket->vr < minRating || userPacket->vr > maxRating) {
+    if (!userPacket->isVersusRatingValid()) {
         return false;
     }
-    // Ensure that players have a valid Battle Rating
-    if (userPacket->br < minRating || userPacket->br > maxRating) {
+
+    if (!userPacket->isBattleRatingValid()) {
         return false;
     }
 
@@ -377,6 +368,7 @@ static bool IsUSERPacketDataValid(
 static bool
 IsITEMPacketDataValid(const void* packet, u8 packetSize, u8 /* playerAid */)
 {
+    using namespace mkw::Item;
     using namespace mkw::Net;
     using namespace mkw::System;
 
@@ -398,26 +390,30 @@ IsITEMPacketDataValid(const void* packet, u8 packetSize, u8 /* playerAid */)
                 reinterpret_cast<const char*>(packet) +
                 (sizeof(ITEMHandler::Packet) * n)
             );
+
+        ItemBox heldItem = static_cast<ItemBox>(itemPacket->heldItem);
+        ItemBox trailedItem = static_cast<ItemBox>(itemPacket->trailedItem);
+
         if (scenario->isOnlineVersusRace()) {
-            if (!itemPacket->isHeldItemValidVS()) {
+            if (!IsHeldItemValidVS(heldItem)) {
                 return false;
             }
-            if (!itemPacket->isTrailedItemValidVS()) {
+            if (!IsTrailedItemValidVS(trailedItem)) {
                 return false;
             }
         } else /* if (scenario->isOnlineBattle()) */ {
             if (scenario->isBalloonBattle()) {
-                if (!itemPacket->isHeldItemValidBB()) {
+                if (!IsHeldItemValidBB(heldItem)) {
                     return false;
                 }
-                if (!itemPacket->isTrailedItemValidBB()) {
+                if (!IsTrailedItemValidBB(trailedItem)) {
                     return false;
                 }
             } else /* if (scenario->isCoinRunners()) */ {
-                if (!itemPacket->isHeldItemValidCR()) {
+                if (!IsHeldItemValidCR(heldItem)) {
                     return false;
                 }
-                if (!itemPacket->isTrailedItemValidCR()) {
+                if (!IsTrailedItemValidCR(trailedItem)) {
                     return false;
                 }
             }
@@ -428,9 +424,18 @@ IsITEMPacketDataValid(const void* packet, u8 packetSize, u8 /* playerAid */)
 }
 
 static bool IsEVENTPacketDataValid(
-    const void* /* packet */, u8 /* packetSize */, u8 /* playerAid */
+    const void* packet, u8 /* packetSize */, u8 /* playerAid */
 )
 {
+    using namespace mkw::Net;
+
+    const EVENTHandler::Packet* eventPacket =
+        reinterpret_cast<const EVENTHandler::Packet*>(packet);
+
+    if (!eventPacket->isEventInfoValid()) {
+        return false;
+    }
+
     return true;
 }
 
@@ -461,7 +466,6 @@ static bool IsRACEPacketValid(
         return false;
     }
 
-    // Validate the size of each packet
     u32 expectedPacketSize = 0;
     for (size_t n = 0; n < sizeof(RACEPacket::sizes); n++) {
         RACEPacket::EType packetType = static_cast<RACEPacket::EType>(n);
@@ -474,12 +478,10 @@ static bool IsRACEPacketValid(
         expectedPacketSize += packetSize;
     }
 
-    // Ensure that the packet is large enough to hold the data
     if (racePacketSize < expectedPacketSize) {
         return false;
     }
 
-    // Validate the data of each packet
     expectedPacketSize = 0;
     for (size_t n = 0; n < sizeof(RACEPacket::sizes); n++) {
         const IsPacketDataValid isPacketDataValid = s_isPacketDataValid[n];

@@ -61,11 +61,13 @@ public:
     };
 
     struct Data {
-        EGG::Vector3f position;
-        EGG::Vector3f rotation;
-        u16 id;
-        CannonType cannonType;
+        /* 0x00 */ EGG::Vector3f position;
+        /* 0x0C */ EGG::Vector3f rotation;
+        /* 0x18 */ u16 id;
+        /* 0x1A */ CannonType cannonType;
     };
+
+    static_assert(sizeof(Data) == 0x1C);
 
     MapdataCannonPoint(const Data* data)
       : m_data(data)
@@ -73,20 +75,22 @@ public:
     }
 
 private:
-    const Data* m_data;
+    /* 0x00 */ const Data* m_data;
 };
 
-static_assert(sizeof(MapdataCannonPoint) == 0x4);
+static_assert(sizeof(MapdataCannonPoint) == 0x04);
 
 // https://github.com/riidefi/mkw/blob/master/source/game/system/CourseMap.hpp#L543-L557
 class MapdataItemPoint
 {
 public:
     struct Data {
-        EGG::Vector3f position;
-        f32 deviation;
-        u16 parameters[2];
+        /* 0x00 */ EGG::Vector3f position;
+        /* 0x0C */ f32 deviation;
+        /* 0x10 */ u16 parameters[2];
     };
+
+    static_assert(sizeof(Data) == 0x14);
 
     MapdataItemPoint(const Data* data)
       : m_data(data)
@@ -94,8 +98,8 @@ public:
     }
 
 private:
-    const Data* m_data;
-    u8 _04[0x14 - 0x04];
+    /* 0x00 */ const Data* m_data;
+    /* 0x04 */ u8 _04[0x14 - 0x04];
 };
 
 static_assert(sizeof(MapdataItemPoint) == 0x14);
@@ -118,24 +122,24 @@ public:
     class Scenario
     {
     public:
-        constexpr bool isOnlineVersusRace() const
+        bool isOnlineVersusRace() const
         {
             return m_gameMode == GameMode::PrivateVersusRace ||
                    m_gameMode == GameMode::PublicVersusRace;
         }
 
-        constexpr bool isOnlineBattle() const
+        bool isOnlineBattle() const
         {
             return m_gameMode == GameMode::PublicBattle ||
                    m_gameMode == GameMode::PrivateBattle;
         }
 
-        constexpr bool isBalloonBattle() const
+        bool isBalloonBattle() const
         {
             return m_battleType == BattleType::BalloonBattle;
         }
 
-        constexpr bool isCoinRunners() const
+        bool isCoinRunners() const
         {
             return m_battleType == BattleType::CoinRunners;
         }

@@ -137,167 +137,73 @@ private:
 
 static_assert(sizeof(SELECTHandler) == 0x3F8);
 
-struct USERPacket {
-    /* 0x00 */ u32 miiGroupBitflags;
-    /* 0x04 */ u16 miiGroupCount;
-    /* 0x06 */ u16 _0x06;
-    /* 0x08 */ wwfc::Mii::RFLiStoreData miiData[2];
-    /* 0xA0 */ u64 wiiFriendCode;
-    /* 0xA8 */ u64 friendCode;
-    /* 0xB0 */ u8 country;
-    /* 0xB1 */ u8 state;
-    /* 0xB2 */ u16 city;
-    /* 0xB4 */ u16 longitude;
-    /* 0xB6 */ u16 latitude;
-    /* 0xB8 */ u16 vr;
-    /* 0xBA */ u16 br;
-    /* 0xBC */ char regionChar;
-    /* 0xBD */ u8 regionId;
-    /* 0xBE */ u16 _0xBE;
+class USERHandler
+{
+public:
+    struct Packet {
+        /* 0x00 */ u32 miiGroupBitflags;
+        /* 0x04 */ u16 miiGroupCount;
+        /* 0x06 */ u16 _0x06;
+        /* 0x08 */ wwfc::Mii::RFLiStoreData miiData[2];
+        /* 0xA0 */ u64 wiiFriendCode;
+        /* 0xA8 */ u64 friendCode;
+        /* 0xB0 */ u8 country;
+        /* 0xB1 */ u8 state;
+        /* 0xB2 */ u16 city;
+        /* 0xB4 */ u16 longitude;
+        /* 0xB6 */ u16 latitude;
+        /* 0xB8 */ u16 vr;
+        /* 0xBA */ u16 br;
+        /* 0xBC */ char regionChar;
+        /* 0xBD */ u8 regionId;
+        /* 0xBE */ u16 _0xBE;
+
+        bool isMiiGroupCountValid() const
+        {
+            return miiGroupCount == maxMiis;
+        }
+
+        bool isVersusRatingValid() const
+        {
+            return vr >= minRating && vr <= maxRating;
+        }
+
+        bool isBattleRatingValid() const
+        {
+            return br >= minRating && br <= maxRating;
+        }
+
+    private:
+        static const u16 maxMiis = 2;
+        static const u16 minRating = 1;
+        static const u16 maxRating = 9999;
+    };
+
+    static_assert(sizeof(Packet) == 0xC0);
+
+    static USERHandler* Instance()
+    {
+        return s_instance;
+    }
+
+private:
+    /* 0x000 */ u8 _000[0x9F0 - 0x000];
+
+    static USERHandler* s_instance
+        AT(RMCXD_PORT(0x809C2108, 0x809BD958, 0x809C1168, 0x809B0748));
 };
 
-static_assert(sizeof(USERPacket) == 0xC0);
+static_assert(sizeof(USERHandler) == 0x9F0);
 
 // https://github.com/SeekyCt/mkw-structures/blob/master/rknetcontroller.h
 class ITEMHandler
 {
 public:
     struct Packet {
-        enum class Item : u8 {
-            GreenShell = 0x00,
-            RedShell = 0x01,
-            Banana = 0x02,
-            FakeItemBox = 0x03,
-            Mushroom = 0x04,
-            TripleMushrooms = 0x05,
-            Bob_omb = 0x06,
-            BlueShell = 0x07,
-            Lightning = 0x08,
-            Star = 0x09,
-            GoldenMushroom = 0x0A,
-            MegaMushroom = 0x0B,
-            Blooper = 0x0C,
-            POWBlock = 0x0D,
-            ThunderCloud = 0x0E,
-            BulletBill = 0x0F,
-            TripleGreenShells = 0x10,
-            TripleRedShells = 0x11,
-            TripleBananas = 0x12,
-            NoItem = 0x14,
-        };
-
-        constexpr bool isHeldItemValidVS() const
-        {
-            return isItemValidVS(heldItem);
-        }
-
-        constexpr bool isTrailedItemValidVS() const
-        {
-            if (trailedItem == Item::NoItem) {
-                return true;
-            }
-
-            if (!isItemValidVS(trailedItem)) {
-                return false;
-            }
-
-            return canTrailItem(trailedItem);
-        }
-
-        constexpr bool isHeldItemValidBB() const
-        {
-            return isItemValidBB(heldItem);
-        }
-
-        constexpr bool isTrailedItemValidBB() const
-        {
-            if (trailedItem == Item::NoItem) {
-                return true;
-            }
-
-            if (!isItemValidBB(trailedItem)) {
-                return false;
-            }
-
-            return canTrailItem(trailedItem);
-        }
-
-        constexpr bool isHeldItemValidCR() const
-        {
-            return isItemValidCR(heldItem);
-        }
-
-        constexpr bool isTrailedItemValidCR() const
-        {
-            if (trailedItem == Item::NoItem) {
-                return true;
-            }
-
-            if (!isItemValidCR(trailedItem)) {
-                return false;
-            }
-
-            return canTrailItem(trailedItem);
-        }
-
         /* 0x00 */ u8 _00;
-        /* 0x01 */ Item heldItem;
-        /* 0x02 */ Item trailedItem;
+        /* 0x01 */ u8 heldItem;
+        /* 0x02 */ u8 trailedItem;
         /* 0x03 */ u8 _03[0x08 - 0x03];
-
-    private:
-        constexpr bool isItemValidVS(Item item) const
-        {
-            switch (item) {
-            case Item::GreenShell... Item::TripleBananas:
-            case Item::NoItem: {
-                return true;
-            }
-            default: {
-                return false;
-            }
-            }
-        }
-
-        constexpr bool isItemValidBB(Item item) const
-        {
-            switch (item) {
-            case Item::GreenShell... Item::Star:
-            case Item::MegaMushroom... Item::Blooper:
-            case Item::TripleGreenShells... Item::TripleBananas:
-            case Item::NoItem: {
-                return true;
-            }
-            default: {
-                return false;
-            }
-            }
-        }
-
-        constexpr bool isItemValidCR(Item item) const
-        {
-            switch (item) {
-            case Item::GreenShell... Item::BlueShell:
-            case Item::Star... Item::POWBlock:
-            case Item::TripleGreenShells... Item::TripleBananas:
-            case Item::NoItem: {
-                return true;
-            }
-            default: {
-                return false;
-            }
-            }
-        }
-
-        constexpr bool canTrailItem(Item item) const
-        {
-            u8 trailedItem = static_cast<u8>(item);
-
-            const mkw::Item::ItemBehaviourEntry& itemBehaviourEntry =
-                mkw::Item::itemBehaviourTable[trailedItem];
-
-            return !itemBehaviourEntry.useFunction;
-        }
     };
 
     static_assert(sizeof(Packet) == 0x08);
@@ -308,13 +214,59 @@ public:
     }
 
 private:
-    u8 _000[0x184 - 0x000];
+    /* 0x000 */ u8 _000[0x184 - 0x000];
 
     static ITEMHandler* s_instance
         AT(RMCXD_PORT(0x809C20F8, 0x809BD950, 0x809C1158, 0x809B0738));
 };
 
 static_assert(sizeof(ITEMHandler) == 0x184);
+
+// https://github.com/SeekyCt/mkw-structures/blob/master/eventhandler.h
+class EVENTHandler
+{
+public:
+    struct EventInfo {
+        /* 0x00 */ u8 : 3;
+        /* 0x00 */ u8 itemObject : 5;
+    };
+
+    static_assert(sizeof(EventInfo) == 0x01);
+
+    struct Packet {
+        /* 0x00 */ EventInfo eventInfo[0x18];
+        /* 0x18 */ u8 _18[0xF8 - 0x18];
+
+        bool isEventInfoValid() const
+        {
+            for (size_t n = 0; n < sizeof(eventInfo); n++) {
+                mkw::Item::ItemObject itemObject =
+                    static_cast<mkw::Item::ItemObject>(eventInfo[n].itemObject);
+
+                if (!mkw::Item::IsItemObjectValid(itemObject)) {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+    };
+
+    static_assert(sizeof(Packet) == 0xF8);
+
+    static EVENTHandler* Instance()
+    {
+        return s_instance;
+    }
+
+private:
+    /* 0x0000 */ u8 _0000[0x2B88 - 0x0000];
+
+    static EVENTHandler* s_instance
+        AT(RMCXD_PORT(0x809C20F0, 0x809BD928, 0x809C1150, 0x809B0730));
+};
+
+static_assert(sizeof(EVENTHandler) == 0x2B88);
 
 // https://github.com/SeekyCt/mkw-structures/blob/master/rknetcontroller.h
 class RKNetController
@@ -358,12 +310,12 @@ public:
         return m_connectionInfo[m_currentConnectionInfoIndex];
     }
 
-    constexpr JoinType joinType() const
+    JoinType joinType() const
     {
         return m_joinType;
     }
 
-    constexpr bool inVanillaMatch() const
+    bool inVanillaMatch() const
     {
         switch (m_joinType) {
         case JoinType::WorldwideVersusRace:
