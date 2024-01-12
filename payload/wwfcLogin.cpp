@@ -319,7 +319,7 @@ static void SendAuthTokenSignature(
 // Always check if the SAKE server has the latest friend info, as it can get
 // outdated when switching between servers (such as Wiimmfi)
 WWFC_DEFINE_PATCH = {Patch::WriteASM(
-    WWFC_PATCH_LEVEL_CRITICAL, //
+    WWFC_PATCH_LEVEL_SUPPORT | WWFC_PATCH_LEVEL_BUGFIX, //
     RMCXD_PORT(0x80672FCC, 0x8066B868, 0x80672638, 0x80661324), //
     1, ASM_LAMBDA(b 0x70)
 )};
@@ -330,9 +330,22 @@ WWFC_DEFINE_PATCH = {Patch::WriteASM(
 
 // Same patch as above but for the Mario Kart Channel
 WWFC_DEFINE_PATCH = {Patch::WriteASM(
-    WWFC_PATCH_LEVEL_CRITICAL, //
+    WWFC_PATCH_LEVEL_SUPPORT | WWFC_PATCH_LEVEL_BUGFIX, //
     RMCXN_PORT(0x801FD08C, 0x801FCFEC, 0x801FCE24, 0x801FD87C), //
     1, ASM_LAMBDA(b 0x6C)
+)};
+
+#endif
+
+#if RMC
+
+// Remove the needless wait during the login friend process. It doesn't seem to
+// make a difference now due to the fast way we handle friend authorization.
+// TODO: This could apply to other games as well
+WWFC_DEFINE_PATCH = {Patch::WriteASM(
+    WWFC_PATCH_LEVEL_SUPPORT, //
+    RMCXD_PORT(0x800CE710, 0x800CE670, 0x800CE630, 0x800CE770), //
+    1, ASM_LAMBDA(nop)
 )};
 
 #endif
