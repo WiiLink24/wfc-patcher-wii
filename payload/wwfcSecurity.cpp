@@ -200,7 +200,7 @@ IsPacketSizeValid(mkw::Net::RACEPacket::EType packetType, u8 packetSize)
         return true;
     }
     case RACEPacket::EVENT: {
-        if (packetSize < 0x18 ||
+        if (packetSize < sizeof(EVENTHandler::Packet::eventInfo) ||
             packetSize > packetBufferSizes[RACEPacket::EVENT]) {
             return false;
         }
@@ -424,15 +424,22 @@ IsITEMPacketDataValid(const void* packet, u8 packetSize, u8 /* playerAid */)
 }
 
 static bool IsEVENTPacketDataValid(
-    const void* packet, u8 /* packetSize */, u8 /* playerAid */
+    const void* packet, u8 packetSize, u8 /* playerAid */
 )
 {
     using namespace mkw::Net;
+    using namespace mkw::System;
+
+    if (static_cast<RKScene::SceneID>(
+            RKSystem::Instance().sceneManager()->getCurrentSceneID()
+        ) != RKScene::SceneID::Race) {
+        return true;
+    }
 
     const EVENTHandler::Packet* eventPacket =
         reinterpret_cast<const EVENTHandler::Packet*>(packet);
 
-    if (!eventPacket->isEventInfoValid()) {
+    if (!eventPacket->isValid(packetSize)) {
         return false;
     }
 

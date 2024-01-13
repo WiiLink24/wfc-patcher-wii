@@ -141,6 +141,21 @@ class USERHandler
 {
 public:
     struct Packet {
+        bool isMiiGroupCountValid() const
+        {
+            return miiGroupCount == maxMiis;
+        }
+
+        bool isVersusRatingValid() const
+        {
+            return vr >= minRating && vr <= maxRating;
+        }
+
+        bool isBattleRatingValid() const
+        {
+            return br >= minRating && br <= maxRating;
+        }
+
         /* 0x00 */ u32 miiGroupBitflags;
         /* 0x04 */ u16 miiGroupCount;
         /* 0x06 */ u16 _0x06;
@@ -157,21 +172,6 @@ public:
         /* 0xBC */ char regionChar;
         /* 0xBD */ u8 regionId;
         /* 0xBE */ u16 _0xBE;
-
-        bool isMiiGroupCountValid() const
-        {
-            return miiGroupCount == maxMiis;
-        }
-
-        bool isVersusRatingValid() const
-        {
-            return vr >= minRating && vr <= maxRating;
-        }
-
-        bool isBattleRatingValid() const
-        {
-            return br >= minRating && br <= maxRating;
-        }
 
     private:
         static const u16 maxMiis = 2;
@@ -226,33 +226,54 @@ static_assert(sizeof(ITEMHandler) == 0x184);
 class EVENTHandler
 {
 public:
-    struct EventInfo {
-        /* 0x00 */ u8 : 3;
-        /* 0x00 */ u8 itemObject : 5;
-    };
-
-    static_assert(sizeof(EventInfo) == 0x01);
-
     struct Packet {
-        /* 0x00 */ EventInfo eventInfo[0x18];
-        /* 0x18 */ u8 _18[0xF8 - 0x18];
+        struct EventInfo {
+            bool isItemObjectValid() const
+            {
+                using namespace mkw::Item;
 
-        bool isEventInfoValid() const
-        {
-            for (size_t n = 0; n < sizeof(eventInfo); n++) {
-                mkw::Item::ItemObject itemObject =
-                    static_cast<mkw::Item::ItemObject>(eventInfo[n].itemObject);
-
-                if (!mkw::Item::IsItemObjectValid(itemObject)) {
-                    return false;
-                }
+                return IsItemObjectValid(static_cast<ItemObject>(itemObject));
             }
 
-            return true;
+            u8 getEventDataSize() const
+            {
+                return GetEventDataSize(itemObject, eventType);
+            }
+
+            /* 0x00 */ u8 eventType : 3;
+            /* 0x00 */ u8 itemObject : 5;
+        };
+
+        static_assert(sizeof(EventInfo) == 0x01);
+
+        bool isValid(u8 packetSize) const
+        {
+            u32 expectedPacketSize = sizeof(eventInfo);
+
+            for (size_t n = 0; n < sizeof(eventInfo); n++) {
+                if (!eventInfo[n].isItemObjectValid()) {
+                    return false;
+                }
+
+                expectedPacketSize += eventInfo[n].getEventDataSize();
+            }
+
+            return expectedPacketSize == packetSize;
         }
+
+        /* 0x00 */ EventInfo eventInfo[0x18];
+        /* 0x18 */ u8 _18[0xF8 - 0x18];
     };
 
     static_assert(sizeof(Packet) == 0xF8);
+
+    static u8 GetEventDataSize(u8 itemObject, u8 eventType)
+    {
+        LONGCALL u8 GetEventDataSize(u8 itemObject, u8 eventType)
+            AT(RMCXD_PORT(0x8079D76C, 0x80794760, 0x8079CDD8, 0x8078BB2C));
+
+        return GetEventDataSize(itemObject, eventType);
+    }
 
     static EVENTHandler* Instance()
     {
