@@ -48,8 +48,14 @@ enum class ItemObject {
     NoObject = 0x10,
 };
 
+enum class UseType {
+    Use = 0,
+    Throw = 1,
+};
+
 struct ItemBehaviourEntry {
-    /* 0x00 */ u8 _00[0x18 - 0x00];
+    /* 0x00 */ u8 _00[0x14 - 0x00];
+    /* 0x14 */ UseType useType;
     /* 0x18 */ void (*useFunction)(void* kartItem);
 };
 
@@ -59,11 +65,37 @@ extern ItemBehaviourEntry itemBehaviourTable[0x13] AT(
     RMCXD_PORT(0x809C36A0, 0x809BEE98, 0x809C2700, 0x809B1CE0)
 );
 
+static bool CanUseItem(ItemBox item)
+{
+    if (item == ItemBox::NoItem) {
+        return false;
+    }
+
+    u8 itemToUse = static_cast<u8>(item);
+
+    return itemBehaviourTable[itemToUse].useType == UseType::Use;
+}
+
+static bool CanThrowItem(ItemBox item)
+{
+    if (item == ItemBox::NoItem) {
+        return false;
+    }
+
+    u8 itemToThrow = static_cast<u8>(item);
+
+    return itemBehaviourTable[itemToThrow].useType == UseType::Throw;
+}
+
 static bool CanTrailItem(ItemBox item)
 {
-    u8 trailedItem = static_cast<u8>(item);
+    if (item == ItemBox::NoItem) {
+        return false;
+    }
 
-    return !itemBehaviourTable[trailedItem].useFunction;
+    u8 itemToTrail = static_cast<u8>(item);
+
+    return !itemBehaviourTable[itemToTrail].useFunction;
 }
 
 static bool IsHeldItemValidVS(ItemBox item)
@@ -157,6 +189,60 @@ static bool IsItemObjectValid(ItemObject itemObject)
     }
     default: {
         return false;
+    }
+    }
+}
+
+static ItemBox ItemObjectToItemBox(ItemObject itemObject)
+{
+    switch (itemObject) {
+    case ItemObject::GreenShell: {
+        return ItemBox::GreenShell;
+    }
+    case ItemObject::RedShell: {
+        return ItemBox::RedShell;
+    }
+    case ItemObject::Banana: {
+        return ItemBox::Banana;
+    }
+    case ItemObject::Mushroom: {
+        return ItemBox::Mushroom;
+    }
+    case ItemObject::Star: {
+        return ItemBox::Star;
+    }
+    case ItemObject::BlueShell: {
+        return ItemBox::BlueShell;
+    }
+    case ItemObject::Lightning: {
+        return ItemBox::Lightning;
+    }
+    case ItemObject::FakeItemBox: {
+        return ItemBox::FakeItemBox;
+    }
+    case ItemObject::MegaMushroom: {
+        return ItemBox::MegaMushroom;
+    }
+    case ItemObject::Bob_omb: {
+        return ItemBox::Bob_omb;
+    }
+    case ItemObject::Blooper: {
+        return ItemBox::Blooper;
+    }
+    case ItemObject::POWBlock: {
+        return ItemBox::POWBlock;
+    }
+    case ItemObject::GoldenMushroom: {
+        return ItemBox::GoldenMushroom;
+    }
+    case ItemObject::BulletBill: {
+        return ItemBox::BulletBill;
+    }
+    case ItemObject::ThunderCloud: {
+        return ItemBox::ThunderCloud;
+    }
+    default: {
+        return ItemBox::NoItem;
     }
     }
 }
