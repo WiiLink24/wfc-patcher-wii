@@ -232,6 +232,7 @@ public:
                 NoEvent = 0,
                 ItemUsed = 1,
                 ItemThrown = 2,
+                ItemDropped = 7,
             };
 
             bool isItemObjectValid() const
@@ -261,6 +262,9 @@ public:
                 case EventType::ItemThrown: {
                     return CanThrowItem(ItemObjectToItemBox(item));
                 }
+                case EventType::ItemDropped: {
+                    return CanDropItemObject(item);
+                }
                 default: {
                     return true;
                 }
@@ -277,6 +281,17 @@ public:
         };
 
         static_assert(sizeof(EventInfo) == 0x01);
+
+        bool containsInvalidItemObject() const
+        {
+            for (size_t n = 0; n < sizeof(eventInfo); n++) {
+                if (!eventInfo[n].isItemObjectValid()) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
 
         bool isValid(u8 packetSize) const
         {

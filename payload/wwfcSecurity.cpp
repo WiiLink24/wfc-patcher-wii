@@ -439,6 +439,16 @@ static bool IsEVENTPacketDataValid(
     const EVENTHandler::Packet* eventPacket =
         reinterpret_cast<const EVENTHandler::Packet*>(packet);
 
+    // Always ensure that the packet does not contain any invalid item objects,
+    // as this can cause a buffer overflow to occur.
+    if (eventPacket->containsInvalidItemObject()) {
+        return false;
+    }
+
+    if (!RKNetController::Instance()->inVanillaMatch()) {
+        return true;
+    }
+
     if (!eventPacket->isValid(packetSize)) {
         return false;
     }
