@@ -228,6 +228,12 @@ class EVENTHandler
 public:
     struct Packet {
         struct EventInfo {
+            enum class EventType : u8 {
+                NoEvent = 0,
+                ItemUsed = 1,
+                ItemThrown = 2,
+            };
+
             bool isItemObjectValid() const
             {
                 using namespace mkw::Item;
@@ -235,12 +241,38 @@ public:
                 return IsItemObjectValid(static_cast<ItemObject>(itemObject));
             }
 
+            bool isValid() const
+            {
+                using namespace mkw::Item;
+
+                if (!isItemObjectValid()) {
+                    return false;
+                }
+
+                ItemObject item = static_cast<ItemObject>(itemObject);
+
+                switch (eventType) {
+                case EventType::NoEvent: {
+                    return item == ItemObject::NoObject;
+                }
+                case EventType::ItemUsed: {
+                    return CanUseItem(ItemObjectToItemBox(item));
+                }
+                case EventType::ItemThrown: {
+                    return CanThrowItem(ItemObjectToItemBox(item));
+                }
+                default: {
+                    return true;
+                }
+                }
+            }
+
             u8 getEventDataSize() const
             {
                 return GetEventDataSize(itemObject, eventType);
             }
 
-            /* 0x00 */ u8 eventType : 3;
+            /* 0x00 */ EventType eventType : 3;
             /* 0x00 */ u8 itemObject : 5;
         };
 
@@ -251,7 +283,7 @@ public:
             u32 expectedPacketSize = sizeof(eventInfo);
 
             for (size_t n = 0; n < sizeof(eventInfo); n++) {
-                if (!eventInfo[n].isItemObjectValid()) {
+                if (!eventInfo[n].isValid()) {
                     return false;
                 }
 
@@ -267,10 +299,12 @@ public:
 
     static_assert(sizeof(Packet) == 0xF8);
 
-    static u8 GetEventDataSize(u8 itemObject, u8 eventType)
+    static u8
+    GetEventDataSize(u8 itemObject, Packet::EventInfo::EventType eventType)
     {
-        LONGCALL u8 GetEventDataSize(u8 itemObject, u8 eventType)
-            AT(RMCXD_PORT(0x8079D76C, 0x80794760, 0x8079CDD8, 0x8078BB2C));
+        LONGCALL u8 GetEventDataSize(
+            u8 itemObject, Packet::EventInfo::EventType eventType
+        ) AT(RMCXD_PORT(0x8079D76C, 0x80794760, 0x8079CDD8, 0x8078BB2C));
 
         return GetEventDataSize(itemObject, eventType);
     }
