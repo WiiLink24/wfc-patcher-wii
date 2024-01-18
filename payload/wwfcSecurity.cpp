@@ -24,6 +24,7 @@ WWFC_DEFINE_PATCH = {
             mr        r4, r28;
             mr        r3, r27;
             ble+      L_ValidLength;
+
             addi      r9, r9, -0x1C; // return -1
             mtctr     r9;
             bctr;
