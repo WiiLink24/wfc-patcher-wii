@@ -67,6 +67,32 @@ WWFC_DEFINE_PATCH = {
     ),
 };
 
+// Prevent the game from crashing if a Thwomp is damaged before it touches the
+// ground
+WWFC_DEFINE_PATCH = {
+    Patch::CallWithCTR(
+        WWFC_PATCH_LEVEL_BUGFIX,
+        RMCXD_PORT(0x80760A88, 0x80753B3C, 0x807600F4, 0x8074EE48), //
+        ASM_LAMBDA(
+            // clang-format off
+            cmpwi     r3, 0;
+            bne+      L_ValidPointer;
+
+            mflr      r12;
+            addi      r12, r12, 0x28; // lwz       r0, 0x14(r1)
+            mtctr     r12;
+            bctr;
+
+        L_ValidPointer:
+            lwz       r12, 0(r3);
+            lwz       r12, 0x08(r12);
+            mtctr     r12;
+            bctr;
+            // clang-format on
+        )
+    ),
+};
+
 #endif
 
 } // namespace wwfc::AntiFreeze
