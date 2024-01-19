@@ -98,6 +98,32 @@ static bool CanTrailItem(ItemBox item)
     return !itemBehaviourTable[itemToTrail].useFunction;
 }
 
+static bool CanTrailItemObject(ItemObject itemObject)
+{
+    switch (itemObject) {
+    case ItemObject::GreenShell... ItemObject::Banana:
+    case ItemObject::FakeItemBox:
+    case ItemObject::Bob_omb: {
+        return true;
+    }
+    default: {
+        return false;
+    }
+    }
+}
+
+static bool CanDropItemObject(ItemObject itemObject)
+{
+    switch (itemObject) {
+    case ItemObject::GreenShell... ItemObject::BulletBill: {
+        return true;
+    }
+    default: {
+        return false;
+    }
+    }
+}
+
 static bool IsHeldItemValidVS(ItemBox item)
 {
     switch (item) {
