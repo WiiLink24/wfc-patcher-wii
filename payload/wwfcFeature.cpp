@@ -1,4 +1,4 @@
-#include "import/mkwNet.hpp"
+#include "import/mkwNetSelectHandler.hpp"
 #include "import/mkwUtil.hpp"
 
 namespace wwfc::Feature
@@ -7,22 +7,22 @@ namespace wwfc::Feature
 #if RMC
 
 static void DecideEngineClass(
-    mkw::Net::SELECTHandler* selectHandler, mkw::Util::Random* random
+    mkw::Net::SelectHandler* selectHandler, mkw::Util::Random* random
 )
 {
     using namespace mkw::Net;
 
-    SELECTHandler::Packet& sendPacket = selectHandler->sendPacket();
+    SelectHandler::Packet& sendPacket = selectHandler->sendPacket();
 
     if (random->nextInt(100) < 65) {
-        sendPacket.engineClass = SELECTHandler::Packet::EngineClass::e150cc;
+        sendPacket.engineClass = SelectHandler::Packet::EngineClass::e150cc;
     } else {
         sendPacket.engineClass =
-            SELECTHandler::Packet::EngineClass::eMirrorMode;
+            SelectHandler::Packet::EngineClass::eMirrorMode;
     }
 }
 
-// Remove the 100cc engine class from Worldwide Versus Races
+// Remove the 100cc engine class from vanilla matches
 WWFC_DEFINE_PATCH = {
     Patch::CallWithCTR( //
         WWFC_PATCH_LEVEL_PARITY, //
@@ -30,7 +30,7 @@ WWFC_DEFINE_PATCH = {
         [](mkw::Util::Random* random) -> void {
             using namespace mkw::Net;
 
-            SELECTHandler* selectHandler = SELECTHandler::Instance();
+            SelectHandler* selectHandler = SelectHandler::Instance();
             if (RKNetController::Instance()->inVanillaMatch()) {
                 DecideEngineClass(selectHandler, random);
             } else {

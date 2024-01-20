@@ -16,7 +16,7 @@ public:
             Random * random, s32 type
         ) AT(RMCXD_PORT(0x80555538, 0x8054F518, 0x80554EB8, 0x80543590));
 
-        return dt(random, type);
+        return dt(this, type);
     }
 
     u32 nextInt()
