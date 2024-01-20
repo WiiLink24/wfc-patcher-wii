@@ -9,6 +9,7 @@
 #include "wwfcLibC.cpp"
 #include "wwfcLogin.cpp"
 #include "wwfcMii.cpp"
+#include "wwfcNatneg.cpp"
 #include "wwfcPatch.cpp"
 #include "wwfcPayload.cpp"
 #include "wwfcSecurity.cpp"
