@@ -1,13 +1,13 @@
 #pragma once
 
-#include "import/mkwNet.hpp"
+#include "import/mkwNetUserHandler.hpp"
 
 namespace wwfc::GPReport
 {
 
 #if RMC
 
-void ReportUSER(mkw::Net::USERHandler::Packet* packet);
+void ReportUser(mkw::Net::UserHandler::Packet* packet);
 
 #endif
 
