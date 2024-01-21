@@ -38,6 +38,10 @@ LONGCALL s32 IOS_Ioctlv( //
     s32 fd, u32 cmd, u32 in_count, u32 out_count, IOVector* vec
 ) AT(ADDRESS_IOS_Ioctlv);
 
+LONGCALL bool SCGetProductSN( //
+    u32* serial
+) AT(ADDRESS_SCGetProductSN);
+
 #ifdef __cplusplus
 }
 }

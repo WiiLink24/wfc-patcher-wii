@@ -74,6 +74,12 @@ def parse_file(file_path, title_name):
         exit('missing strcmp :( ' + title_name)
     ADDRESS_strcmp = dol_to_real(hdr, index - 0x10)
 
+    # find OSGetTime
+    index = dol.find(b'\x7C\x6D\x42\xE6\x7C\x8C\x42\xE6\x7C\xAD\x42\xE6\x7C\x03\x28\x00\x40\x82\xFF\xF0\x4E\x80\x00\x20')
+    if index == -1:
+        exit('missing OSGetTime :( ' + title_name)
+    ADDRESS_OSGetTime = dol_to_real(hdr, index)
+
     index = dol.find('https://naswii.nintendowifi.net/ac'.encode('ascii'))
     if index == -1:
         exit('missing naswii url :( ' + title_name)
@@ -162,7 +168,7 @@ def parse_file(file_path, title_name):
         auth_func_size = 0x8C8
 
         ADDRESS_DWC_AUTH_ADD_MACADDR = ADDRESS_DWCi_Auth_SendRequest + (0x80323CF8 - 0x803238B8)
-        ADDRESS_DWC_AUTH_ADD_CSNUM = ADDRESS_DWCi_Auth_SendRequest + (0x80323CF8 - 0x803238B8)
+        ADDRESS_DWC_AUTH_ADD_CSNUM = ADDRESS_DWCi_Auth_SendRequest + (0x80323EEC - 0x803238B8)
 
         version = 'PB'
         index = real_to_dol(hdr, ADDRESS_DWCi_Auth_SendRequest)
@@ -667,23 +673,205 @@ def parse_file(file_path, title_name):
             exit(title_name + " WHAT DNS PRINT CACHE TGHING NOT FOUND")
         ADDRESS_SKIP_DNS_CACHE_CONTINUE = dol_to_real(hdr, index+next_index+0xC)
 
+    # find SOSocket
+    # 40 82 00 7C 2C 1C 00 17 40 82 00 0C
+    index = dol.find(b'\x40\x82\x00\x7C\x2C\x1C\x00\x17\x40\x82\x00\x0C')
+    ADDRESS_SOSocket = 0
+    if index == -1:
+        exit('Missing find SOSocket ' + title_name)
+    if dol[index-0x54:index-0x50] == b'\x94\x21\xFF\xE0':
+        ADDRESS_SOSocket = dol_to_real(hdr, index - 0x54)
+    elif dol[index-0x38:index-0x34] == b'\x94\x21\xFF\xE0':
+        ADDRESS_SOSocket = dol_to_real(hdr, index - 0x38)
+    else:
+        exit('Missing verify SOSocket ' + title_name)
+
+    # find SOClose
+    # 40 82 00 64 38 60 00 0C 38 80 00 20
+    index2 = dol[index:].find(b'\x40\x82\x00\x64\x38\x60\x00\x0C\x38\x80\x00\x20')
+    ADDRESS_SOClose = 0
+    if index2 == -1:
+        exit('Missing find SOClose ' + title_name)
+    index = index + index2
+    assert(dol[index-0x28:index-0x24] == b'\x94\x21\xFF\xE0')
+    ADDRESS_SOClose = dol_to_real(hdr, index - 0x28)
+
+    # SOiAlloc and SOiFree
+    index -= 0x28
+    ADDRESS_SOiAlloc = decode_bl(dol, index + 0x34)
+    ADDRESS_SOiFree = decode_bl(dol, index + 0x7C)
+
+    # find SOBind
+    # 80 61 00 08 7F C5 F3 78 38 80 00 02 38 C0 00 24 38 E0 00 00 39 00 00 00
+    index2 = dol[index:].find(b'\x80\x61\x00\x08\x7F\xC5\xF3\x78\x38\x80\x00\x02\x38\xC0\x00\x24\x38\xE0\x00\x00\x39\x00\x00\x00')
+    ADDRESS_SOBind = 0
+    if index2 == -1:
+        exit('Missing find SOBind ' + title_name)
+    index = index + index2
+    if dol[index-0x90:index-0x8C] == b'\x94\x21\xFF\xE0':
+        ADDRESS_SOBind = dol_to_real(hdr, index - 0x90)
+    elif dol[index-0x8C:index-0x88] == b'\x94\x21\xFF\xE0':
+        ADDRESS_SOBind = dol_to_real(hdr, index - 0x8C)
+    else:
+        exit('Missing verify SOBind ' + title_name)
+
+    # find SOConnect
+    # 80 61 00 08 7F C5 F3 78 38 80 00 04 38 C0 00 24 38 E0 00 00 39 00 00 00
+    index2 = dol[index:].find(b'\x80\x61\x00\x08\x7F\xC5\xF3\x78\x38\x80\x00\x04\x38\xC0\x00\x24\x38\xE0\x00\x00\x39\x00\x00\x00')
+    ADDRESS_SOConnect = 0
+    if index2 == -1:
+        exit('Missing find SOConnect ' + title_name)
+    index = index + index2
+    if dol[index-0x90:index-0x8C] == b'\x94\x21\xFF\xE0':
+        ADDRESS_SOConnect = dol_to_real(hdr, index - 0x90)
+    elif dol[index-0x8C:index-0x88] == b'\x94\x21\xFF\xE0':
+        ADDRESS_SOConnect = dol_to_real(hdr, index - 0x8C)
+
+    # find SOGetSockName
+    # 89 1B 00 00 7F 87 E3 78 38 80 00 07 38 C0 00 04
+    index2 = dol[index:].find(b'\x89\x1B\x00\x00\x7F\x87\xE3\x78\x38\x80\x00\x07\x38\xC0\x00\x04')
+    ADDRESS_SOGetSockName = 0
+    if index2 == -1:
+        exit('Missing find SOGetSockName ' + title_name)
+    index = index + index2
+    if dol[index-0x98:index-0x94] == b'\x94\x21\xFF\xD0':
+        ADDRESS_SOGetSockName = dol_to_real(hdr, index - 0x98)
+    elif dol[index-0x94:index-0x90] == b'\x94\x21\xFF\xD0':
+        ADDRESS_SOGetSockName = dol_to_real(hdr, index - 0x94)
+    else:
+        exit('Missing verify SOGetSockName ' + title_name)
+
+    # find SORecvFrom
+    # 7C 8A 23 78 7C A9 2B 78 7C C0 33 78 7C E8 3B 78 7C 64 1B 78 7D 45 53 78 7D 26 4B 78 7C 07 03 78 38 60 00 00
+    index2 = dol[index:].find(b'\x7C\x8A\x23\x78\x7C\xA9\x2B\x78\x7C\xC0\x33\x78\x7C\xE8\x3B\x78\x7C\x64\x1B\x78\x7D\x45\x53\x78\x7D\x26\x4B\x78\x7C\x07\x03\x78\x38\x60\x00\x00')
+    ADDRESS_SORecvFrom = 0
+    if index2 == -1:
+        exit('Missing find SORecvFrom ' + title_name)
+    index = index + index2
+    ADDRESS_SORecvFrom = dol_to_real(hdr, index)
+
+    ADDRESS_SORecv = 0
+    if dol[index+0x28:index+0x2C] == b'\x7C\x88\x23\x78':
+        ADDRESS_SORecv = ADDRESS_SORecvFrom + 0x28
+        index = index + 0x28
+    elif dol[index+0x28:index+0x34] == b'\x00\x00\x00\x00\x00\x00\x00\x00\x7C\x88\x23\x78':
+        ADDRESS_SORecv = ADDRESS_SORecvFrom + 0x30
+        index = index + 0x30
+    else:
+        exit('Missing verify SORecv ' + title_name)
+
+    ADDRESS_SOSendTo = 0
+    if dol[index+0x24:index+0x28] == b'\x7C\x8A\x23\x78':
+        ADDRESS_SOSendTo = ADDRESS_SORecv + 0x24
+        index = index + 0x24
+    elif dol[index+0x24:index+0x34] == b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x7C\x8A\x23\x78':
+        ADDRESS_SOSendTo = ADDRESS_SORecv + 0x30
+        index = index + 0x30
+    else:
+        exit('Missing verify SOSendTo ' + title_name)
+
+    ADDRESS_SOSend = 0
+    if dol[index+0x28:index+0x2C] == b'\x7C\x88\x23\x78':
+        ADDRESS_SOSend = ADDRESS_SOSendTo + 0x28
+        index = index + 0x28
+    elif dol[index+0x28:index+0x34] == b'\x00\x00\x00\x00\x00\x00\x00\x00\x7C\x88\x23\x78':
+        ADDRESS_SOSend = ADDRESS_SOSendTo + 0x30
+        index = index + 0x30
+    else:
+        exit('Missing verify SOSend ' + title_name)
+
+    # find SOFcntl
+    # 39 61 00 98 38 01 00 08 3D 80 02 00
+    index2 = dol[index:].find(b'\x39\x61\x00\x98\x38\x01\x00\x08\x3D\x80\x02\x00')
+    ADDRESS_SOFcntl = 0
+    if index2 == -1:
+        exit('Missing find SOFcntl ' + title_name)
+    index = index + index2
+    if dol[index-0x48:index-0x44] == b'\x94\x21\xFF\x70':
+        ADDRESS_SOFcntl = dol_to_real(hdr, index - 0x48)
+    elif dol[index-0x4C:index-0x48] == b'\x94\x21\xFF\x70':
+        ADDRESS_SOFcntl = dol_to_real(hdr, index - 0x4C)
+    else:
+        exit('Missing verify SOFcntl ' + title_name)
+
+    # find SOShutdown
+    # 40 82 00 0C 3B E0 FF CF 48 00 00 3C 93 A3 00 00
+    index2 = dol[index:].find(b'\x40\x82\x00\x0C\x3B\xE0\xFF\xCF\x48\x00\x00\x3C\x93\xA3\x00\x00')
+    ADDRESS_SOShutdown = 0
+    if index2 == -1:
+        exit('Missing find SOShutdown ' + title_name)
+    index = index + index2
+    if dol[index-0x48:index-0x44] == b'\x94\x21\xFF\xE0':
+        ADDRESS_SOShutdown = dol_to_real(hdr, index - 0x48)
+    else:
+        exit('Missing verify SOShutdown ' + title_name)
+
+    # find SOPoll
+    # 1F BA 00 0C 38 60 00 0C 38 1D 00 3F
+    index2 = dol[index:].find(b'\x1F\xBA\x00\x0C\x38\x60\x00\x0C\x38\x1D\x00\x3F')
+    ADDRESS_SOPoll = 0
+    if index2 == -1:
+        exit('Missing find SOPoll ' + title_name)
+    index = index + index2
+    if dol[index-0x48:index-0x44] == b'\x94\x21\xFF\xD0':
+        ADDRESS_SOPoll = dol_to_real(hdr, index - 0x48)
+    else:
+        exit('Missing verify SOPoll ' + title_name)
+
     # find SOInetAtoN
-    index = dol.find(b'\x40\x82\x00\x0C\x3B\xC0\xFF\xE4\x48\x00\x00\xA4')
+    index2 = dol[index:].find(b'\x40\x82\x00\x0C\x3B\xC0\xFF\xE4\x48\x00\x00\xA4')
     ADDRESS_SOInetAtoN = 0
     if index == -1:
-        print('Missing find SOInetAtoN ' + title_name)
-    else:
-        assert(dol[index-0x38:index-0x34] == b'\x94\x21\xFF\xD0')
-        ADDRESS_SOInetAtoN = dol_to_real(hdr, index - 0x38)
+        exit('Missing find SOInetAtoN ' + title_name)
+    index = index + index2
+    assert(dol[index-0x38:index-0x34] == b'\x94\x21\xFF\xD0')
+    ADDRESS_SOInetAtoN = dol_to_real(hdr, index - 0x38)
 
     # find SOGetAddrInfo
-    index = dol.find(b'\x38\x63\x00\x01\x38\x63\x00\x1F\x38\x1D\x00\x1F\x54\x64\x00\x34')
+    index2 = dol[index:].find(b'\x38\x63\x00\x01\x38\x63\x00\x1F\x38\x1D\x00\x1F\x54\x64\x00\x34')
     ADDRESS_SOGetAddrInfo = 0
     if index == -1:
-        print('Missing find SOGetAddrInfo ' + title_name)
+        exit('Missing find SOGetAddrInfo ' + title_name)
+    index = index + index2
+    assert(dol[index-0x6C:index-0x68] == b'\x94\x21\xFF\xC0')
+    ADDRESS_SOGetAddrInfo = dol_to_real(hdr, index - 0x6C)
+
+    # find SOFreeAddrInfo
+    index = index + 0x278
+    ADDRESS_SOFreeAddrInfo = 0
+    if dol[index:index+4] == b'\x94\x21\xFF\xF0':
+        ADDRESS_SOFreeAddrInfo = dol_to_real(hdr, index)
+    # or 4E 80 00 20 00 00 00 00 00 00 00 00 94 21 FF F0
+    elif dol[index:index+0x10] == b'\x4E\x80\x00\x20\x00\x00\x00\x00\x00\x00\x00\x00\x94\x21\xFF\xF0':
+        ADDRESS_SOFreeAddrInfo = dol_to_real(hdr, index+0xC)
     else:
-        assert(dol[index-0x6C:index-0x68] == b'\x94\x21\xFF\xC0')
-        ADDRESS_SOGetAddrInfo = dol_to_real(hdr, index - 0x6C)
+        exit('Missing verify SOFreeAddrInfo ' + title_name)
+
+    # find SOSetSockOpt
+    # 80 61 00 08 7F C5 F3 78 38 80 00 09 38 C0 00 24 38 E0 00 00 39 00 00 00
+    index2 = dol[index:].find(b'\x80\x61\x00\x08\x7F\xC5\xF3\x78\x38\x80\x00\x09\x38\xC0\x00\x24\x38\xE0\x00\x00\x39\x00\x00\x00')
+    ADDRESS_SOSetSockOpt = 0
+    if index2 == -1:
+        exit('Missing find SOSetSockOpt ' + title_name)
+    index = index + index2
+    if dol[index-0xB0:index-0xAC] == b'\x94\x21\xFF\xD0':
+        ADDRESS_SOSetSockOpt = dol_to_real(hdr, index - 0xB0)
+    elif dol[index-0xA8:index-0xA4] == b'\x94\x21\xFF\xD0':
+        ADDRESS_SOSetSockOpt = dol_to_real(hdr, index - 0xA8)
+    else:
+        exit('Missing verify SOSetSockOpt ' + title_name)
+
+    # find SOGetInterfaceOpt
+    # 40 82 01 8C 38 19 EF FF 28 00 00 01 41 81 00 0C
+    index2 = dol[index:].find(b'\x40\x82\x01\x8C\x38\x19\xEF\xFF\x28\x00\x00\x01\x41\x81\x00\x0C')
+    ADDRESS_SOGetInterfaceOpt = 0
+    if index2 == -1:
+        exit('Missing find SOGetInterfaceOpt ' + title_name)
+    index = index + index2
+    if dol[index-0x38:index-0x34] == b'\x94\x21\xFF\xD0':
+        ADDRESS_SOGetInterfaceOpt = dol_to_real(hdr, index - 0x38)
+    else:
+        exit('Missing verify SOGetInterfaceOpt ' + title_name)
 
     old_index = 0
     didskipent = False
@@ -1014,6 +1202,24 @@ def parse_file(file_path, title_name):
         assert(dol[index-0x20:index-0x1C] == b'\x94\x21\xFF\xD0')
         ADDRESS_sendto = dol_to_real(hdr, index - 0x20)
 
+
+    # find stpLoginCnt
+    ADDRESS_stpLoginCnt = 0
+    d = real_to_dol(hdr, ADDRESS_DWCi_GetUserData)
+    if dol[d:d+2] == b'\x80\x6D':
+        offset = struct.unpack('>H', dol[d+2:d+4])[0]
+        if offset & 0x8000:
+            offset -= 0x10000
+        ADDRESS_stpLoginCnt = ADDRESS_R13_BASE + offset
+    elif dol[d:d+2] == b'\x3C\x60' and dol[d+4:d+6] == b'\x80\x63':
+        ha = struct.unpack('>H', dol[d+2:d+4])[0]
+        lo = struct.unpack('>H', dol[d+6:d+8])[0]
+        if lo & 0x8000:
+            ha -= 1
+        ADDRESS_stpLoginCnt = (ha << 16) | lo
+    else:
+        exit('bad stpLoginCnt access ' + title_name + " " + dol[d:d+12].hex())
+
     # find stpFriendCnt
     ADDRESS_stpFriendCnt = 0
     index = dol.find(b'\x48\x00\x00\x0C\x3B\xE0\x00\x06\x38\x60\xFF\xEC\x80\x0D')
@@ -1053,6 +1259,55 @@ def parse_file(file_path, title_name):
     else:
         print('bad s_auth_result access ' + title_name)
 
+    # find natneg wait patch
+    ADDRESS_NATNEG_SET_COMPLETED_DELAY = 0
+    index = dol.find(b'\x38\x03\x13\x88\x90\x1F\x00\x2C\x48\x00\x00\xF4\x88\x1E\x00\x13')
+    if index != -1:
+        ADDRESS_NATNEG_SET_COMPLETED_DELAY = dol_to_real(hdr, index)
+    else:
+        index = dol.find(b'\x38\x03\x13\x88\x90\x1E\x00\x2C\x2C\x05\xFF\xFF\x41\x82\x01\x08')
+        if index != -1:
+            ADDRESS_NATNEG_SET_COMPLETED_DELAY = dol_to_real(hdr, index)
+        else:
+            # some games don't have this code I guess?
+            # print('No find natneg wait patch ' + title_name)
+            pass
+
+    # find gti2CreateSocket
+    if False:
+        ADDRESS_gti2CreateSocket = 0
+        index = dol.find(b'\x2C\x1C\x00\x00\x40\x82\x00\x08\x3F\x80\x00\x01\x2C\x1B\x00\x00\x40\x82\x00\x08\x3F\x60\x00\x01\x7F\xE3\xFB\x78\x38\x81\x00\x10\x38\xA1\x00\x08')
+        if index != -1:
+            if dol[index-0x30:index-0x2C] != b'\x94\x21\xFF\xC0':
+                exit('bad gti2CreateSocket ' + title_name)
+            ADDRESS_gti2CreateSocket = dol_to_real(hdr, index-0x30)
+        else:
+            exit('No find gti2CreateSocket ' + title_name)
+
+    # find DWCi_GT2Startup patch
+    ADDRESS_GT2_PORT_PATCH = 0
+    GT2_PORT_PATCH_REG = 0
+    match = re.search(b'\x38\xE7..(\x80\xBF\x00\x14\x80\xDF\x00\x18|\x80\xBE\x00\x14\x80\xDE\x00\x18)[\x48\x4B]', dol, flags=re.DOTALL)
+    if match == None:
+        exit('No find DWCi_GT2Startup patch ' + title_name)
+    else:
+        if match.group(1) == b'\x80\xBF\x00\x14\x80\xDF\x00\x18':
+            GT2_PORT_PATCH_REG = 31
+            
+        elif match.group(1) == b'\x80\xBE\x00\x14\x80\xDE\x00\x18':
+            GT2_PORT_PATCH_REG = 30
+
+        assert(dol[match.start(0)+0x18:match.start(0)+0x20] == b'\x2C\x03\x00\x00\x41\x82\x00\x0C')
+        ADDRESS_GT2_PORT_PATCH = dol_to_real(hdr, match.start(0)+4)
+
+    ADDRESS_gt2AddressToString = decode_bl(dol, match.start(0)-0x10)
+    ADDRESS_gt2CreateSocket = decode_bl(dol, match.start(0)+0xC)
+
+    # get SCGetProductSN
+    d = real_to_dol(hdr, ADDRESS_DWC_AUTH_ADD_CSNUM)
+    ADDRESS_SCGetProductSN = decode_bl(dol, d+0x14)
+
+
     def fmthex(v):
         return "0x{:08X}".format(v)
 
@@ -1060,6 +1315,7 @@ def parse_file(file_path, title_name):
         "Title": title_name,
         "ADDRESS_MD5Digest":                 fmthex(ADDRESS_MD5Digest),
         "ADDRESS_strcmp":                    fmthex(ADDRESS_strcmp),
+        "ADDRESS_OSGetTime":                 fmthex(ADDRESS_OSGetTime),
         "ADDRESS_DCFlushRange":              fmthex(ADDRESS_DCFlushRange),
         "ADDRESS_ICInvalidateRange":         fmthex(ADDRESS_ICInvalidateRange),
         "ADDRESS_IOS_Open":                  fmthex(ADDRESS_IOS_Open),
@@ -1095,8 +1351,25 @@ def parse_file(file_path, title_name):
         "ADDRESS_SKIP_DNS_CACHE":            fmthex(ADDRESS_SKIP_DNS_CACHE),
         "ADDRESS_SKIP_DNS_CACHE_CONTINUE":   fmthex(ADDRESS_SKIP_DNS_CACHE_CONTINUE),
         "ADDRESS_gethostbyname":             fmthex(ADDRESS_gethostbyname),
+        "ADDRESS_SOiAlloc":                  fmthex(ADDRESS_SOiAlloc),
+        "ADDRESS_SOiFree":                   fmthex(ADDRESS_SOiFree),
+        "ADDRESS_SOSocket":                  fmthex(ADDRESS_SOSocket),
+        "ADDRESS_SOClose":                   fmthex(ADDRESS_SOClose),
+        "ADDRESS_SOBind":                    fmthex(ADDRESS_SOBind),
+        "ADDRESS_SOConnect":                 fmthex(ADDRESS_SOConnect),
+        "ADDRESS_SOGetSockName":             fmthex(ADDRESS_SOGetSockName),
+        "ADDRESS_SORecvFrom":                fmthex(ADDRESS_SORecvFrom),
+        "ADDRESS_SORecv":                    fmthex(ADDRESS_SORecv),
+        "ADDRESS_SOSendTo":                  fmthex(ADDRESS_SOSendTo),
+        "ADDRESS_SOSend":                    fmthex(ADDRESS_SOSend),
+        "ADDRESS_SOFcntl":                   fmthex(ADDRESS_SOFcntl),
+        "ADDRESS_SOShutdown":                fmthex(ADDRESS_SOShutdown),
+        "ADDRESS_SOPoll":                    fmthex(ADDRESS_SOPoll),
         "ADDRESS_SOInetAtoN":                fmthex(ADDRESS_SOInetAtoN),
         "ADDRESS_SOGetAddrInfo":             fmthex(ADDRESS_SOGetAddrInfo),
+        "ADDRESS_SOFreeAddrInfo":            fmthex(ADDRESS_SOFreeAddrInfo),
+        "ADDRESS_SOSetSockOpt":              fmthex(ADDRESS_SOSetSockOpt),
+        "ADDRESS_SOGetInterfaceOpt":         fmthex(ADDRESS_SOGetInterfaceOpt),
         "ADDRESS_DWC_Printf":                fmthex(ADDRESS_DWC_Printf),
         "ADDRESS_OSReport":                  fmthex(ADDRESS_OSReport),
         "ADDRESS_GHIPARSEURL_HTTPS_PATCH":   fmthex(ADDRESS_GHIPARSEURL_HTTPS_PATCH),
@@ -1117,8 +1390,16 @@ def parse_file(file_path, title_name):
         "ADDRESS_SBCM_RETURN":               fmthex(ADDRESS_SBCM_RETURN),
         "ADDRESS_OSYieldThread":             fmthex(ADDRESS_OSYieldThread),
         "ADDRESS_sendto":                    fmthex(ADDRESS_sendto),
+        "ADDRESS_stpLoginCnt":               fmthex(ADDRESS_stpLoginCnt),
         "ADDRESS_stpFriendCnt":              fmthex(ADDRESS_stpFriendCnt),
         "ADDRESS_AUTH_RESULT":               fmthex(ADDRESS_AUTH_RESULT),
+        "ADDRESS_NATNEG_SET_COMPLETED_DELAY": fmthex(ADDRESS_NATNEG_SET_COMPLETED_DELAY),
+        # "ADDRESS_gti2CreateSocket":          fmthex(ADDRESS_gti2CreateSocket),
+        "ADDRESS_GT2_PORT_PATCH":            fmthex(ADDRESS_GT2_PORT_PATCH),
+        "GT2_PORT_PATCH_REG":                GT2_PORT_PATCH_REG,
+        "ADDRESS_gt2AddressToString":        fmthex(ADDRESS_gt2AddressToString),
+        "ADDRESS_gt2CreateSocket":           fmthex(ADDRESS_gt2CreateSocket),
+        "ADDRESS_SCGetProductSN":            fmthex(ADDRESS_SCGetProductSN),
     }
 
     games.append(game)
@@ -1134,6 +1415,7 @@ if __name__ == '__main__':
         "Title",
         "ADDRESS_MD5Digest",
         "ADDRESS_strcmp",
+        "ADDRESS_OSGetTime",
         "ADDRESS_DCFlushRange",
         "ADDRESS_ICInvalidateRange",
         "ADDRESS_IOS_Open",
@@ -1169,8 +1451,25 @@ if __name__ == '__main__':
         "ADDRESS_SKIP_DNS_CACHE",
         "ADDRESS_SKIP_DNS_CACHE_CONTINUE",
         "ADDRESS_gethostbyname",
+        "ADDRESS_SOiAlloc",
+        "ADDRESS_SOiFree",
+        "ADDRESS_SOSocket",
+        "ADDRESS_SOClose",
+        "ADDRESS_SOBind",
+        "ADDRESS_SOConnect",
+        "ADDRESS_SOGetSockName",
+        "ADDRESS_SORecvFrom",
+        "ADDRESS_SORecv",
+        "ADDRESS_SOSendTo",
+        "ADDRESS_SOSend",
+        "ADDRESS_SOFcntl",
+        "ADDRESS_SOShutdown",
+        "ADDRESS_SOPoll",
         "ADDRESS_SOInetAtoN",
         "ADDRESS_SOGetAddrInfo",
+        "ADDRESS_SOFreeAddrInfo",
+        "ADDRESS_SOSetSockOpt",
+        "ADDRESS_SOGetInterfaceOpt",
         "ADDRESS_DWC_Printf",
         "ADDRESS_OSReport",
         "ADDRESS_GHIPARSEURL_HTTPS_PATCH",
@@ -1191,8 +1490,16 @@ if __name__ == '__main__':
         "ADDRESS_SBCM_RETURN",
         "ADDRESS_OSYieldThread",
         "ADDRESS_sendto",
+        "ADDRESS_stpLoginCnt",
         "ADDRESS_stpFriendCnt",
         "ADDRESS_AUTH_RESULT",
+        "ADDRESS_NATNEG_SET_COMPLETED_DELAY",
+        "ADDRESS_gti2CreateSocket",
+        "ADDRESS_GT2_PORT_PATCH",
+        "GT2_PORT_PATCH_REG",
+        "ADDRESS_gt2AddressToString",
+        "ADDRESS_gt2CreateSocket",
+        "ADDRESS_SCGetProductSN",
     ]
 
     with open('gamedefs.csv', 'w', newline='') as csvfile:
