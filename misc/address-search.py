@@ -1494,7 +1494,7 @@ if __name__ == '__main__':
         "ADDRESS_stpFriendCnt",
         "ADDRESS_AUTH_RESULT",
         "ADDRESS_NATNEG_SET_COMPLETED_DELAY",
-        "ADDRESS_gti2CreateSocket",
+        # "ADDRESS_gti2CreateSocket",
         "ADDRESS_GT2_PORT_PATCH",
         "GT2_PORT_PATCH_REG",
         "ADDRESS_gt2AddressToString",
