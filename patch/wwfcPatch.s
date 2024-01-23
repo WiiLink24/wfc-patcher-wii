@@ -221,6 +221,14 @@ GCT_WRITE_BRANCH(ADDRESS_AUTH_HANDLERESP_HOOK, ADDRESS_DWC_AUTH_ADD_CSNUM + 0x4)
 GCT_WRITE_BRANCH(ADDRESS_SKIP_DNS_CACHE, ADDRESS_SKIP_DNS_CACHE_CONTINUE) // 0x800D1518, 0x800D170C
 
 
+// Pokemon Battle Revolution doesn't align the HTTP response buffer like how we
+// need it to be
+#if RPBED00 || RPBPD00
+GCT_WRITE_INSTR(ADDRESS_DWCi_Auth_SendRequest + 0x4C, addi r5, r6, 0x41C6)
+GCT_WRITE_INSTR(ADDRESS_DWCi_Auth_SendRequest + 0x58, li r6, 0x1000 - 3)
+#endif
+
+
 GCT_ENDIF(1)
 
 

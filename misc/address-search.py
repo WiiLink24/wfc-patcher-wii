@@ -154,6 +154,7 @@ def parse_file(file_path, title_name):
     ADDRESS_DWCi_Auth_HandleResponse = 0
     ADDRESS_DWC_AUTH_ADD_MACADDR = 0
     ADDRESS_DWC_AUTH_ADD_CSNUM = 0
+    ADDRESS_DWC_ERROR = 0
 
     index = -1
 
@@ -161,9 +162,11 @@ def parse_file(file_path, title_name):
         if title_name == 'RPBJD00':
             ADDRESS_DWCi_Auth_SendRequest = 0x803238B8
             ADDRESS_DWCi_Auth_HandleResponse = 0x80324180
+            ADDRESS_DWC_ERROR = 0x805E1A60
         else:
             ADDRESS_DWCi_Auth_SendRequest = dol_to_real(hdr, 0x31F7F8)
             ADDRESS_DWCi_Auth_HandleResponse = dol_to_real(hdr, 0x3200C0)
+            ADDRESS_DWC_ERROR = 0x805E1DA0
 
         auth_func_size = 0x8C8
 
@@ -349,11 +352,12 @@ def parse_file(file_path, title_name):
     d = real_to_dol(hdr, ADDRESS_AUTH_HANDLERESP_HOOK)
     AUTH_HANDLERESP_UNPATCH = struct.unpack('>I', dol[d:d+4])[0]
 
-    hi = struct.unpack('>H', dol[index+0x16:index+0x18])[0]
-    lo = struct.unpack('>H', dol[index+0x1E:index+0x20])[0]
-    if lo & 0x8000:
-        hi -= 1
-    ADDRESS_DWC_ERROR = (hi << 16) | lo
+    if ADDRESS_DWC_ERROR == 0:
+        hi = struct.unpack('>H', dol[index+0x16:index+0x18])[0]
+        lo = struct.unpack('>H', dol[index+0x1E:index+0x20])[0]
+        if lo & 0x8000:
+            hi -= 1
+        ADDRESS_DWC_ERROR = (hi << 16) | lo
 
     # find DWCi_SetError
     ADDRESS_DWCi_SetError = 0
