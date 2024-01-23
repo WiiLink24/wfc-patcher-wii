@@ -79,6 +79,19 @@ GCT_STRING(ADDRESS_DWC_AUTH_ADD_CSNUM, AuthStage0Code) // 0x800EE098
     // Adjust offsets from this point:
     // 0x0C -> 0x2C
     // 0x58 -> 0x78
+#  elif RMKED00 || RMKJD00 || RMKPD00
+    // Mario Sports Mix allocates HBM at game start, but recreates the heap
+    // everytime HBM is opened
+    // Instead of allocating more memory, let's just truncate the HBM heap
+    /* 0x04 */ lwz     r3, -0x6F98(r13) # HBM data (-0x10)
+    /* 0x08 */ lis     r0, 0x60000@h
+    /* 0x0C */ stw     r0, 0x10 + 0x2C(r3) # Heap size
+    /* 0x10 */ lwz     r3, 0x10 + 0x10(r3) # Heap pointer
+    /* 0x14 */ add     r3, r3, r0
+    /* 0x18 */ HD(GCT_STRING_PTR_STWU, r3, r31, LD_Stage1ParamBlock)
+    // Adjust offsets from this point:
+    // 0x0C -> 0x20
+    // 0x58 -> 0x6C
 #  else
     // Normal routine, executed if the HBM allocator is used
     /* 0x04 */ HD(GCT_STRING_PTR, r31, LD_Stage1ParamBlock)
