@@ -87,7 +87,9 @@ void ClearUserMiiInfo(mkw::Net::UserHandler::Packet* packet)
     }
 
     // Send Mii data to the server
-    wwfc::GPReport::ReportUser(packet);
+    wwfc::GPReport::ReportB64Encode(
+        "mkw_user", packet, sizeof(mkw::Net::UserHandler::Packet)
+    );
 }
 
 #endif

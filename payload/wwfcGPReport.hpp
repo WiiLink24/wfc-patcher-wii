@@ -7,7 +7,8 @@ namespace wwfc::GPReport
 
 #if RMC
 
-void ReportUser(mkw::Net::UserHandler::Packet* packet);
+void Report(const char* key, const char* string);
+void ReportB64Encode(const char* key, const void* data, size_t dataSize);
 
 #endif
 
