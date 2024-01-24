@@ -8,7 +8,7 @@ namespace wwfc::GPReport
 
 #if RMC
 
-void ReportUser(mkw::Net::UserHandler::Packet* packet)
+void Report(const char* key, const char* string)
 {
     auto connection = DWC::stpMatchCnt->connection;
     if (connection == nullptr) {
@@ -17,28 +17,38 @@ void ReportUser(mkw::Net::UserHandler::Packet* packet)
 
     auto iconnection = reinterpret_cast<GameSpy::GPIConnection*>(*connection);
 
-    char b64UserPacket[0x400];
-    s32 b64Len = DWC::DWC_Base64Encode(
-        packet, sizeof(mkw::Net::UserHandler::Packet), b64UserPacket,
-        sizeof(b64UserPacket)
-    );
-    if (b64Len < 0 || b64Len >= 0x400) {
-        LOG_ERROR("Could not base64 encode the User packet");
-        return;
-    }
-
-    // Add null terminator
-    b64UserPacket[b64Len] = '\0';
-
     GameSpy::gpiAppendStringToBuffer(
-        connection, &iconnection->outputBuffer, "\\wwfc_report\\\\mkw_user\\"
+        connection, &iconnection->outputBuffer, "\\wwfc_report\\\\"
     );
     GameSpy::gpiAppendStringToBuffer(
-        connection, &iconnection->outputBuffer, b64UserPacket
+        connection, &iconnection->outputBuffer, key
+    );
+    GameSpy::gpiAppendStringToBuffer(
+        connection, &iconnection->outputBuffer, "\\"
+    );
+    GameSpy::gpiAppendStringToBuffer(
+        connection, &iconnection->outputBuffer, string
     );
     GameSpy::gpiAppendStringToBuffer(
         connection, &iconnection->outputBuffer, "\\final\\"
     );
+}
+
+void ReportB64Encode(const char* key, const void* data, size_t dataSize)
+{
+    char b64Data[0x400];
+
+    s32 b64Size =
+        DWC::DWC_Base64Encode(data, dataSize, b64Data, sizeof(b64Data));
+    if (b64Size == -1 || b64Size == sizeof(b64Data)) {
+        LOG_ERROR(
+            "Could not fit the base64-encoded data into the provided buffer!"
+        );
+        return;
+    }
+    b64Data[b64Size] = '\0';
+
+    Report(key, b64Data);
 }
 
 #endif

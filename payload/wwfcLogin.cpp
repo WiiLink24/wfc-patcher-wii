@@ -302,8 +302,9 @@ static void SendAuthTokenSignature(
     s32 b64Len = DWC::DWC_Base64Encode(
         &authSig, sizeof(authSig), b64AuthSig, sizeof(b64AuthSig)
     );
-    if (b64Len < 0 || b64Len >= 0x400) {
-        LOG_ERROR("Could not base64 encode the signature");
+    if (b64Len == -1 || b64Len == sizeof(b64AuthSig)) {
+        LOG_ERROR("Could not fit the base64-encoded signature into the "
+                  "provided buffer!");
         return;
     }
 
