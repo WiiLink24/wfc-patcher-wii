@@ -6,6 +6,8 @@
 namespace mkw::Item
 {
 
+#if RMC
+
 enum class ItemBox {
     GreenShell = 0x00,
     RedShell = 0x01,
@@ -272,5 +274,7 @@ static ItemBox ItemObjectToItemBox(ItemObject itemObject)
     }
     }
 }
+
+#endif
 
 } // namespace mkw::Item
