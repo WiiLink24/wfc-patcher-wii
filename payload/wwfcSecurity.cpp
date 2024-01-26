@@ -4,6 +4,7 @@
 #include "import/mkwNetRoomHandler.hpp"
 #include "import/mkwRegistry.hpp"
 #include "import/mkwSystem.hpp"
+#include "wwfcGPReport.hpp"
 #include "wwfcPatch.hpp"
 #include <cstddef>
 
@@ -527,8 +528,16 @@ WWFC_DEFINE_PATCH = {Patch::BranchWithCTR( //
        mkw::Net::RACEPacket* racePacket, u32 packetSize, u32 _,
        u8 playerAid) -> void {
         if (!IsRACEPacketValid(racePacket, packetSize, playerAid)) {
-            LONGCALL int DWC_CloseConnectionHard(u8 playerAid)
-                AT(RMCXD_PORT(0x800D2000, 0x800D1F60, 0x800D1F20, 0x800D2060));
+            using namespace DWC;
+
+            DWCiNodeInfo* nodeInfo =
+                DWCi_NodeInfoList_GetNodeInfoForAid(playerAid);
+            if (nodeInfo) {
+                wwfc::GPReport::ReportU32(
+                    "mkw_malicious_packet", nodeInfo->profileId
+                );
+            }
+
             DWC_CloseConnectionHard(playerAid);
 
             return;

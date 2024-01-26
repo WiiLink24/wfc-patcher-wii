@@ -1,3 +1,4 @@
+#include "wwfcLibC.hpp"
 #include <algorithm>
 #include <ctype.h>
 #include <string.h>
