@@ -1,7 +1,7 @@
 #pragma once
 
-#include <wwfcUtil.h>
 #include "gamespy.h"
+#include <wwfcUtil.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -68,12 +68,28 @@ extern DWCLoginContext* stpLoginCnt AT(ADDRESS_stpLoginCnt);
 
 #if RMC
 
+LONGCALL int DWC_CloseConnectionHard(u8 playerAid)
+    AT(RMCXD_PORT(0x800D2000, 0x800D1F60, 0x800D1F20, 0x800D2060));
+
+typedef struct {
+    /* 0x00 */ u32 profileId;
+    /* 0x04 */ u8 _04[0x30 - 0x04];
+} DWCiNodeInfo;
+
+#  ifdef __cplusplus
+static_assert(sizeof(DWCiNodeInfo) == 0x30);
+#  endif
+
+LONGCALL DWCiNodeInfo* DWCi_NodeInfoList_GetNodeInfoForAid(u8 playerAid)
+    AT(RMCXD_PORT(0x800E7EE0, 0x800E7E40, 0x800E7E00, 0x800E7F40));
+
 typedef struct {
     /* 0x0 */ GameSpy::GPConnection* connection;
 } DWCMatchContext;
 
 // 0x8038630C
-extern DWCMatchContext* stpMatchCnt AT(RMCXD_PORT(0x8038630C, 0x80381F8C, 0x80385C8C, 0x8037432C));
+extern DWCMatchContext*
+    stpMatchCnt AT(RMCXD_PORT(0x8038630C, 0x80381F8C, 0x80385C8C, 0x8037432C));
 
 #endif
 
