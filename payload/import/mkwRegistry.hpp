@@ -5,6 +5,8 @@
 namespace mkw::Registry
 {
 
+#if RMC
+
 enum class Character {
     Mario = 0x00,
     BabyPeach = 0x01,
@@ -194,5 +196,7 @@ static bool IsBattleCourse(Course course)
 {
     return course >= Course::DelfinoPier && course <= Course::N64Skyscraper;
 }
+
+#endif
 
 } // namespace mkw::Registry

@@ -89,12 +89,12 @@ char* HandleWWFCErrorMessage(char* strstrResult, const char* command)
     }
 
     // TODO: Convert UTF-8 to UTF-16 properly
-    int i = 0;
-    for (; value[i] != '\0' && i < (sizeof(s_wwfcErrorMsg) / sizeof(u16)) - 1;
-         i++) {
-        s_wwfcErrorMsg[i] = value[i];
+    size_t n = 0;
+    for (; value[n] != '\0' && n < (sizeof(s_wwfcErrorMsg) / sizeof(u16)) - 1;
+         n++) {
+        s_wwfcErrorMsg[n] = value[n];
     }
-    s_wwfcErrorMsg[i] = '\0';
+    s_wwfcErrorMsg[n] = '\0';
 
     s_wwfcErrorCode = error;
 

@@ -141,17 +141,17 @@ static u64 DecodeUintString(const char* str, u32 bitCount)
 {
     u64 value = 0;
 
-    for (int i = 0; i < (bitCount >> 2); i++) {
+    for (u32 n = 0; n < (bitCount >> 2); n++) {
         u8 nybble = 0;
-        if (str[i] >= '0' && str[i] <= '9') {
-            nybble = str[i] - '0';
-        } else if (str[i] >= 'a' && str[i] <= 'f') {
-            nybble = (str[i] - 'a') + 0xA;
+        if (str[n] >= '0' && str[n] <= '9') {
+            nybble = str[n] - '0';
+        } else if (str[n] >= 'a' && str[n] <= 'f') {
+            nybble = (str[n] - 'a') + 0xA;
         } else {
             return 0;
         }
 
-        value |= u64(nybble) << ((bitCount - 4) - i * 4);
+        value |= u64(nybble) << ((bitCount - 4) - n * 4);
     }
 
     return value;
