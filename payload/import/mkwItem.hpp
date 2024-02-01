@@ -100,12 +100,10 @@ static bool CanTrailItem(ItemBox item)
     return !itemBehaviourTable[itemToTrail].useFunction;
 }
 
-static bool CanTrailItemObject(ItemObject itemObject)
+static bool CanHitItemObject(ItemObject itemObject)
 {
     switch (itemObject) {
-    case ItemObject::GreenShell... ItemObject::Banana:
-    case ItemObject::FakeItemBox:
-    case ItemObject::Bob_omb: {
+    case ItemObject::GreenShell... ItemObject::BulletBill: {
         return true;
     }
     default: {
