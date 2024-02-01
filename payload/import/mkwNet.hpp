@@ -7,7 +7,7 @@ namespace mkw::Net
 
 #if RMC
 
-struct RACEPacket {
+struct RacePacket {
     enum EType {
         Header,
         RaceHeader1,
@@ -24,7 +24,7 @@ struct RACEPacket {
     /* 0x08 */ u8 sizes[8];
 };
 
-static_assert(sizeof(RACEPacket) == 0x10);
+static_assert(sizeof(RacePacket) == 0x10);
 
 // https://github.com/SeekyCt/mkw-structures/blob/master/rknetcontroller.h
 class RKNetController
@@ -53,14 +53,14 @@ public:
     static_assert(sizeof(ConnectionInfo) == 0x58);
 
     void
-    processRACEPacket(u32 playerAid, RACEPacket* racePacket, u32 packetSize)
+    processRacePacket(u32 playerAid, RacePacket* racePacket, u32 packetSize)
     {
-        LONGCALL void processRACEPacket(
+        LONGCALL void processRacePacket(
             RKNetController * rkNetController, u32 playerAid,
-            RACEPacket * racePacket, u32 packetSize
+            RacePacket * racePacket, u32 packetSize
         ) AT(RMCXD_PORT(0x80659A84, 0x806555FC, 0x806590F0, 0x80647D9C));
 
-        processRACEPacket(this, playerAid, racePacket, packetSize);
+        processRacePacket(this, playerAid, racePacket, packetSize);
     }
 
     ConnectionInfo& currentConnectionInfo()

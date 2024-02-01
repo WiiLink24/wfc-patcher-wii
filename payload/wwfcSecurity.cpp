@@ -1,12 +1,14 @@
+#include "import/dwc.h"
 #include "import/mkwNet.hpp"
 #include "import/mkwNetEventHandler.hpp"
 #include "import/mkwNetItemHandler.hpp"
 #include "import/mkwNetRoomHandler.hpp"
+#include "import/mkwNetSelectHandler.hpp"
+#include "import/mkwNetUserHandler.hpp"
 #include "import/mkwRegistry.hpp"
 #include "import/mkwSystem.hpp"
 #include "wwfcGPReport.hpp"
 #include "wwfcPatch.hpp"
-#include <cstddef>
 
 namespace wwfc::Security
 {
@@ -123,89 +125,104 @@ WWFC_DEFINE_PATCH = {
 
 #if RMC
 
-static bool
-IsPacketSizeValid(mkw::Net::RACEPacket::EType packetType, u8 packetSize)
-{
-    using namespace mkw::Net;
+using namespace mkw::Net;
 
-    if (packetType >= RACEPacket::RaceHeader1 &&
-        packetType <= RACEPacket::Event) {
+static size_t s_vanillaPacketBufferSizes[sizeof(RacePacket::sizes)] = {
+    sizeof(RacePacket),
+    0x28,
+    0x28,
+    sizeof(SelectHandler::Packet),
+    0x40 << 1,
+    sizeof(UserHandler::Packet),
+    sizeof(ItemHandler::Packet) << 1,
+    sizeof(EventHandler::Packet),
+};
+
+static bool IsPacketSizeValid(RacePacket::EType packetType, u8 packetSize)
+{
+    if (packetType >= RacePacket::RaceHeader1 &&
+        packetType <= RacePacket::Event) {
         if (packetSize == 0) {
             return true;
         }
     }
 
-    extern u32 packetBufferSizes[sizeof(RACEPacket::sizes)] AT(
-        RMCXD_PORT(0x8089A194, 0x80895AC4, 0x808992F4, 0x808885CC)
-    );
+    size_t* packetBufferSizesPointer;
+    if (!RKNetController::Instance()->inVanillaMatch()) {
+        extern size_t packetBufferSizes[sizeof(RacePacket::sizes)] AT(
+            RMCXD_PORT(0x8089A194, 0x80895AC4, 0x808992F4, 0x808885CC)
+        );
+
+        packetBufferSizesPointer = packetBufferSizes;
+    } else {
+        packetBufferSizesPointer = s_vanillaPacketBufferSizes;
+    }
 
     switch (packetType) {
-    case RACEPacket::Header: {
-        if (packetSize < sizeof(RACEPacket) ||
-            packetSize > packetBufferSizes[RACEPacket::Header]) {
+    case RacePacket::Header: {
+        if (packetSize < sizeof(RacePacket) ||
+            packetSize > packetBufferSizesPointer[RacePacket::Header]) {
             return false;
         }
 
         return true;
     }
-    case RACEPacket::RaceHeader1: {
+    case RacePacket::RaceHeader1: {
         if (packetSize < 0x28 ||
-            packetSize > packetBufferSizes[RACEPacket::RaceHeader1]) {
+            packetSize > packetBufferSizesPointer[RacePacket::RaceHeader1]) {
             return false;
         }
 
         return true;
     }
-    case RACEPacket::RaceHeader2: {
+    case RacePacket::RaceHeader2: {
         if (packetSize < 0x28 ||
-            packetSize > packetBufferSizes[RACEPacket::RaceHeader2]) {
+            packetSize > packetBufferSizesPointer[RacePacket::RaceHeader2]) {
             return false;
         }
 
         return true;
     }
-    case RACEPacket::RoomSelect: {
+    case RacePacket::RoomSelect: {
         // 'Room' packet
         if (packetSize < sizeof(SelectHandler::Packet)) {
             return packetSize == sizeof(RoomHandler::Packet);
         }
 
         // 'Select' packet
-        if (packetSize > packetBufferSizes[RACEPacket::RoomSelect]) {
+        if (packetSize > packetBufferSizesPointer[RacePacket::RoomSelect]) {
             return false;
         }
 
         return true;
     }
-    case RACEPacket::RaceData: {
+    case RacePacket::RaceData: {
         if (packetSize < 0x40 ||
-            packetSize > packetBufferSizes[RACEPacket::RaceData] ||
-            packetSize % 0x40) {
+            packetSize > packetBufferSizesPointer[RacePacket::RaceData]) {
             return false;
         }
 
         return true;
     }
-    case RACEPacket::User: {
+    case RacePacket::User: {
         if (packetSize < sizeof(UserHandler::Packet) ||
-            packetSize > packetBufferSizes[RACEPacket::User]) {
+            packetSize > packetBufferSizesPointer[RacePacket::User]) {
             return false;
         }
 
         return true;
     }
-    case RACEPacket::Item: {
+    case RacePacket::Item: {
         if (packetSize < sizeof(ItemHandler::Packet) ||
-            packetSize > packetBufferSizes[RACEPacket::Item] ||
-            packetSize % sizeof(ItemHandler::Packet)) {
+            packetSize > packetBufferSizesPointer[RacePacket::Item]) {
             return false;
         }
 
         return true;
     }
-    case RACEPacket::Event: {
+    case RacePacket::Event: {
         if (packetSize < sizeof(EventHandler::Packet::eventInfo) ||
-            packetSize > packetBufferSizes[RACEPacket::Event]) {
+            packetSize > packetBufferSizesPointer[RacePacket::Event]) {
             return false;
         }
 
@@ -241,7 +258,6 @@ static bool IsRaceHeader2PacketDataValid(
 static bool
 IsRoomSelectPacketDataValid(const void* packet, u8 packetSize, u8 playerAid)
 {
-    using namespace mkw::Net;
     using namespace mkw::Registry;
     using namespace mkw::System;
 
@@ -349,8 +365,6 @@ static bool IsUserPacketDataValid(
     const void* packet, u8 /* packetSize */, u8 /* playerAid */
 )
 {
-    using namespace mkw::Net;
-
     const UserHandler::Packet* userPacket =
         reinterpret_cast<const UserHandler::Packet*>(packet);
 
@@ -373,7 +387,6 @@ static bool
 IsItemPacketDataValid(const void* packet, u8 packetSize, u8 /* playerAid */)
 {
     using namespace mkw::Item;
-    using namespace mkw::Net;
     using namespace mkw::System;
 
     if (!RKNetController::Instance()->inVanillaMatch()) {
@@ -431,7 +444,6 @@ static bool IsEventPacketDataValid(
     const void* packet, u8 packetSize, u8 /* playerAid */
 )
 {
-    using namespace mkw::Net;
     using namespace mkw::System;
 
     if (static_cast<RKScene::SceneID>(
@@ -443,8 +455,8 @@ static bool IsEventPacketDataValid(
     const EventHandler::Packet* eventPacket =
         reinterpret_cast<const EventHandler::Packet*>(packet);
 
-    // Always ensure that the packet does not contain any invalid item objects,
-    // as this can cause a buffer overflow to occur.
+    // Always ensure that the packet does not contain any invalid item
+    // objects, as this can cause a buffer overflow to occur.
     if (eventPacket->containsInvalidItemObject()) {
         return false;
     }
@@ -460,10 +472,11 @@ static bool IsEventPacketDataValid(
     return true;
 }
 
-typedef bool (*IsPacketDataValid
-)(const void* packet, u8 packetSize, u8 playerAid);
+typedef bool (*IsPacketDataValid)(
+    const void* packet, u8 packetSize, u8 playerAid
+);
 
-static std::array<IsPacketDataValid, sizeof(mkw::Net::RACEPacket::sizes)>
+static std::array<IsPacketDataValid, sizeof(RacePacket::sizes)>
     s_isPacketDataValid{
         IsHeaderPacketDataValid,      IsRaceHeader1PacketDataValid,
         IsRaceHeader2PacketDataValid, IsRoomSelectPacketDataValid,
@@ -472,24 +485,22 @@ static std::array<IsPacketDataValid, sizeof(mkw::Net::RACEPacket::sizes)>
     };
 
 // CLIENT TO CLIENT VULNERABILITY
-// Patch for Mario Kart Wii RACE exploit. This was the first RCE exploit
-// discovered in a Wii game. Originally discovered by XeR, but then
+// Patch for the Mario Kart Wii Race packet exploit. This was the first RCE
+// exploit discovered in a Wii game. Originally discovered by XeR, but then
 // rediscovered by Star, who reported the exploit and then released it.
 // CVE-ID: CVE-2023-35856
 // https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2023-35856
-static bool IsRACEPacketValid(
-    const mkw::Net::RACEPacket* racePacket, u32 racePacketSize, u8 playerAid
+static bool IsRacePacketValid(
+    const RacePacket* racePacket, u32 racePacketSize, u8 playerAid
 )
 {
-    using namespace mkw::Net;
-
-    if (racePacketSize < sizeof(RACEPacket)) {
+    if (racePacketSize < sizeof(RacePacket)) {
         return false;
     }
 
     u32 expectedPacketSize = 0;
-    for (size_t n = 0; n < sizeof(RACEPacket::sizes); n++) {
-        RACEPacket::EType packetType = static_cast<RACEPacket::EType>(n);
+    for (size_t n = 0; n < sizeof(RacePacket::sizes); n++) {
+        RacePacket::EType packetType = static_cast<RacePacket::EType>(n);
         u8 packetSize = racePacket->sizes[n];
 
         if (!IsPacketSizeValid(packetType, packetSize)) {
@@ -504,7 +515,7 @@ static bool IsRACEPacketValid(
     }
 
     expectedPacketSize = 0;
-    for (size_t n = 0; n < sizeof(RACEPacket::sizes); n++) {
+    for (size_t n = 0; n < sizeof(RacePacket::sizes); n++) {
         const IsPacketDataValid isPacketDataValid = s_isPacketDataValid[n];
         const void* packet =
             reinterpret_cast<const char*>(racePacket) + expectedPacketSize;
@@ -524,27 +535,25 @@ static bool IsRACEPacketValid(
 WWFC_DEFINE_PATCH = {Patch::BranchWithCTR( //
     WWFC_PATCH_LEVEL_CRITICAL, //
     RMCXD_PORT(0x80658604, 0x8065417C, 0x80657C70, 0x8064691C), //
-    [](mkw::Net::RKNetController* rkNetController,
-       mkw::Net::RACEPacket* racePacket, u32 packetSize, u32 _,
-       u8 playerAid) -> void {
-        if (!IsRACEPacketValid(racePacket, packetSize, playerAid)) {
-            using namespace DWC;
+    [](RKNetController* rkNetController, RacePacket* racePacket, u32 packetSize,
+       u32 _, u8 playerAid) -> void {
+    if (!IsRacePacketValid(racePacket, packetSize, playerAid)) {
+        using namespace DWC;
 
-            DWCiNodeInfo* nodeInfo =
-                DWCi_NodeInfoList_GetNodeInfoForAid(playerAid);
-            if (nodeInfo) {
-                wwfc::GPReport::ReportU32(
-                    "mkw_malicious_packet", nodeInfo->profileId
-                );
-            }
-
-            DWC_CloseConnectionHard(playerAid);
-
-            return;
+        DWCiNodeInfo* nodeInfo = DWCi_NodeInfoList_GetNodeInfoForAid(playerAid);
+        if (nodeInfo) {
+            wwfc::GPReport::ReportU32(
+                "mkw_malicious_packet", nodeInfo->profileId
+            );
         }
 
-        rkNetController->processRACEPacket(playerAid, racePacket, packetSize);
+        DWC_CloseConnectionHard(playerAid);
+
+        return;
     }
+
+    rkNetController->processRacePacket(playerAid, racePacket, packetSize);
+}
 )};
 
 #endif
