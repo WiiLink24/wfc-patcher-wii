@@ -18,7 +18,7 @@ public:
                 NoEvent = 0,
                 ItemUsed = 1,
                 ItemThrown = 2,
-                ItemHitTrailed = 3,
+                ItemObjectHit = 3,
                 ItemDropped = 7,
             };
 
@@ -49,8 +49,8 @@ public:
                 case EventType::ItemThrown: {
                     return CanThrowItem(ItemObjectToItemBox(item));
                 }
-                case EventType::ItemHitTrailed: {
-                    return CanTrailItemObject(item);
+                case EventType::ItemObjectHit: {
+                    return CanHitItemObject(item);
                 }
                 case EventType::ItemDropped: {
                     return CanDropItemObject(item);
