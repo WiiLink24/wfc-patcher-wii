@@ -19,6 +19,7 @@ public:
                 ItemUsed = 1,
                 ItemThrown = 2,
                 ItemObjectHit = 3,
+                ItemLost = 5,
                 ItemDropped = 7,
             };
 
@@ -51,6 +52,9 @@ public:
                 }
                 case EventType::ItemObjectHit: {
                     return CanHitItemObject(item);
+                }
+                case EventType::ItemLost: {
+                    return item == ItemObject::ThunderCloud;
                 }
                 case EventType::ItemDropped: {
                     return CanDropItemObject(item);
