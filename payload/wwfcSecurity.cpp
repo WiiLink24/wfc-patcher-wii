@@ -271,7 +271,7 @@ IsRoomSelectPacketDataValid(const void* packet, u8 packetSize, u8 playerAid)
                 RKNetController::Instance()->currentConnectionInfo();
 
             // Ensure that guests can't start rooms
-            if (playerAid != connectionInfo.hostAid) {
+            if (playerAid != connectionInfo.serverAid) {
                 return false;
             }
         }
@@ -547,47 +547,50 @@ WWFC_DEFINE_PATCH = {Patch::BranchWithCTR( //
     RMCXD_PORT(0x80658604, 0x8065417C, 0x80657C70, 0x8064691C), //
     [](RKNetController* rkNetController, RacePacket* racePacket, u32 packetSize,
        u32 _, u8 playerAid) -> void {
-        if (packetSize >= sizeof(RacePacket)) {
-            LONGCALL u32 NETCalcCRC32( //
-                const void* data, u32 size
-            ) AT(RMCXD_PORT(0x801D1CA0, 0x801D1C00, 0x801D1BC0, 0x801D1FFC));
+    if (packetSize >= sizeof(RacePacket)) {
+        LONGCALL u32 NETCalcCRC32( //
+            const void* data, u32 size
+        ) AT(RMCXD_PORT(0x801D1CA0, 0x801D1C00, 0x801D1BC0, 0x801D1FFC));
 
-            u32 savedChecksum = racePacket->checksum;
-            racePacket->checksum = 0;
-            u32 realChecksum = NETCalcCRC32(racePacket, packetSize);
-            racePacket->checksum = savedChecksum;
+        u32 savedChecksum = racePacket->checksum;
+        racePacket->checksum = 0;
+        u32 realChecksum = NETCalcCRC32(racePacket, packetSize);
+        racePacket->checksum = savedChecksum;
 
-            if (realChecksum != savedChecksum) {
-                LOG_WARN_FMT(
-                    "Invalid Race packet from aid %u (checksum mismatch)\n",
-                    playerAid
-                );
-                return;
-            }
-        }
-
-        if (!IsRacePacketValid(racePacket, packetSize, playerAid)) {
-            using namespace DWC;
-
+        if (realChecksum != savedChecksum) {
             LOG_WARN_FMT(
-                "Invalid Race packet from aid %u (malicious packet)\n",
+                "Invalid Race packet from aid %u (checksum mismatch)\n",
                 playerAid
             );
-
-            DWCiNodeInfo* nodeInfo =
-                DWCi_NodeInfoList_GetNodeInfoForAid(playerAid);
-            if (nodeInfo) {
-                wwfc::GPReport::ReportU32(
-                    "mkw_malicious_packet", nodeInfo->profileId
-                );
-            }
-
-            DWC_CloseConnectionHard(playerAid);
             return;
         }
-
-        rkNetController->processRacePacket(playerAid, racePacket, packetSize);
     }
+
+    if (!IsRacePacketValid(racePacket, packetSize, playerAid)) {
+        using namespace DWC;
+
+        LOG_WARN_FMT(
+            "Invalid Race packet from aid %u (malicious packet)\n", playerAid
+        );
+
+        DWCiNodeInfo* nodeInfo = DWCi_NodeInfoList_GetNodeInfoForAid(playerAid);
+        if (nodeInfo) {
+            wwfc::GPReport::ReportU32(
+                "mkw_malicious_packet", nodeInfo->profileId
+            );
+        }
+
+        RKNetController::ConnectionInfo& connectionInfo =
+            RKNetController::Instance()->currentConnectionInfo();
+        if (connectionInfo.myAid == connectionInfo.serverAid) {
+            DWC_CloseConnectionHard(playerAid);
+        }
+
+        return;
+    }
+
+    rkNetController->processRacePacket(playerAid, racePacket, packetSize);
+}
 )};
 
 #endif

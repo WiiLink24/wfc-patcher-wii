@@ -45,8 +45,9 @@ public:
     };
 
     struct ConnectionInfo {
-        /* 0x00 */ u8 _00[0x22 - 0x00];
-        /* 0x22 */ u8 hostAid;
+        /* 0x00 */ u8 _00[0x21 - 0x00];
+        /* 0x21 */ u8 myAid;
+        /* 0x22 */ u8 serverAid;
         /* 0x23 */ u8 _23[0x58 - 0x23];
     };
 
