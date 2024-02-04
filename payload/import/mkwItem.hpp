@@ -129,6 +129,20 @@ static bool CanHitItemObject(ItemObject itemObject)
     }
 }
 
+static bool CanItemObjectLockOn(ItemObject itemObject)
+{
+    switch (itemObject) {
+    case ItemObject::RedShell:
+    case ItemObject::BlueShell:
+    case ItemObject::ThunderCloud: {
+        return true;
+    }
+    default: {
+        return false;
+    }
+    }
+}
+
 static bool CanDropItemObject(ItemObject itemObject)
 {
     switch (itemObject) {
