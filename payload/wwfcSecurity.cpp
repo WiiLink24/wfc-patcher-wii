@@ -398,6 +398,11 @@ IsItemPacketDataValid(const void* packet, u8 packetSize, u8 /* playerAid */)
         ) != RKScene::SceneID::Race) {
         return true;
     }
+    // Ensure that the table which controls the behaviour of items is loaded
+    // into memory before attempting to use it.
+    if (!mkw::Item::ItemDirector::Instance()) {
+        return true;
+    }
 
     RaceConfig::Scenario* scenario = &RaceConfig::Instance()->raceScenario();
 
@@ -449,6 +454,11 @@ static bool IsEventPacketDataValid(
     if (static_cast<RKScene::SceneID>(
             RKSystem::Instance().sceneManager()->getCurrentSceneID()
         ) != RKScene::SceneID::Race) {
+        return true;
+    }
+    // Ensure that the table which controls the behaviour of items is loaded
+    // into memory before attempting to use it.
+    if (!mkw::Item::ItemDirector::Instance()) {
         return true;
     }
 

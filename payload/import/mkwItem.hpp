@@ -55,6 +55,23 @@ enum class UseType {
     Throw = 1,
 };
 
+class ItemDirector
+{
+public:
+    static ItemDirector* Instance()
+    {
+        return s_instance;
+    }
+
+private:
+    /* 0x000 */ u8 _000[0x430 - 0x000];
+
+    static ItemDirector* s_instance
+        AT(RMCXD_PORT(0x809C3618, 0x809BEE20, 0x809C2678, 0x809B1C58));
+};
+
+static_assert(sizeof(ItemDirector) == 0x430);
+
 struct ItemBehaviourEntry {
     /* 0x00 */ u8 _00[0x14 - 0x00];
     /* 0x14 */ UseType useType;
