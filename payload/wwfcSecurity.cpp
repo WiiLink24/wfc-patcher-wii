@@ -494,12 +494,6 @@ static std::array<IsPacketDataValid, sizeof(RacePacket::sizes)>
         IsItemPacketDataValid,        IsEventPacketDataValid,
     };
 
-// CLIENT TO CLIENT VULNERABILITY
-// Patch for the Mario Kart Wii Race packet exploit. This was the first RCE
-// exploit discovered in a Wii game. Originally discovered by XeR, but then
-// rediscovered by Star, who reported the exploit and then released it.
-// CVE-ID: CVE-2023-35856
-// https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2023-35856
 static bool IsRacePacketValid(
     const RacePacket* racePacket, u32 racePacketSize, u8 playerAid
 )
@@ -542,28 +536,58 @@ static bool IsRacePacketValid(
     return true;
 }
 
+// CLIENT TO CLIENT VULNERABILITY
+// Patch for the Mario Kart Wii Race packet exploit. This was the first RCE
+// exploit discovered in a Wii game. Originally discovered by XeR, but then
+// rediscovered by Star, who reported the exploit and then released it.
+// CVE-ID: CVE-2023-35856
+// https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2023-35856
 WWFC_DEFINE_PATCH = {Patch::BranchWithCTR( //
     WWFC_PATCH_LEVEL_CRITICAL, //
     RMCXD_PORT(0x80658604, 0x8065417C, 0x80657C70, 0x8064691C), //
     [](RKNetController* rkNetController, RacePacket* racePacket, u32 packetSize,
        u32 _, u8 playerAid) -> void {
-    if (!IsRacePacketValid(racePacket, packetSize, playerAid)) {
-        using namespace DWC;
+        if (packetSize >= sizeof(RacePacket)) {
+            LONGCALL u32 NETCalcCRC32( //
+                const void* data, u32 size
+            ) AT(RMCXD_PORT(0x801D1CA0, 0x801D1C00, 0x801D1BC0, 0x801D1FFC));
 
-        DWCiNodeInfo* nodeInfo = DWCi_NodeInfoList_GetNodeInfoForAid(playerAid);
-        if (nodeInfo) {
-            wwfc::GPReport::ReportU32(
-                "mkw_malicious_packet", nodeInfo->profileId
-            );
+            u32 savedChecksum = racePacket->checksum;
+            racePacket->checksum = 0;
+            u32 realChecksum = NETCalcCRC32(racePacket, packetSize);
+            racePacket->checksum = savedChecksum;
+
+            if (realChecksum != savedChecksum) {
+                LOG_WARN_FMT(
+                    "Invalid Race packet from aid %u (checksum mismatch)\n",
+                    playerAid
+                );
+                return;
+            }
         }
 
-        DWC_CloseConnectionHard(playerAid);
+        if (!IsRacePacketValid(racePacket, packetSize, playerAid)) {
+            using namespace DWC;
 
-        return;
+            LOG_WARN_FMT(
+                "Invalid Race packet from aid %u (malicious packet)\n",
+                playerAid
+            );
+
+            DWCiNodeInfo* nodeInfo =
+                DWCi_NodeInfoList_GetNodeInfoForAid(playerAid);
+            if (nodeInfo) {
+                wwfc::GPReport::ReportU32(
+                    "mkw_malicious_packet", nodeInfo->profileId
+                );
+            }
+
+            DWC_CloseConnectionHard(playerAid);
+            return;
+        }
+
+        rkNetController->processRacePacket(playerAid, racePacket, packetSize);
     }
-
-    rkNetController->processRacePacket(playerAid, racePacket, packetSize);
-}
 )};
 
 #endif
