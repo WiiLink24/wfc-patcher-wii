@@ -27,14 +27,10 @@
 
 #ifndef NEEDS_IBAT_CONFIG
 
-// #if ST7PD00 | ST7ED00 | ST7JD00 | ADDRESS_PES_ALLOC_FUNCTION | DWEPD00 |       \
-//     RWEED00 | RWEJD00 | RWEPD00 | R2WED00 | R2WJD00 | R2WPD00 | R2WXD00 |      \
-//     RENED00 | RENJD00 | RENPD00 | SNCED00 | SNCJD00 | SNCPD00
-
 // Actually just blacklist known working games
 #if RMCED00 | RMCJD00 | RMCKD00 | RMCPD00 | \
     RSBED01 | RSBED02 | RSBJD00 | RSBJD01 | RSBPD00 | RSBPD01 | \
-    RTYPD00 | WASJN0001
+    RTYPD00 | R4QED01 | R4QJD00 | R4QPD01 | R4QPD02 | WASJN0001
 #  define NEEDS_IBAT_CONFIG 0
 #else
 #  define NEEDS_IBAT_CONFIG 1
@@ -86,6 +82,21 @@ GCT_STRING(ADDRESS_DWC_AUTH_ADD_CSNUM, AuthStage0Code) // 0x800EE098
     /* 0x08 */ lis     r0, 0x60000@h
     /* 0x0C */ stw     r0, 0x10 + 0x2C(r3) # Heap size
     /* 0x10 */ lwz     r3, 0x10 + 0x10(r3) # Heap pointer
+    /* 0x14 */ add     r3, r3, r0
+    /* 0x18 */ HD(GCT_STRING_PTR_STWU, r3, r31, LD_Stage1ParamBlock)
+    // Adjust offsets from this point:
+    // 0x0C -> 0x20
+    // 0x58 -> 0x6C
+#elif R4QED01 | R4QJD00 | R4QKD00 | R4QPD01 | R4QPD02
+    // Mario Strikers Charged works the same way as Mario Sports Mix
+#if R4QKD00
+    /* 0x04 */ lwz     r3, -0x1B90(r13) # HBM data (-0x4)
+#else
+    /* 0x04 */ lwz     r3, -0x1AE8(r13) # HBM data (-0x4)
+#endif
+    /* 0x08 */ lis     r0, 0x60000@h
+    /* 0x0C */ stw     r0, 0x4 + 0x2C(r3) # Heap size
+    /* 0x10 */ lwz     r3, 0x4 + 0x10(r3) # Heap pointer
     /* 0x14 */ add     r3, r3, r0
     /* 0x18 */ HD(GCT_STRING_PTR_STWU, r3, r31, LD_Stage1ParamBlock)
     // Adjust offsets from this point:
@@ -248,9 +259,9 @@ GCT_WRITE_BRANCH(ADDRESS_AUTH_HANDLERESP_HOOK, ADDRESS_DWC_AUTH_ADD_CSNUM + 0x4)
 GCT_WRITE_BRANCH(ADDRESS_SKIP_DNS_CACHE, ADDRESS_SKIP_DNS_CACHE_CONTINUE) // 0x800D1518, 0x800D170C
 
 
-// Pokemon Battle Revolution doesn't align the HTTP response buffer like how we
-// need it to be
-#if RPBED00 || RPBPD00
+// Pokemon Battle Revolution and Mario Strikers Charged don't align the HTTP response buffer
+// like how we need it to be
+#if RPBED00 | RPBPD00 | R4QED01 | R4QJD00 | R4QPD01 | R4QPD02
 GCT_WRITE_INSTR(ADDRESS_DWCi_Auth_SendRequest + 0x4C, addi r5, r6, 0x41C6)
 GCT_WRITE_INSTR(ADDRESS_DWCi_Auth_SendRequest + 0x58, li r6, 0x1000 - 3)
 #endif
@@ -265,5 +276,5 @@ GCT_STRING_END(AvailableURLOverride)
 
 
 GCT_STRING(ADDRESS_NASWII_AC_URL + 0x4, AuthURLOverride) // 0x8027A42C
-    .ascii  "://192.168.1.100" "/w0\0"
+    .ascii  "://nas." WWFC_DOMAIN "/w0\0"
 GCT_STRING_END(AuthURLOverride)
