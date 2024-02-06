@@ -10,10 +10,10 @@ namespace mkw::Net
 struct RacePacket {
     enum EType {
         Header,
-        RaceHeader1,
-        RaceHeader2,
+        MatchHeader,
+        MatchData,
         RoomSelect,
-        RaceData,
+        PlayerData,
         User,
         Item,
         Event,
