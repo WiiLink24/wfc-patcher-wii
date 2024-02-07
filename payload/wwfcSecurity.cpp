@@ -2,6 +2,7 @@
 #include "import/mkwNet.hpp"
 #include "import/mkwNetEventHandler.hpp"
 #include "import/mkwNetItemHandler.hpp"
+#include "import/mkwNetMatchHeaderHandler.hpp"
 #include "import/mkwNetRoomHandler.hpp"
 #include "import/mkwNetSelectHandler.hpp"
 #include "import/mkwNetUserHandler.hpp"
@@ -129,7 +130,7 @@ using namespace mkw::Net;
 
 static size_t s_vanillaPacketBufferSizes[sizeof(RacePacket::sizes)] = {
     sizeof(RacePacket),
-    0x28,
+    sizeof(MatchHeaderHandler::Packet),
     0x28,
     sizeof(SelectHandler::Packet),
     0x40 << 1,
@@ -140,7 +141,7 @@ static size_t s_vanillaPacketBufferSizes[sizeof(RacePacket::sizes)] = {
 
 static bool IsPacketSizeValid(RacePacket::EType packetType, u8 packetSize)
 {
-    if (packetType >= RacePacket::RaceHeader1 &&
+    if (packetType >= RacePacket::MatchHeader &&
         packetType <= RacePacket::Event) {
         if (packetSize == 0) {
             return true;
@@ -167,17 +168,17 @@ static bool IsPacketSizeValid(RacePacket::EType packetType, u8 packetSize)
 
         return true;
     }
-    case RacePacket::RaceHeader1: {
-        if (packetSize < 0x28 ||
-            packetSize > packetBufferSizesPointer[RacePacket::RaceHeader1]) {
+    case RacePacket::MatchHeader: {
+        if (packetSize < sizeof(MatchHeaderHandler::Packet) ||
+            packetSize > packetBufferSizesPointer[RacePacket::MatchHeader]) {
             return false;
         }
 
         return true;
     }
-    case RacePacket::RaceHeader2: {
+    case RacePacket::MatchData: {
         if (packetSize < 0x28 ||
-            packetSize > packetBufferSizesPointer[RacePacket::RaceHeader2]) {
+            packetSize > packetBufferSizesPointer[RacePacket::MatchData]) {
             return false;
         }
 
@@ -196,9 +197,9 @@ static bool IsPacketSizeValid(RacePacket::EType packetType, u8 packetSize)
 
         return true;
     }
-    case RacePacket::RaceData: {
+    case RacePacket::PlayerData: {
         if (packetSize < 0x40 ||
-            packetSize > packetBufferSizesPointer[RacePacket::RaceData]) {
+            packetSize > packetBufferSizesPointer[RacePacket::PlayerData]) {
             return false;
         }
 
@@ -241,14 +242,75 @@ static bool IsHeaderPacketDataValid(
     return true;
 }
 
-static bool IsRaceHeader1PacketDataValid(
-    const void* /* packet */, u8 /* packetSize */, u8 /* playerAid */
+static bool IsMatchHeaderPacketDataValid(
+    const void* packet, u8 /* packetSize */, u8 /* playerAid */
 )
 {
+    using namespace mkw::Net;
+    using namespace mkw::Registry;
+    using namespace mkw::System;
+
+    const MatchHeaderHandler::Packet* matchHeaderPacket =
+        reinterpret_cast<const MatchHeaderHandler::Packet*>(packet);
+
+    if (!RKNetController::Instance()->inVanillaMatch()) {
+        return true;
+    }
+
+    if (static_cast<RKScene::SceneID>(
+            RKSystem::Instance().sceneManager()->getCurrentSceneID()
+        ) != RKScene::SceneID::Race) {
+        return true;
+    }
+
+    RaceConfig::Scenario* scenario = &RaceConfig::Instance()->raceScenario();
+
+    for (size_t n = 0; n < sizeof(MatchHeaderHandler::Packet::player) /
+                               sizeof(MatchHeaderHandler::Packet::Player);
+         n++) {
+        MatchHeaderHandler::Packet::Player player =
+            matchHeaderPacket->player[n];
+
+        MatchHeaderHandler::Packet::Vehicle playerVehicle = player.vehicle;
+        MatchHeaderHandler::Packet::Character playerCharacter =
+            player.character;
+        if (playerVehicle == MatchHeaderHandler::Packet::Vehicle::None &&
+            playerCharacter == MatchHeaderHandler::Packet::Character::None) {
+            continue;
+        }
+
+        Vehicle vehicle = static_cast<Vehicle>(playerVehicle);
+        Character character = static_cast<Character>(playerCharacter);
+        if (scenario->isOnlineVersusRace()) {
+            if (!IsCombinationValidVS(character, vehicle)) {
+                return false;
+            }
+        } else /* if (scenario->isOnlineBattle()) */ {
+            if (!IsCombinationValidBT(character, vehicle)) {
+                return false;
+            }
+        }
+    }
+
+    MatchHeaderHandler::Packet::Course currentCourse =
+        matchHeaderPacket->course;
+    if (currentCourse != MatchHeaderHandler::Packet::Course::None) {
+        Course course = static_cast<Course>(currentCourse);
+        if (scenario->isOnlineVersusRace()) {
+            if (!IsRaceCourse(course)) {
+                return false;
+            }
+        } else /* if (scenario->isOnlineBattle()) */ {
+            if (!IsBattleCourse(course)) {
+                return false;
+            }
+        }
+    }
+
     return true;
 }
 
-static bool IsRaceHeader2PacketDataValid(
+static bool IsMatchDataPacketDataValid(
     const void* /* packet */, u8 /* packetSize */, u8 /* playerAid */
 )
 {
@@ -354,7 +416,7 @@ IsRoomSelectPacketDataValid(const void* packet, u8 packetSize, u8 playerAid)
     return true;
 }
 
-static bool IsRaceDataPacketDataValid(
+static bool IsPlayerDataPacketDataValid(
     const void* /* packet */, u8 /* packetSize */, u8 /* playerAid */
 )
 {
@@ -488,10 +550,10 @@ typedef bool (*IsPacketDataValid)(
 
 static std::array<IsPacketDataValid, sizeof(RacePacket::sizes)>
     s_isPacketDataValid{
-        IsHeaderPacketDataValid,      IsRaceHeader1PacketDataValid,
-        IsRaceHeader2PacketDataValid, IsRoomSelectPacketDataValid,
-        IsRaceDataPacketDataValid,    IsUserPacketDataValid,
-        IsItemPacketDataValid,        IsEventPacketDataValid,
+        IsHeaderPacketDataValid,     IsMatchHeaderPacketDataValid,
+        IsMatchDataPacketDataValid,  IsRoomSelectPacketDataValid,
+        IsPlayerDataPacketDataValid, IsUserPacketDataValid,
+        IsItemPacketDataValid,       IsEventPacketDataValid,
     };
 
 static bool IsRacePacketValid(

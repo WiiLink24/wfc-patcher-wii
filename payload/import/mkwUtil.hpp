@@ -38,7 +38,7 @@ public:
     }
 
 private:
-    u8 _00[0x18 - 0x00];
+    /* 0x00 */ u8 _00[0x18 - 0x00];
 };
 
 static_assert(sizeof(Random) == 0x18);

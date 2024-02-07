@@ -2,7 +2,6 @@
 
 #include <wwfcUtil.h>
 
-// https://github.com/SeekyCt/mkw-structures/blob/master/itembehaviour.h
 namespace mkw::Item
 {
 
@@ -72,6 +71,7 @@ private:
 
 static_assert(sizeof(ItemDirector) == 0x430);
 
+// https://github.com/SeekyCt/mkw-structures/blob/master/itembehaviour.h
 struct ItemBehaviourEntry {
     /* 0x00 */ u8 _00[0x14 - 0x00];
     /* 0x14 */ UseType useType;
