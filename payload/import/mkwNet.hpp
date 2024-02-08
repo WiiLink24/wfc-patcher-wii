@@ -87,13 +87,21 @@ public:
         case JoinType::ContinentalBattle:
         case JoinType::FriendContinentalVersusRace:
         case JoinType::FriendContinentalBattle: {
-            auto matchingArea =
-                mkw::HostSystem::SystemManager::Instance()->matchingArea();
+            using namespace mkw::HostSystem;
 
-            return matchingArea >=
-                       mkw::HostSystem::SystemManager::MatchingArea::Japan &&
-                   matchingArea <=
-                       mkw::HostSystem::SystemManager::MatchingArea::China;
+            // Allow clients to modify their region without having to change
+            // their matching area.
+            extern SystemManager::MatchingArea customMatchingArea AT(0x80005EFC
+            );
+            if (customMatchingArea < SystemManager::MatchingArea::Japan ||
+                customMatchingArea > SystemManager::MatchingArea::China) {
+                return false;
+            }
+
+            SystemManager::MatchingArea matchingArea =
+                SystemManager::Instance()->matchingArea();
+            return matchingArea >= SystemManager::MatchingArea::Japan &&
+                   matchingArea <= SystemManager::MatchingArea::China;
         }
         case JoinType::RoomHost:
         case JoinType::RoomGuest: {
