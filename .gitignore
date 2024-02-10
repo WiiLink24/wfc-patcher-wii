@@ -36,6 +36,7 @@ payload/build
 payload/binary
 exploit/build
 exploit/sbcm
+launcher/build
 *.elf
 *.out
 *.dol
