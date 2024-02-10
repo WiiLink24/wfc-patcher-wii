@@ -222,4 +222,17 @@ public:
     } ATTRIBUTE_PACKED;
 
     static_assert(sizeof(TicketView) == 0xD8);
+
+    static ESError Open();
+    static void Close();
+
+    /**
+     * ES_DiGetTicketView; Get the ticket view of the current title context.
+     * @param[in] ticket Optional ticket to use for the view.
+     * @param[out] view Output ticket view.
+     */
+    static ESError DIGetTicketView(ES::Ticket* ticket, ES::TicketView* view);
+
+private:
+    static s32 s_fd;
 };
