@@ -1,5 +1,6 @@
 #include "DI.hpp"
 #include "GameAddresses.hpp"
+#include "IOS.hpp"
 #include "Stage1Payload.hpp"
 #include "Util.hpp"
 #include <cstdio>
@@ -124,32 +125,6 @@ extern u32 g_wwfcPatchEnd[];
 static void* s_xfb = nullptr;
 static GXRModeObj* s_rmode = nullptr;
 
-static bool IsDolphinImpl()
-{
-    // Newer versions of Dolphin have an IOS device called /dev/dolphin
-    s32 fd = IOS_Open("/dev/dolphin", 0);
-    if (fd >= 0) {
-        IOS_Close(fd);
-        return true;
-    }
-
-    // Older versions do not have this device, but they can be detected by the
-    // lack of /dev/sha
-    fd = IOS_Open("/dev/sha", 0);
-    if (fd >= 0) {
-        IOS_Close(fd);
-        return false;
-    }
-
-    return fd == -6; // ENOENT
-}
-
-bool IsDolphin()
-{
-    static bool isDolphin = IsDolphinImpl();
-    return isDolphin;
-}
-
 int main(int argc, char** argv)
 {
     (void) argc;
@@ -182,15 +157,15 @@ int main(int argc, char** argv)
         return EXIT_FAILURE;
     }
 
-    DI::DiskID* diskId = reinterpret_cast<DI::DiskID*>(0x80000000);
-
     std::printf("Reading the disc, please wait...\n");
-    auto retDi = DI::ReadDiskID(diskId);
+
+    DI::DiskID diskId = {};
+    auto retDi = DI::ReadDiskID(&diskId);
     if (retDi == DI::DIError::DRIVE) {
         // The drive probably hasn't been spun up yet
         retDi = DI::Reset(true);
         if (retDi == DI::DIError::OK) {
-            retDi = DI::ReadDiskID(diskId);
+            retDi = DI::ReadDiskID(&diskId);
         }
     }
 
@@ -201,8 +176,8 @@ int main(int argc, char** argv)
 
     char gameId[16];
     std::snprintf(
-        gameId, sizeof(gameId), "%c%c%c%cD%02x", diskId->gameId[0],
-        diskId->gameId[1], diskId->gameId[2], diskId->gameId[3], diskId->discVer
+        gameId, sizeof(gameId), "%c%c%c%cD%02x", diskId.gameId[0],
+        diskId.gameId[1], diskId.gameId[2], diskId.gameId[3], diskId.discVer
     );
 
     std::printf("Game ID/Rev: %s\n", gameId);
@@ -261,6 +236,12 @@ int main(int argc, char** argv)
     if (partOffset == 0) {
         std::fprintf(stderr, "Failed to find game partition\n");
         return EXIT_FAILURE;
+    }
+
+    // If the game is Korean or Chinese, wee may need IOS patches
+    if ((diskId.gameId[3] == 'K' || diskId.gameId[3] == 'C') &&
+        !IOS::IsDolphin()) {
+        IOS::PatchIOS(IOS::PATCH_IOSC_KOREAN_KEY);
     }
 
     ES::TMDFixed<512> tmd alignas(32) = {};
@@ -419,6 +400,8 @@ int main(int argc, char** argv)
         return EXIT_FAILURE;
     }
 
+    IOS::WaitForPatchIOS();
+
     std::printf("Reloading into IOS%d\n", U64Lo(tmd.iosTitleId));
     s32 ret = IOS_ReloadIOS(U64Lo(tmd.iosTitleId));
     if (ret != 0) {
@@ -432,13 +415,20 @@ int main(int argc, char** argv)
         return EXIT_FAILURE;
     }
 
-    retDi = DI::ReadDiskID(diskId);
+    if ((diskId.gameId[3] == 'K' || diskId.gameId[3] == 'C') &&
+        !IOS::IsDolphin()) {
+        // Needs Korean key
+        IOS::PatchIOS(IOS::PATCH_IOSC_KOREAN_KEY);
+    }
+
+    // Read the disk ID to the top of MEM1
+    retDi = DI::ReadDiskID(reinterpret_cast<DI::DiskID*>(0x80000000));
     if (retDi != DI::DIError::OK) {
         std::fprintf(stderr, "Failed to reread disk ID: 0x%X\n", u32(retDi));
         return EXIT_FAILURE;
     }
 
-    if (!IsDolphin()) {
+    if (!IOS::IsDolphin()) {
         retDi = DI::OpenPartitionWithTmdAndTicketView(partOffset, &tmd, &retEs);
     } else {
         // Dolphin doesn't implement that version of OpenPartition
