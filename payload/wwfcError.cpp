@@ -53,10 +53,11 @@ WWFC_DEFINE_PATCH = {
             blr;
             // clang-format on
         )
-    )};
+    )
+};
 
 static int s_wwfcErrorCode = 0;
-static u16 s_wwfcErrorMsg[256] = {};
+static wchar_t s_wwfcErrorMsg[256] = {};
 
 char* HandleWWFCErrorMessage(char* strstrResult, const char* command)
 {
@@ -90,7 +91,8 @@ char* HandleWWFCErrorMessage(char* strstrResult, const char* command)
 
     // TODO: Convert UTF-8 to UTF-16 properly
     size_t n = 0;
-    for (; value[n] != '\0' && n < (sizeof(s_wwfcErrorMsg) / sizeof(u16)) - 1;
+    for (;
+         value[n] != '\0' && n < (sizeof(s_wwfcErrorMsg) / sizeof(wchar_t)) - 1;
          n++) {
         s_wwfcErrorMsg[n] = value[n];
     }

@@ -1,19 +1,24 @@
 #pragma once
 
 #include <wwfcCommon.h>
-#include <wwfcUtil.h>
 
 namespace mkw::UI
 {
 
+#if RMC
+
 struct FormatParam {
     /* 0x00 */ s32 numbers[9];
-    /* 0x24 */ s32 msgIds[9];
-    /* 0x48 */ void* miis[9];
-    /* 0x6C */ u8 licenses[9];
-    /* 0x78 */ s32 playerIds[9];
-    /* 0x9C */ const u16* strings[9];
-    /* 0xC0 */ u32 unk_0xC0;
+    /* 0x24 */ u32 messageIds[9];
+    /* 0x48 */ const void* miis[9];
+    /* 0x6C */ u8 licenseIds[9];
+    /* 0x78 */ u32 playerIds[9];
+    /* 0x9C */ const wchar_t* strings[9];
+    /* 0xC0 */ u8 _C0[0xC4 - 0xC0];
 };
+
+static_assert(sizeof(FormatParam) == 0xC4);
+
+#endif
 
 } // namespace mkw::UI
