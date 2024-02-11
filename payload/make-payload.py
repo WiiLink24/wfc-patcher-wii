@@ -29,7 +29,7 @@ def build(game):
         if key != "Title":
             flags.append("-D" + key + "=" + value)
 
-    flags += ["-g", "-Os", "-fPIE", "-std=c++20", '-Wall', '-Werror', "-n", "-fno-rtti", "-fno-exceptions", "-ffunction-sections", "-fdata-sections", "-Wl,--gc-sections", "-Wno-address-of-packed-member"]
+    flags += ["-g", "-Os", "-fPIE", "-std=c++20", '-Wall', '-Werror', "-n", "-fno-rtti", "-fno-exceptions", "-ffunction-sections", "-fdata-sections", "-fshort-wchar", "-Wl,--gc-sections", "-Wno-address-of-packed-member"]
     flags += extra_build_flags
 
     out_path = os.path.join("build", game["Title"])
