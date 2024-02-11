@@ -117,3 +117,8 @@ static inline void MaskU32(u32 address, u32 clear, u32 set)
 {
     *(volatile u32*) address = ((*(volatile u32*) address) & ~clear) | set;
 }
+
+constexpr u32 MakeBranch(u32 from, u32 to)
+{
+    return 0x48000000 | ((to - from) & 0x03FFFFFC);
+}

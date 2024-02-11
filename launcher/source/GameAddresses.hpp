@@ -4,7 +4,7 @@
 
 #define GAME_ASM(_INST01, _INST02)                                             \
     (u32*) +[]() {                                                             \
-        __asm__ volatile(_INST01 "; " _INST02 "; .long 0");                    \
+        __asm__ volatile(_INST01 "; " _INST02 "; nop");                        \
         __builtin_unreachable();                                               \
     }
 
@@ -15,8 +15,11 @@ struct GameAddresses {
     u32 addrNHTTPSendRequest;
     u32 addrNHTTPDestroyResponse;
     u32 addrNASError;
+    u32 addrSkipDNSCache;
+    u32 addrSkipDNSCacheContinue;
+    u32 addrAvailableDomain;
     u32* loadAuthRequestAsm;
 };
 
 extern const GameAddresses GameAddressesList[];
-extern const int GameAddressesListSize;
+extern const u32 GameAddressesListSize;

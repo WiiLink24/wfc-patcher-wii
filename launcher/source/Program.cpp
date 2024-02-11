@@ -29,6 +29,41 @@ struct DOL {
     u32 bssSize;
     u32 entryPoint;
     u32 pad[0x1C / 4];
+
+    u32 GetReal(u32 offset) const
+    {
+        for (u32 i = 0; i < DOL::SECTION_COUNT; i++) {
+            u32 sectOff = section[i];
+            u32 sectSize = sectionSize[i];
+            if (offset >= sectOff && offset - sectOff < sectSize) {
+                u32 sectAddr = sectionAddr[i];
+                return sectAddr + (offset - sectOff);
+            }
+        }
+
+        std::fprintf(stderr, "Invalid DOL section (1)\n");
+        std::exit(EXIT_FAILURE);
+    }
+
+    u32 GetDol(u32 offset) const
+    {
+        for (u32 i = 0; i < DOL::SECTION_COUNT; i++) {
+            u32 sectAddr = sectionAddr[i];
+            u32 sectSize = sectionSize[i];
+            if (offset >= sectAddr && offset - sectAddr < sectSize) {
+                u32 sectOff = section[i];
+                return sectOff + (offset - sectAddr);
+            }
+        }
+
+        std::fprintf(stderr, "Invalid DOL section (2)\n");
+        std::exit(EXIT_FAILURE);
+    }
+
+    u32 GetDolMem(u32 offset) const
+    {
+        return u32(this) + GetDol(offset);
+    }
 };
 
 struct PartitionGroup {
@@ -59,49 +94,35 @@ struct PartitionOffsets {
 
 static_assert(sizeof(PartitionOffsets) == 0x20);
 
+struct Stage1Param {
+    u32 p_block;
+
+    u32 p_NHTTPCreateRequest;
+    u32 p_NHTTPSendRequestAsync;
+    u32 p_NHTTPDestroyResponse;
+
+    u32 p_allocator;
+    u32 p_dwcError;
+
+    char title[9];
+    u8 finished;
+    u8 padding[2];
+    u32 p_stage1;
+};
+
 extern "C" {
 void RunDOL(const DOL* dol);
 void RunDOLEnd();
 
-extern u32 WWFCPatchStart[];
-extern u32 WWFCPatch_LoadAuthWorkReq[];
-extern u32 WWFCPatch_AuthExit[];
-extern u32 WWFCPatch_Stage1Data[];
-extern u32 WWFCPatchEnd[];
+extern u32 g_wwfcPatchStart[];
+extern u32 g_wwfcPatchLoadAuthWorkReq[];
+extern u32 g_wwfcPatchAuthExit[];
+extern Stage1Param g_wwfcPatchStage1Data;
+extern u32 g_wwfcPatchEnd[];
 }
 
 static void* s_xfb = nullptr;
 static GXRModeObj* s_rmode = nullptr;
-
-static u32 DolToReal(const DOL* dol, u32 offset)
-{
-    for (u32 i = 0; i < DOL::SECTION_COUNT; i++) {
-        u32 sectOff = dol->section[i];
-        u32 sectSize = dol->sectionSize[i];
-        if (offset >= sectOff && offset - sectOff < sectSize) {
-            u32 sectAddr = dol->sectionAddr[i];
-            return sectAddr + (offset - sectOff);
-        }
-    }
-
-    std::fprintf(stderr, "Invalid DOL section (1)\n");
-    std::exit(EXIT_FAILURE);
-}
-
-static u32 RealToDol(const DOL* dol, u32 offset)
-{
-    for (u32 i = 0; i < DOL::SECTION_COUNT; i++) {
-        u32 sectAddr = dol->sectionAddr[i];
-        u32 sectSize = dol->sectionSize[i];
-        if (offset >= sectAddr && offset - sectAddr < sectSize) {
-            u32 sectOff = dol->section[i];
-            return sectOff + (offset - sectAddr);
-        }
-    }
-
-    std::fprintf(stderr, "Invalid DOL section (2)\n");
-    std::exit(EXIT_FAILURE);
-}
 
 static bool IsDolphinImpl()
 {
@@ -318,8 +339,8 @@ int main(int argc, char** argv)
     }
 
     // Read the FST
-    u32 fstSize = hdrOffsets.fstSize << 2;
-    u32 fstDest = AlignDown(0x81800000 - fstSize, 32);
+    const u32 fstSize = hdrOffsets.fstSize << 2;
+    const u32 fstDest = AlignDown(0x81800000 - fstSize, 32);
     if (fstDest < 0x81700000) {
         std::fprintf(stderr, "FST size is too large\n");
         return EXIT_FAILURE;
@@ -335,7 +356,7 @@ int main(int argc, char** argv)
     }
 
     // Add stage 1
-    u32 stage1Start = AlignDown(fstDest - sizeof(Stage1Payload), 32);
+    const u32 stage1Start = AlignDown(fstDest - sizeof(Stage1Payload), 32);
     std::memcpy(
         reinterpret_cast<void*>(stage1Start), Stage1Payload,
         sizeof(Stage1Payload)
@@ -345,56 +366,53 @@ int main(int argc, char** argv)
         reinterpret_cast<void*>(stage1Start), sizeof(Stage1Payload)
     );
 
-    u32 payloadBlock = stage1Start - 0x20000;
-    u32 wwfcAsm = payloadBlock - 0x100;
+    const u32 payloadBlock = stage1Start - 0x20000;
+    const u32 wwfcAsm = payloadBlock - 0x100;
+
+    const u32 start = u32(g_wwfcPatchStart);
+    const u32 loadAuthWork = u32(g_wwfcPatchLoadAuthWorkReq);
+    const u32 authExit = u32(g_wwfcPatchAuthExit);
+    const u32 end = u32(g_wwfcPatchEnd);
 
     // Patch WWFC
-    u32 stage1DataOffset =
-        wwfcAsm + (u32(WWFCPatch_Stage1Data) - u32(WWFCPatchStart));
-    WWFCPatchStart[0] &= ~0xFFFF;
-    WWFCPatchStart[0] |= u16(stage1DataOffset >> 16);
-    WWFCPatchStart[1] &= ~0xFFFF;
-    WWFCPatchStart[1] |= u16(stage1DataOffset);
+    const u32 stage1DataAddr = wwfcAsm + (u32(&g_wwfcPatchStage1Data) - start);
+    MaskU32(start + 0, 0xFFFF, (stage1DataAddr >> 16) & 0xFFFF);
+    MaskU32(start + 4, 0xFFFF, stage1DataAddr & 0xFFFF);
 
-    WWFCPatch_LoadAuthWorkReq[0] = game->loadAuthRequestAsm[0];
-    WWFCPatch_LoadAuthWorkReq[1] = game->loadAuthRequestAsm[1];
-    WWFCPatch_LoadAuthWorkReq[2] = game->loadAuthRequestAsm[2];
-    if (WWFCPatch_LoadAuthWorkReq[2] == 0) {
-        WWFCPatch_LoadAuthWorkReq[2] = 0x60000000;
-    }
+    WriteU32(loadAuthWork + 0, game->loadAuthRequestAsm[0]);
+    WriteU32(loadAuthWork + 4, game->loadAuthRequestAsm[1]);
+    WriteU32(loadAuthWork + 8, game->loadAuthRequestAsm[2]);
 
-    u32 authExitOffset =
-        wwfcAsm + (u32(WWFCPatch_AuthExit) - u32(WWFCPatchStart));
-    WWFCPatch_AuthExit[0] =
-        *(u32*) (u32(dol) + RealToDol(dol, game->addrAuthSendRequest));
-    WWFCPatch_AuthExit[1] =
-        0x48000000 |
-        (((game->addrAuthSendRequest + 4) - (authExitOffset + 4)) & 0x3FFFFFF);
+    WriteU32(authExit + 0, ReadU32(dol->GetDolMem(game->addrAuthSendRequest)));
+    WriteU32(
+        authExit + 4,
+        MakeBranch(
+            wwfcAsm + (authExit - start) + 4, game->addrAuthSendRequest + 4
+        )
+    );
 
-    WWFCPatch_Stage1Data[0] = payloadBlock;
-    WWFCPatch_Stage1Data[1] = game->addrNHTTPCreateRequest;
-    WWFCPatch_Stage1Data[2] = game->addrNHTTPSendRequest;
-    WWFCPatch_Stage1Data[3] = game->addrNHTTPDestroyResponse;
-    WWFCPatch_Stage1Data[5] = game->addrNASError;
-    std::memset(WWFCPatch_Stage1Data + 6, 0, 9);
-    std::strncpy(reinterpret_cast<char*>(WWFCPatch_Stage1Data + 6), gameId, 9);
-    WWFCPatch_Stage1Data[9] = stage1Start;
+    g_wwfcPatchStage1Data = {
+        .p_block = payloadBlock,
+        .p_NHTTPCreateRequest = game->addrNHTTPCreateRequest,
+        .p_NHTTPSendRequestAsync = game->addrNHTTPSendRequest,
+        .p_NHTTPDestroyResponse = game->addrNHTTPDestroyResponse,
+        .p_allocator = 0,
+        .p_dwcError = game->addrNASError,
+        .title = {},
+        .finished = 0,
+        .padding = {},
+        .p_stage1 = stage1Start,
+    };
+    std::strncpy(g_wwfcPatchStage1Data.title, gameId, 9);
 
     std::memcpy(
-        reinterpret_cast<void*>(wwfcAsm), WWFCPatchStart,
-        u32(WWFCPatchEnd) - u32(WWFCPatchStart)
+        reinterpret_cast<void*>(wwfcAsm), g_wwfcPatchStart, end - start
     );
-    DCFlushRange(
-        reinterpret_cast<void*>(wwfcAsm),
-        u32(WWFCPatchEnd) - u32(WWFCPatchStart)
-    );
-    ICInvalidateRange(
-        reinterpret_cast<void*>(wwfcAsm),
-        u32(WWFCPatchEnd) - u32(WWFCPatchStart)
-    );
+    DCFlushRange(reinterpret_cast<void*>(wwfcAsm), end - start);
+    ICInvalidateRange(reinterpret_cast<void*>(wwfcAsm), end - start);
 
     // Read BI2
-    u32 bi2 = wwfcAsm - 0x2000;
+    const u32 bi2 = wwfcAsm - 0x2000;
     retDi = DI::Read(reinterpret_cast<void*>(bi2), 0x2000, 0x440);
     if (retDi != DI::DIError::OK) {
         std::fprintf(stderr, "Failed to read BI2: 0x%X\n", u32(retDi));
@@ -462,8 +480,22 @@ int main(int argc, char** argv)
     SYS_ResetSystem(SYS_SHUTDOWN, 0, 0);
 
     // Add hook to game
-    *(u32*) (u32(dol) + RealToDol(dol, game->addrAuthSendRequest)) =
-        0x48000000 | ((wwfcAsm - game->addrAuthSendRequest) & 0x3FFFFFF);
+    WriteU32(
+        dol->GetDolMem(game->addrAuthSendRequest),
+        MakeBranch(game->addrAuthSendRequest, wwfcAsm)
+    );
+
+    // Skip DNS cache in login
+    WriteU32(
+        dol->GetDolMem(game->addrSkipDNSCache),
+        MakeBranch(game->addrSkipDNSCache, game->addrSkipDNSCacheContinue)
+    );
+
+    // Patch available domain
+    std::strcpy(
+        reinterpret_cast<char*>(dol->GetDolMem(game->addrAvailableDomain)),
+        "%s.av.gs.wiilink24.com"
+    );
 
     // Stub exception handlers
     static constexpr u32 EXCEPTION_HANDLERS[] = {
