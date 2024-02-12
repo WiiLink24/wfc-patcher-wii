@@ -27,7 +27,7 @@ g_wwfcPatchLoadAuthWorkReq:
 
 L_SetFinishedAndExit:
     lis     r11, 1
-    stw     r11, L_Stage1DataFinished - g_wwfcPatchStage1Data(r12)
+    stb     r11, L_Stage1DataFinished - g_wwfcPatchStage1Data(r12)
     // Fall through
 
     .global g_wwfcPatchAuthExit
