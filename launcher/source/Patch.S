@@ -26,7 +26,7 @@ g_wwfcPatchLoadAuthWorkReq:
     bctr
 
 L_SetFinishedAndExit:
-    lis     r11, 1
+    li      r11, 1
     stb     r11, L_Stage1DataFinished - g_wwfcPatchStage1Data(r12)
     // Fall through
 
