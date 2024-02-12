@@ -11,8 +11,10 @@
 #include <ogc/cache.h>
 #include <ogc/ios.h>
 #include <ogc/irq.h>
+#include <ogc/lwp.h>
 #include <ogc/system.h>
 #include <ogc/video.h>
+#include <unistd.h>
 
 static constexpr u32 LOAD_DOL_ADDRESS = 0x80901000;
 static constexpr u32 LOAD_DOL_MAXLEN = 0x00900000;
@@ -273,22 +275,41 @@ static void PatchAndLaunchDol(
     }
 }
 
-void Apploader::LaunchDisc()
+static Apploader::State s_state = Apploader::State::INITIALIZING;
+static bool s_shutdown = false;
+
+Apploader::State Apploader::GetState()
 {
+    return s_state;
+}
+
+static Apploader::State LaunchDisc()
+{
+#define CHECK_SHUTDOWN()                                                       \
+    if (s_shutdown) {                                                          \
+        return Apploader::State::INITIALIZING;                                 \
+    }
+
+    std::printf("Reading the disc, please wait...\n");
+
     DI::DiskID diskId = {};
-    auto retDi = DI::ReadDiskID(&diskId);
-    if (retDi == DI::DIError::DRIVE) {
+    auto diRet = DI::ReadDiskID(&diskId);
+    if (diRet == DI::DIError::DRIVE) {
         // The drive probably hasn't been spun up yet
-        retDi = DI::Reset(true);
-        if (retDi == DI::DIError::OK) {
-            retDi = DI::ReadDiskID(&diskId);
+        s_state = Apploader::State::DISC_SPINUP;
+
+        diRet = DI::Reset(true);
+        CHECK_SHUTDOWN();
+        if (diRet == DI::DIError::OK) {
+            diRet = DI::ReadDiskID(&diskId);
         }
     }
 
-    if (retDi != DI::DIError::OK) {
-        std::fprintf(stderr, "Failed to init DI: 0x%X\n", u32(retDi));
-        return;
+    if (diRet != DI::DIError::OK) {
+        std::fprintf(stderr, "Failed to init DI: 0x%X\n", u32(diRet));
+        return Apploader::State::READ_ERROR;
     }
+    CHECK_SHUTDOWN();
 
     char gameId[16];
     std::snprintf(
@@ -308,18 +329,21 @@ void Apploader::LaunchDisc()
 
     if (game == nullptr) {
         std::fprintf(stderr, "Game not supported\n");
-        return;
+        return Apploader::State::UNSUPPORTED_GAME;
     }
+
+    s_state = Apploader::State::READING_DISC;
 
     // Find the game partition
     PartitionGroup groups[4] alignas(0x20);
-    retDi = DI::UnencryptedRead(groups, sizeof(groups), 0x40000 >> 2);
-    if (retDi != DI::DIError::OK) {
+    diRet = DI::UnencryptedRead(groups, sizeof(groups), 0x40000 >> 2);
+    if (diRet != DI::DIError::OK) {
         std::fprintf(
-            stderr, "Failed to read partition groups: 0x%X\n", u32(retDi)
+            stderr, "Failed to read partition groups: 0x%X\n", u32(diRet)
         );
-        return;
+        return Apploader::State::READ_ERROR;
     }
+    CHECK_SHUTDOWN();
 
     u32 partOffset = 0;
 
@@ -332,14 +356,15 @@ void Apploader::LaunchDisc()
         }
 
         PartitionInfo partitions[4] alignas(0x20);
-        retDi = DI::UnencryptedRead(partitions, sizeof(partitions), offset);
-        if (retDi != DI::DIError::OK) {
+        diRet = DI::UnencryptedRead(partitions, sizeof(partitions), offset);
+        if (diRet != DI::DIError::OK) {
             std::fprintf(
                 stderr, "Failed to read partition info at offset %08X: 0x%X\n",
-                offset, u32(retDi)
+                offset, u32(diRet)
             );
-            return;
+            return Apploader::State::READ_ERROR;
         }
+        CHECK_SHUTDOWN();
 
         for (u32 j = 0; j < partitionCount; j++) {
             if (partitions[j].type == PartitionType::DATA) {
@@ -351,10 +376,10 @@ void Apploader::LaunchDisc()
 
     if (partOffset == 0) {
         std::fprintf(stderr, "Failed to find game partition\n");
-        return;
+        return Apploader::State::READ_ERROR;
     }
 
-    // If the game is Korean or Chinese, wee may need IOS patches
+    // If the game is Korean or Chinese, we may need IOS patches
     if ((diskId.gameId[3] == 'K' || diskId.gameId[3] == 'C') &&
         !IOS::IsDolphin()) {
         IOS::PatchIOS(IOS::PATCH_IOSC_KOREAN_KEY);
@@ -362,40 +387,44 @@ void Apploader::LaunchDisc()
 
     ES::TMDFixed<512> tmd alignas(32) = {};
 
-    ES::ESError retEs;
-    retDi = DI::OpenPartition(partOffset, &tmd, &retEs);
-    if (retDi != DI::DIError::OK) {
+    ES::ESError esRet = ES::ESError::OK;
+    diRet = DI::OpenPartition(partOffset, &tmd, &esRet);
+    if (diRet != DI::DIError::OK) {
         std::fprintf(
             stderr, "Failed to open partition at offset %08X: 0x%X, ES: %d\n",
-            partOffset, u32(retDi), s32(retEs)
+            partOffset, u32(diRet), s32(esRet)
         );
-        return;
+        return Apploader::State::READ_ERROR;
     }
 
     std::printf("Opened partition at offset %08X\n", partOffset);
+    CHECK_SHUTDOWN();
 
     PartitionOffsets hdrOffsets alignas(32) = {};
-    retDi = DI::Read(&hdrOffsets, sizeof(hdrOffsets), 0x420 >> 2);
-    if (retDi != DI::DIError::OK) {
+    diRet = DI::Read(&hdrOffsets, sizeof(hdrOffsets), 0x420 >> 2);
+    if (diRet != DI::DIError::OK) {
         std::fprintf(
-            stderr, "Failed to read from %08X: 0x%X\n", partOffset, u32(retDi)
+            stderr, "Failed to read from %08X: 0x%X\n", partOffset, u32(diRet)
         );
-        return;
+        return Apploader::State::READ_ERROR;
     }
+    CHECK_SHUTDOWN();
 
     // Read the DOL
     DOL* dol = reinterpret_cast<DOL*>(LOAD_DOL_ADDRESS);
 
-    retDi = DI::Read(dol, sizeof(DOL), hdrOffsets.dolOffset);
-    if (retDi != DI::DIError::OK) {
-        std::fprintf(stderr, "Failed to read DOL header: 0x%X\n", u32(retDi));
-        return;
+    diRet = DI::Read(dol, sizeof(DOL), hdrOffsets.dolOffset);
+    if (diRet != DI::DIError::OK) {
+        std::fprintf(stderr, "Failed to read DOL header: 0x%X\n", u32(diRet));
+        return Apploader::State::READ_ERROR;
     }
 
     for (u32 i = 0; i < DOL::SECTION_COUNT; i++) {
         if (dol->sectionSize[i] == 0) {
             continue;
         }
+
+        CHECK_SHUTDOWN();
 
         std::printf(
             "DOL section (%02u): %08X, %08X, %08X\n", i, dol->section[i],
@@ -408,7 +437,7 @@ void Apploader::LaunchDisc()
             !IsAligned(dol->sectionAddr[i], 32) ||
             !IsAligned(dol->sectionSize[i], 4)) {
             std::fprintf(stderr, "DOL section (%02u) has bad alignment\n", i);
-            return;
+            return Apploader::State::READ_ERROR;
         }
 
         if (!CheckBounds(
@@ -420,18 +449,18 @@ void Apploader::LaunchDisc()
                 dol->sectionSize[i]
             )) {
             std::fprintf(stderr, "DOL section (%02u) out of bounds\n", i);
-            return;
+            return Apploader::State::READ_ERROR;
         }
 
-        retDi = DI::Read(
+        diRet = DI::Read(
             reinterpret_cast<void*>(LOAD_DOL_ADDRESS + dol->section[i]),
             dol->sectionSize[i], hdrOffsets.dolOffset + (dol->section[i] >> 2)
         );
-        if (retDi != DI::DIError::OK) {
+        if (diRet != DI::DIError::OK) {
             std::fprintf(
-                stderr, "Failed to read DOL section (%u): 0x%X\n", i, u32(retDi)
+                stderr, "Failed to read DOL section (%u): 0x%X\n", i, u32(diRet)
             );
-            return;
+            return Apploader::State::READ_ERROR;
         }
     }
 
@@ -440,38 +469,41 @@ void Apploader::LaunchDisc()
     const u32 fstDest = AlignDown(0x81800000 - fstSize, 32);
     if (fstDest < 0x81700000) {
         std::fprintf(stderr, "FST size is too large\n");
-        return;
+        return Apploader::State::READ_ERROR;
     }
 
-    retDi = DI::Read(
+    diRet = DI::Read(
         reinterpret_cast<void*>(fstDest), AlignUp(fstSize, 32),
         hdrOffsets.fstOffset
     );
-    if (retDi != DI::DIError::OK) {
-        std::fprintf(stderr, "Failed to read FST: 0x%X\n", u32(retDi));
-        return;
+    if (diRet != DI::DIError::OK) {
+        std::fprintf(stderr, "Failed to read FST: 0x%X\n", u32(diRet));
+        return Apploader::State::READ_ERROR;
     }
+    CHECK_SHUTDOWN();
 
     u8 bi2Data[0x2000] alignas(32);
-    retDi = DI::Read(bi2Data, 0x2000, 0x440);
-    if (retDi != DI::DIError::OK) {
-        std::fprintf(stderr, "Failed to read BI2: 0x%X\n", u32(retDi));
-        return;
+    diRet = DI::Read(bi2Data, 0x2000, 0x440);
+    if (diRet != DI::DIError::OK) {
+        std::fprintf(stderr, "Failed to read BI2: 0x%X\n", u32(diRet));
+        return Apploader::State::READ_ERROR;
     }
+    CHECK_SHUTDOWN();
 
+    s_state = Apploader::State::LAUNCHING;
     IOS::WaitForPatchIOS();
 
     std::printf("Reloading into IOS%d\n", U64Lo(tmd.iosTitleId));
     s32 ret = IOS_ReloadIOS(U64Lo(tmd.iosTitleId));
     if (ret != 0) {
         std::fprintf(stderr, "Failed to reload IOS: %d\n", ret);
-        return;
+        return Apploader::State::FATAL_ERROR;
     }
 
     // Reopen the partition
     if (!DI::Init()) {
         std::printf("Failed to reopen DI\n");
-        return;
+        return Apploader::State::FATAL_ERROR;
     }
 
     if ((diskId.gameId[3] == 'K' || diskId.gameId[3] == 'C') &&
@@ -481,30 +513,134 @@ void Apploader::LaunchDisc()
     }
 
     // Read the disk ID to the top of MEM1
-    retDi = DI::ReadDiskID(reinterpret_cast<DI::DiskID*>(0x80000000));
-    if (retDi != DI::DIError::OK) {
-        std::fprintf(stderr, "Failed to reread disk ID: 0x%X\n", u32(retDi));
-        return;
+    diRet = DI::ReadDiskID(reinterpret_cast<DI::DiskID*>(0x80000000));
+    if (diRet != DI::DIError::OK) {
+        std::fprintf(stderr, "Failed to reread disk ID: 0x%X\n", u32(diRet));
+        return Apploader::State::FATAL_ERROR;
     }
 
     if (!IOS::IsDolphin()) {
-        retDi = DI::OpenPartitionWithTmdAndTicketView(partOffset, &tmd, &retEs);
+        diRet = DI::OpenPartitionWithTmdAndTicketView(partOffset, &tmd, &esRet);
     } else {
         // Dolphin doesn't implement that version of OpenPartition
-        retDi = DI::OpenPartition(partOffset, &tmd, &retEs);
+        diRet = DI::OpenPartition(partOffset, &tmd, &esRet);
     }
 
-    if (retDi != DI::DIError::OK) {
+    if (diRet != DI::DIError::OK) {
         std::fprintf(
             stderr, "Failed to reopen partition at offset %08X: 0x%X, ES: %d\n",
-            partOffset, u32(retDi), s32(retEs)
+            partOffset, u32(diRet), s32(esRet)
         );
-        return;
+        return Apploader::State::FATAL_ERROR;
     }
 
     std::printf("Reopened partition at offset %08X\n", partOffset);
 
     WriteU32(0x80000038, fstDest); // Start of FST (varies in all games)
     PatchAndLaunchDol(dol, game, bi2Data, fstDest);
-    return;
+
+    // Should never be reached
+    return Apploader::State::FATAL_ERROR;
+#undef CHECK_SHUTDOWN
+}
+
+static void* ApploaderProcess(void* arg)
+{
+#define CHECK_SHUTDOWN()                                                       \
+    if (s_shutdown) {                                                          \
+        return nullptr;                                                        \
+    }
+
+    while (!s_shutdown) {
+        // Wait for a disc to be inserted
+        bool printed = false;
+        for (;;) {
+            u32 cover;
+            DI::DIError diRet = DI::GetCoverRegister(&cover);
+            if (diRet != DI::DIError::OK) {
+                std::fprintf(
+                    stderr, "Failed to get cover register: 0x%X\n", u32(diRet)
+                );
+                s_state = Apploader::State::FATAL_ERROR;
+                return nullptr;
+            }
+            CHECK_SHUTDOWN();
+
+            // Check if the cover is closed
+            if ((cover & DI::DICVR_CVR) == 0) {
+                break;
+            }
+
+            if (!printed) {
+                std::printf("Waiting for a disc to be inserted.\n");
+                printed = true;
+            }
+
+            s_state = Apploader::State::NO_DISC;
+
+            // Sleep for 8 ms
+            usleep(8000);
+            CHECK_SHUTDOWN();
+        }
+
+        s_state = LaunchDisc();
+        if (s_state == Apploader::State::FATAL_ERROR) {
+            return nullptr;
+        }
+        CHECK_SHUTDOWN();
+
+        // Stop the motor for an error
+        DI::StopMotor(false, false);
+
+        std::printf("Waiting for the disc to be ejected.\n");
+
+        // Wait for the disc to be removed
+        for (;;) {
+            u32 cover = 0;
+            DI::DIError diRet = DI::GetCoverRegister(&cover);
+            if (diRet != DI::DIError::OK) {
+                std::fprintf(
+                    stderr, "Failed to get cover register: 0x%X\n", u32(diRet)
+                );
+                s_state = Apploader::State::FATAL_ERROR;
+                return nullptr;
+            }
+            CHECK_SHUTDOWN();
+
+            // Check if the cover is open
+            if ((cover & DI::DICVR_CVR) == 1) {
+                break;
+            }
+
+            // Sleep for 8 ms
+            usleep(8000);
+            CHECK_SHUTDOWN();
+        }
+    }
+
+    return nullptr;
+#undef CHECK_SHUTDOWN
+}
+
+static lwp_t s_thread;
+static bool s_threadStarted = false;
+
+void Apploader::StartThread()
+{
+    if (s_threadStarted) {
+        return;
+    }
+
+    s_threadStarted = true;
+    LWP_CreateThread(
+        &s_thread, ApploaderProcess, nullptr, nullptr, 0x40000, 64
+    );
+}
+
+void Apploader::Shutdown()
+{
+    s_shutdown = true;
+    if (s_threadStarted) {
+        LWP_JoinThread(s_thread, nullptr);
+    }
 }

@@ -136,6 +136,10 @@ GXRModeObj GetRenderMode()
             break;
         }
 
+#if 0
+        // Not sure if this is needed, PAL-M seems to work fine when Mario Kart
+        // Wii tries to switch the video mode to NTSC, so I'm going to stick to
+        // that
     case VI_MPAL:
         if (dtv && progressive) {
             // PAL-M 480p
@@ -176,6 +180,7 @@ GXRModeObj GetRenderMode()
             };
             break;
         }
+#endif
     }
 
     return rmode;
@@ -186,7 +191,7 @@ int main(int argc, char** argv)
     (void) argc;
     (void) argv;
 
-    // Set reserved area for our apploader
+    // Reserve the end of MEM1 for our apploader
     SYS_SetArena1Hi(reinterpret_cast<void*>(0x80900000));
 
     // Initialize video
@@ -216,6 +221,8 @@ int main(int argc, char** argv)
         return EXIT_FAILURE;
     }
 
-    std::printf("Reading the disc, please wait...\n");
-    Apploader::LaunchDisc();
+    Apploader::StartThread();
+
+    while (true) {
+    }
 }

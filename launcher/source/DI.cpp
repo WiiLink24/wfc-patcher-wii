@@ -82,6 +82,23 @@ DI::DIError DI::WaitForCoverClose()
 }
 
 /**
+ * DVDLowGetCoverRegister; Gets the cover register.
+ * @param[out] cover Register value.
+ */
+DI::DIError DI::GetCoverRegister(u32* cover)
+{
+    DICommand block = {
+        .cmd = DIIoctl::GET_COVER_REGISTER,
+        .args = {0},
+    };
+    u32 drvCover[8] alignas(32) = {};
+    DIError ret =
+        CallIoctl(block, DIIoctl::GET_COVER_REGISTER, drvCover, sizeof(u32));
+    *cover = drvCover[0];
+    return ret;
+}
+
+/**
  * DVDLowGetLength; Get the length of the last transfer.
  * @param[out] length Output length.
  */
@@ -91,10 +108,9 @@ DI::DIError DI::GetLength(u32* length)
         .cmd = DIIoctl::GET_LENGTH,
         .args = {0},
     };
-    u32 drvLength;
-    DIError res =
-        CallIoctl(block, DIIoctl::GET_LENGTH, &drvLength, sizeof(u32));
-    *length = drvLength;
+    u32 drvLength[8] alignas(32) = {};
+    DIError res = CallIoctl(block, DIIoctl::GET_LENGTH, drvLength, sizeof(u32));
+    *length = drvLength[0];
     return res;
 }
 
@@ -324,6 +340,22 @@ DI::DIError DI::ReadDiskBCA(u8* out)
         .args = {0},
     };
     return CallIoctl(block, DIIoctl::READ_DISK_BCA, out, 64);
+}
+
+/**
+ * DVDLowStopMotor; Stops the disc motor.
+ * @param[in] eject Eject the disc after stopping the motor.
+ * @param[in] kill Completely shut down the drive, no commands will function
+ * until next reset.
+ */
+DI::DIError DI::StopMotor(bool eject, bool kill)
+{
+    DICommand block = {
+        .cmd = DIIoctl::STOP_MOTOR,
+        .args = {static_cast<u32>(eject), static_cast<u32>(kill)},
+    };
+    u32 out[8] alignas(32);
+    return CallIoctl(block, DIIoctl::STOP_MOTOR, out, sizeof(out));
 }
 
 DI::DIError DI::CallIoctl(DICommand& block, DIIoctl cmd, void* out, u32 outLen)

@@ -69,6 +69,13 @@ public:
         AUDIO_BUFFER_CONFIG = 0xE4,
     };
 
+    // Flags
+    enum {
+        DICVR_CVR = (1 << 0),
+        DICVR_CVRINTMASK = (1 << 1),
+        DICVR_CVRINT = (1 << 2),
+    };
+
     struct DriveInfo {
         u16 revisionLevel;
         u16 deviceCode;
@@ -136,6 +143,12 @@ public:
      * DIError::CoverClosed on success.
      */
     static DIError WaitForCoverClose();
+
+    /**
+     * DVDLowGetCoverRegister; Gets the cover register.
+     * @param[out] cover Register value.
+     */
+    static DIError GetCoverRegister(u32* cover);
 
     /**
      * DVDLowGetLength; Get the length of the last transfer.
@@ -222,6 +235,14 @@ public:
      * area).
      */
     static DIError ReadDiskBCA(u8* out);
+
+    /**
+     * DVDLowStopMotor; Stops the disc motor.
+     * @param[in] eject Eject the disc after stopping the motor.
+     * @param[in] kill Completely shut down the drive, no commands will function
+     * until next reset.
+     */
+    static DIError StopMotor(bool eject, bool kill);
 
 private:
     static DIError CallIoctl(

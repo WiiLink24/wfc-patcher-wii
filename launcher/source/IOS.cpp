@@ -428,7 +428,7 @@ void IOS::PatchIOSAsync(u32 patchFlags)
     // Start a new thread to perform the patch
     s32 ret = LWP_CreateThread(
         &s_patchThread, PatchIOSThread, reinterpret_cast<void*>(patchFlags),
-        NULL, 0, 0x80
+        nullptr, 0x20000, 0x80
     );
     if (ret != 0) {
         std::fprintf(
