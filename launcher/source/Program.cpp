@@ -1,16 +1,20 @@
 #include "Apploader.hpp"
 #include "DI.hpp"
 #include "Util.hpp"
+#include <cassert>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <ogc/cache.h>
 #include <ogc/conf.h>
 #include <ogc/consol.h>
+#include <ogc/gu.h>
 #include <ogc/gx.h>
 #include <ogc/system.h>
 #include <ogc/video.h>
 
 static void* s_xfb[2] [[maybe_unused]] = {nullptr, nullptr};
+static u32 s_currXfb = 0;
 static void* s_consoleXfb = nullptr;
 static GXRModeObj s_rmode = {};
 static s32 s_aspectRatio = 0;
@@ -186,6 +190,40 @@ GXRModeObj GetRenderMode()
     return rmode;
 }
 
+static void* AllocMEM1(s32 size)
+{
+    InterruptsLock lock{};
+
+    u8* start = reinterpret_cast<u8*>(SYS_GetArenaLo());
+    u8* end = reinterpret_cast<u8*>(SYS_GetArenaHi());
+
+    assert(start != nullptr);
+    assert(end != nullptr);
+    assert(size <= (end - start));
+
+    start = AlignUp(start, 32);
+    SYS_SetArena1Lo(AlignUp(start + size, 32));
+
+    DCZeroRange(start, size);
+    return start;
+}
+
+struct Rect {
+    float left;
+    float top;
+    float right;
+    float bottom;
+};
+
+static Rect GetProjectionRect()
+{
+    if (s_aspectRatio == 1) {
+        return Rect{-416, 228, 416, -228};
+    } else {
+        return Rect{-304, 228, 304, -228};
+    }
+}
+
 int main(int argc, char** argv)
 {
     (void) argc;
@@ -198,7 +236,25 @@ int main(int argc, char** argv)
     VIDEO_Init();
     s_rmode = GetRenderMode();
     s_consoleXfb = MEM_K0_TO_K1(SYS_AllocateFramebuffer(&s_rmode));
+    s_xfb[0] = MEM_K0_TO_K1(SYS_AllocateFramebuffer(&s_rmode));
+    s_xfb[1] = MEM_K0_TO_K1(SYS_AllocateFramebuffer(&s_rmode));
     VIDEO_Configure(&s_rmode);
+
+    // Initialize GX
+    GX_Init(AllocMEM1(0x80000), 0x80000);
+
+    GX_SetViewport(0, 0, s_rmode.fbWidth, s_rmode.efbHeight, 0, 1);
+    GX_SetScissor(0, 0, s_rmode.fbWidth, s_rmode.efbHeight);
+
+    float factor = GX_GetYScaleFactor(s_rmode.efbHeight, s_rmode.xfbHeight);
+    u16 lines = GX_SetDispCopyYScale(factor);
+
+    GX_SetDispCopySrc(0, 0, s_rmode.fbWidth, s_rmode.xfbHeight);
+    GX_SetDispCopyDst(s_rmode.fbWidth, lines);
+    GX_SetCopyFilter(s_rmode.aa, s_rmode.sample_pattern, 0, s_rmode.vfilter);
+    GX_SetPixelFmt(0, 0);
+
+    GX_SetViewport(0, 0, s_rmode.fbWidth, s_rmode.efbHeight, 0, 1);
 
     // Initialize LibOGC console
     CON_Init(
@@ -223,6 +279,59 @@ int main(int argc, char** argv)
 
     Apploader::StartThread();
 
+    bool firstFrame = true;
+    GXColor bgColor = {0xA9, 0xA9, 0xA9, 0x00};
+
+    // Main loop
     while (true) {
+        VIDEO_WaitVSync();
+
+        GX_InvVtxCache();
+        GX_InvalidateTexAll();
+
+        {
+            float mtx[4][4];
+            auto rect = GetProjectionRect();
+            guOrtho(mtx, rect.top, rect.bottom, rect.left, rect.right, 0, 500);
+            GX_LoadProjectionMtx(mtx, GX_ORTHOGRAPHIC);
+        }
+
+        {
+            float mtx[3][4];
+            guMtxIdentity(mtx);
+            GX_LoadPosMtxImm(mtx, 0);
+            GX_SetCurrentMtx(0);
+        }
+
+        GX_SetLineWidth(6, 0);
+        GX_SetPointSize(6, 0);
+        GX_SetCullMode(0);
+        GX_SetZMode(GX_TRUE, GX_LEQUAL, GX_TRUE);
+
+        // TODO: Do drawing here
+
+        bgColor.r += 1;
+        bgColor.g -= 1;
+        bgColor.b += 1;
+        GX_SetCopyClear(bgColor, 0xFFFFFF);
+        GX_SetZMode(1, 7, 1);
+
+        GX_SetAlphaUpdate(1);
+        GX_SetColorUpdate(1);
+
+        GX_CopyDisp(s_xfb[s_currXfb], 1);
+        GX_DrawDone();
+
+        VIDEO_SetNextFramebuffer(s_xfb[s_currXfb]);
+
+        if (firstFrame) {
+            VIDEO_SetBlack(false);
+            firstFrame = false;
+        }
+
+        VIDEO_Flush();
+
+        // Swap framebuffers
+        s_currXfb ^= 1;
     }
 }

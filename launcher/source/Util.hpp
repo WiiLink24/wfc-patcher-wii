@@ -2,6 +2,7 @@
 
 #include <gctypes.h>
 #include <gcutil.h>
+#include <ogc/machine/processor.h>
 
 template <typename T>
 constexpr T AlignUp(T num, unsigned int align)
@@ -122,3 +123,35 @@ constexpr u32 MakeBranch(u32 from, u32 to)
 {
     return 0x48000000 | ((to - from) & 0x03FFFFFC);
 }
+
+static inline u32 DisableInterrupts()
+{
+    u32 level;
+    _CPU_ISR_Disable(level);
+    return level;
+}
+
+static inline void RestoreInterrupts(u32 level)
+{
+    _CPU_ISR_Restore(level);
+}
+
+class InterruptsLock
+{
+public:
+    // Disable copy
+    InterruptsLock(const InterruptsLock&) = delete;
+
+    InterruptsLock()
+      : m_level(DisableInterrupts())
+    {
+    }
+
+    ~InterruptsLock()
+    {
+        RestoreInterrupts(m_level);
+    }
+
+private:
+    u32 m_level;
+};

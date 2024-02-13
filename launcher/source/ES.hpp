@@ -223,15 +223,52 @@ public:
 
     static_assert(sizeof(TicketView) == 0xD8);
 
+    /**
+     * Open the ES interface.
+     * @return ESError::OK on success, otherwise an error code.
+     */
     static ESError Open();
+
+    /**
+     * Close the ES interface.
+     */
     static void Close();
+
+    /**
+     * Reset the ES interface without calling IOS_Close, usually used for IOS
+     * reload.
+     */
+    static void Reset();
+
+    /**
+     * ES_LaunchTitle; Launch a title using IOS_IoctlvReboot.
+     * @param[in] titleId Title ID to launch.
+     * @param[in] view Optional ticket view to use for the launch. The function
+     * will get the ticket view itself if null.
+     */
+    static ESError LaunchTitleReboot(u64 titleId, const TicketView* view);
+
+    /**
+     * ES_GetNumTicketViews; Get the number of ticket views for a title.
+     * @param[in] titleID Title ID to get the number of ticket views for.
+     * @param[out] outCount Output number of ticket views.
+     */
+    static ESError GetNumTicketViews(u64 titleId, u32* outCount);
+
+    /**
+     * ES_GetTicketViews; Get the ticket views for a title.
+     * @param[in] titleId Title ID to get the ticket views for.
+     * @param[in] count Number of ticket views to get.
+     * @param[out] outViews Output ticket views.
+     */
+    static ESError GetTicketViews(u64 titleId, u32 count, TicketView* outViews);
 
     /**
      * ES_DiGetTicketView; Get the ticket view of the current title context.
      * @param[in] ticket Optional ticket to use for the view.
      * @param[out] view Output ticket view.
      */
-    static ESError DIGetTicketView(ES::Ticket* ticket, ES::TicketView* view);
+    static ESError DIGetTicketView(Ticket* ticket, TicketView* view);
 
 private:
     static s32 s_fd;

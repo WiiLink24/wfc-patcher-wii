@@ -28,7 +28,7 @@ INCLUDES	:=
 CFLAGS	= -g -Os -Wall -ffunction-sections -fdata-sections $(MACHDEP) $(INCLUDE)
 CXXFLAGS	=	$(CFLAGS)
 
-LDFLAGS	=	-g $(MACHDEP) -Wl,-Map,$(notdir $@).map
+LDFLAGS	=	-g $(MACHDEP) -Wl,-Map,$(notdir $@).map -Wl,--defsym=__Arena1Hi=0x808FF800 -Wl,--defsym=__gxregs=0x808FF800
 
 #---------------------------------------------------------------------------------
 # any extra libraries we wish to link with the project
