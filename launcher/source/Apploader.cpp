@@ -15,6 +15,7 @@
 #include <ogc/system.h>
 #include <ogc/video.h>
 #include <unistd.h>
+#include <wiiuse/wpad.h>
 
 static constexpr u32 LOAD_DOL_ADDRESS = 0x80901000;
 static constexpr u32 LOAD_DOL_MAXLEN = 0x00900000;
@@ -287,7 +288,7 @@ static Apploader::State LaunchDisc()
 {
 #define CHECK_SHUTDOWN()                                                       \
     if (s_shutdown) {                                                          \
-        return Apploader::State::INITIALIZING;                                 \
+        return Apploader::State::SHUTTING_DOWN;                                \
     }
 
     std::printf("Reading the disc, please wait...\n");
@@ -492,13 +493,17 @@ static Apploader::State LaunchDisc()
 
     s_state = Apploader::State::LAUNCHING;
     IOS::WaitForPatchIOS();
+    WPAD_Shutdown();
 
     std::printf("Reloading into IOS%d\n", U64Lo(tmd.iosTitleId));
+
+    LWP_SetThreadPriority(LWP_GetSelf(), 1);
     s32 ret = IOS_ReloadIOS(U64Lo(tmd.iosTitleId));
     if (ret != 0) {
         std::fprintf(stderr, "Failed to reload IOS: %d\n", ret);
         return Apploader::State::FATAL_ERROR;
     }
+    LWP_SetThreadPriority(LWP_GetSelf(), 80);
 
     // Reopen the partition
     if (!DI::Init()) {
@@ -548,6 +553,7 @@ static void* ApploaderProcess(void* arg)
 {
 #define CHECK_SHUTDOWN()                                                       \
     if (s_shutdown) {                                                          \
+        s_state = Apploader::State::SHUTTING_DOWN;                             \
         return nullptr;                                                        \
     }
 
@@ -587,7 +593,11 @@ static void* ApploaderProcess(void* arg)
         if (s_state == Apploader::State::FATAL_ERROR) {
             return nullptr;
         }
-        CHECK_SHUTDOWN();
+
+        if (s_shutdown) {
+            DI::Reset(false);
+            return nullptr;
+        }
 
         // Stop the motor for an error
         DI::StopMotor(false, false);
@@ -635,6 +645,11 @@ void Apploader::StartThread()
     LWP_CreateThread(
         &s_thread, ApploaderProcess, nullptr, nullptr, 0x40000, 64
     );
+}
+
+void Apploader::ShutdownAsync()
+{
+    s_shutdown = true;
 }
 
 void Apploader::Shutdown()

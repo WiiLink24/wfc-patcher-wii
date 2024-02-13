@@ -13,10 +13,12 @@ public:
         READ_ERROR,
         UNSUPPORTED_GAME,
         FATAL_ERROR,
+        SHUTTING_DOWN,
     };
 
     static State GetState();
 
     static void StartThread();
+    static void ShutdownAsync();
     static void Shutdown();
 };

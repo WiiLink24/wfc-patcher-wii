@@ -13,6 +13,7 @@
 #include <ogc/gx.h>
 #include <ogc/system.h>
 #include <ogc/video.h>
+#include <wiiuse/wpad.h>
 
 static void* s_xfb[2] = {nullptr, nullptr};
 static u32 s_currXfb = 0;
@@ -247,13 +248,20 @@ void LayoutDraw()
     s_loadingIcon.Draw();
 }
 
+enum class ShutdownType {
+    NONE,
+    POWER_OFF,
+    EXIT,
+};
+
+static ShutdownType s_shutdownType = ShutdownType::NONE;
+
 int main(int argc, char** argv)
 {
     (void) argc;
     (void) argv;
 
-    // Reserve the end of MEM1 for our apploader
-    SYS_SetArena1Hi(reinterpret_cast<void*>(0x80900000));
+    LWP_SetThreadPriority(LWP_GetSelf(), 100);
 
     // Initialize video
     VIDEO_Init();
@@ -284,6 +292,21 @@ int main(int argc, char** argv)
         return EXIT_FAILURE;
     }
 
+    // Initialize WPAD
+    WPAD_Init();
+
+    STM_RegisterEventHandler([](u32 event) {
+        if (event == STM_EVENT_RESET) {
+            s_shutdownType = ShutdownType::EXIT;
+            Apploader::ShutdownAsync();
+        }
+
+        if (event == STM_EVENT_POWER) {
+            s_shutdownType = ShutdownType::POWER_OFF;
+            Apploader::ShutdownAsync();
+        }
+    });
+
     Apploader::StartThread();
 
     // Initialize GX
@@ -309,6 +332,23 @@ int main(int argc, char** argv)
 
     // Main loop
     while (true) {
+        if (Apploader::GetState() == Apploader::State::SHUTTING_DOWN) {
+            break;
+        }
+
+        WPAD_ScanPads();
+
+        // Check for HOME button press
+        for (u32 i = 0; i < 4; i++) {
+            if (s_shutdownType == ShutdownType::NONE &&
+                WPAD_ButtonsDown(i) & WPAD_BUTTON_HOME) {
+                std::printf("Exiting...\n");
+
+                s_shutdownType = ShutdownType::EXIT;
+                Apploader::ShutdownAsync();
+            }
+        }
+
         LayoutCalc();
 
         VIDEO_WaitVSync();
@@ -359,4 +399,12 @@ int main(int argc, char** argv)
         // Swap framebuffers
         s_currXfb ^= 1;
     }
+
+    Apploader::Shutdown();
+
+    if (s_shutdownType == ShutdownType::POWER_OFF) {
+        SYS_ResetSystem(SYS_POWEROFF, 0, 0);
+    }
+
+    return EXIT_SUCCESS;
 }
