@@ -1,5 +1,6 @@
 #include "Apploader.hpp"
 #include "DI.hpp"
+#include "Layout_LoadingIcon.hpp"
 #include "Util.hpp"
 #include <cassert>
 #include <cstdio>
@@ -13,7 +14,7 @@
 #include <ogc/system.h>
 #include <ogc/video.h>
 
-static void* s_xfb[2] [[maybe_unused]] = {nullptr, nullptr};
+static void* s_xfb[2] = {nullptr, nullptr};
 static u32 s_currXfb = 0;
 static void* s_consoleXfb = nullptr;
 static GXRModeObj s_rmode = {};
@@ -224,6 +225,28 @@ static Rect GetProjectionRect()
     }
 }
 
+static Layout_LoadingIcon s_loadingIcon;
+
+void LayoutInit()
+{
+    s_loadingIcon.Init();
+    s_loadingIcon.m_width = 50.0f;
+    s_loadingIcon.m_height = 50.0f;
+    s_loadingIcon.m_x = -360.0f;
+    s_loadingIcon.m_y = -176.0f;
+    s_loadingIcon.m_alpha = 0xFF;
+}
+
+void LayoutCalc()
+{
+    s_loadingIcon.Calc();
+}
+
+void LayoutDraw()
+{
+    s_loadingIcon.Draw();
+}
+
 int main(int argc, char** argv)
 {
     (void) argc;
@@ -239,22 +262,6 @@ int main(int argc, char** argv)
     s_xfb[0] = MEM_K0_TO_K1(SYS_AllocateFramebuffer(&s_rmode));
     s_xfb[1] = MEM_K0_TO_K1(SYS_AllocateFramebuffer(&s_rmode));
     VIDEO_Configure(&s_rmode);
-
-    // Initialize GX
-    GX_Init(AllocMEM1(0x80000), 0x80000);
-
-    GX_SetViewport(0, 0, s_rmode.fbWidth, s_rmode.efbHeight, 0, 1);
-    GX_SetScissor(0, 0, s_rmode.fbWidth, s_rmode.efbHeight);
-
-    float factor = GX_GetYScaleFactor(s_rmode.efbHeight, s_rmode.xfbHeight);
-    u16 lines = GX_SetDispCopyYScale(factor);
-
-    GX_SetDispCopySrc(0, 0, s_rmode.fbWidth, s_rmode.xfbHeight);
-    GX_SetDispCopyDst(s_rmode.fbWidth, lines);
-    GX_SetCopyFilter(s_rmode.aa, s_rmode.sample_pattern, 0, s_rmode.vfilter);
-    GX_SetPixelFmt(0, 0);
-
-    GX_SetViewport(0, 0, s_rmode.fbWidth, s_rmode.efbHeight, 0, 1);
 
     // Initialize LibOGC console
     CON_Init(
@@ -279,11 +286,31 @@ int main(int argc, char** argv)
 
     Apploader::StartThread();
 
+    // Initialize GX
+    GX_Init(AllocMEM1(0x80000), 0x80000);
+
+    GX_SetViewport(0, 0, s_rmode.fbWidth, s_rmode.efbHeight, 0, 1);
+    GX_SetScissor(0, 0, s_rmode.fbWidth, s_rmode.efbHeight);
+
+    float factor = GX_GetYScaleFactor(s_rmode.efbHeight, s_rmode.xfbHeight);
+    u16 lines = GX_SetDispCopyYScale(factor);
+
+    GX_SetDispCopySrc(0, 0, s_rmode.fbWidth, s_rmode.xfbHeight);
+    GX_SetDispCopyDst(s_rmode.fbWidth, lines);
+    GX_SetCopyFilter(s_rmode.aa, s_rmode.sample_pattern, 0, s_rmode.vfilter);
+    GX_SetPixelFmt(0, 0);
+
+    GX_SetViewport(0, 0, s_rmode.fbWidth, s_rmode.efbHeight, 0, 1);
+
     bool firstFrame = true;
-    GXColor bgColor = {0xA9, 0xA9, 0xA9, 0x00};
+    const GXColor bgColor = {0x00, 0x00, 0x00, 0x00};
+
+    LayoutInit();
 
     // Main loop
     while (true) {
+        LayoutCalc();
+
         VIDEO_WaitVSync();
 
         GX_InvVtxCache();
@@ -309,10 +336,8 @@ int main(int argc, char** argv)
         GX_SetZMode(GX_TRUE, GX_LEQUAL, GX_TRUE);
 
         // TODO: Do drawing here
+        LayoutDraw();
 
-        bgColor.r += 1;
-        bgColor.g -= 1;
-        bgColor.b += 1;
         GX_SetCopyClear(bgColor, 0xFFFFFF);
         GX_SetZMode(1, 7, 1);
 

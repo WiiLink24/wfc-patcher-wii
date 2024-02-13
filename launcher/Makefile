@@ -25,7 +25,7 @@ INCLUDES	:=
 # options for code generation
 #---------------------------------------------------------------------------------
 
-CFLAGS	= -g -Os -Wall -ffunction-sections -fdata-sections $(MACHDEP) $(INCLUDE)
+CFLAGS	= -g -Os -Wall -ffunction-sections -fdata-sections -fno-rtti $(MACHDEP) $(INCLUDE)
 CXXFLAGS	=	$(CFLAGS)
 
 LDFLAGS	=	-g $(MACHDEP) -Wl,-Map,$(notdir $@).map -Wl,--defsym=__Arena1Hi=0x808FF800 -Wl,--defsym=__gxregs=0x808FF800
