@@ -98,7 +98,7 @@ ES::ESError ES::GetNumTicketViews(u64 titleId, u32* outCount)
     vec[1].len = sizeof(u32);
 
     s32 ret = IOS_Ioctlv(s_fd, s32(ESIoctl::GET_NUM_TICKET_VIEWS), 1, 1, vec);
-    *outCount = drvStack[2];
+    *outCount = drvCount[0];
     return static_cast<ESError>(ret);
 }
 
