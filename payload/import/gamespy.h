@@ -10,6 +10,10 @@ namespace GameSpy
 #endif
 
 typedef enum {
+    GPNoError = 0,
+} GPResult;
+
+typedef enum {
     // Success
     GT2Success = 0,
     // Ran out of memory
@@ -75,6 +79,14 @@ LONGCALL int gpiAppendStringToBuffer( //
 LONGCALL int gpiAppendIntToBuffer( //
     void* connection, void* outputBuffer, int num
 ) AT(ADDRESS_gpiAppendIntToBuffer);
+
+#if RMC
+
+LONGCALL GPIBool gpiValueForKey( //
+    const char* command, const char* key, char* value, int length
+) AT(RMCXD_PORT(0x80108FB4, 0x80108F14, 0x80108ED4, 0x8010902C));
+
+#endif
 
 typedef void* GPConnection;
 

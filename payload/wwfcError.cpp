@@ -1,6 +1,8 @@
+#include "import/dwc.h"
 #include "import/gamespy.h"
 #include "import/mkwUI.hpp"
 #include "wwfcPatch.hpp"
+#include <cstring>
 
 namespace wwfc::Error
 {
@@ -61,10 +63,6 @@ static wchar_t s_wwfcErrorMsg[256] = {};
 
 char* HandleWWFCErrorMessage(char* strstrResult, const char* command)
 {
-    LONGCALL GameSpy::GPIBool gpiValueForKey( //
-        const char* command, const char* key, char* value, int len
-    ) AT(RMCXD_PORT(0x80108FB4, 0x80108F14, 0x80108ED4, 0x8010902C));
-
     LONGCALL int atoi( //
         const char* str
     ) AT(RMCXD_PORT(0x8001543C, 0x800148DC, 0x80015360, 0x800154A4));
@@ -73,9 +71,10 @@ char* HandleWWFCErrorMessage(char* strstrResult, const char* command)
         return nullptr;
     }
 
-    char value[256];
-    if (gpiValueForKey(command, "\\wwfc_err\\", value, sizeof(value)) ==
-        GameSpy::GPIFalse) {
+    char value[512];
+    if (GameSpy::gpiValueForKey(
+            command, "\\wwfc_err\\", value, sizeof(value)
+        ) == GameSpy::GPIFalse) {
         return strstrResult;
     }
 
@@ -84,19 +83,21 @@ char* HandleWWFCErrorMessage(char* strstrResult, const char* command)
         return strstrResult;
     }
 
-    if (gpiValueForKey(command, "\\wwfc_errmsg\\", value, sizeof(value)) ==
-        GameSpy::GPIFalse) {
+    if (GameSpy::gpiValueForKey(
+            command, "\\wwfc_errmsg\\", value, sizeof(value)
+        ) == GameSpy::GPIFalse) {
         return strstrResult;
     }
 
-    // TODO: Convert UTF-8 to UTF-16 properly
-    size_t n = 0;
-    for (;
-         value[n] != '\0' && n < (sizeof(s_wwfcErrorMsg) / sizeof(wchar_t)) - 1;
-         n++) {
-        s_wwfcErrorMsg[n] = value[n];
+    s32 errorMessageLength = DWC::DWC_Base64Decode(
+        value, strlen(value), reinterpret_cast<char*>(s_wwfcErrorMsg),
+        sizeof(s_wwfcErrorMsg)
+    );
+    if (errorMessageLength == -1 ||
+        errorMessageLength == sizeof(s_wwfcErrorMsg)) {
+        return strstrResult;
     }
-    s_wwfcErrorMsg[n] = '\0';
+    s_wwfcErrorMsg[errorMessageLength / sizeof(wchar_t)] = L'\0';
 
     s_wwfcErrorCode = error;
 

@@ -84,12 +84,27 @@ public:
             section->page<MessagePopupPage>(PageId::MessagePopup);
 
         FormatParam formatParam{};
-        formatParam.strings[0] = L"Welcome to\nWiiLink Wi-Fi Connection!";
+        formatParam.strings[0] = s_messageOfTheDay;
 
         messagePopupPage->reset();
         messagePopupPage->setWindowMessage(0x19CA, &formatParam);
 
         push(PageId::MessagePopup, Animation::Next);
+    }
+
+    static void SetMessageOfTheDay(wchar_t* messageOfTheDay)
+    {
+        s_messageOfTheDay = messageOfTheDay;
+    }
+
+    static wchar_t* MessageOfTheDayBuffer()
+    {
+        return s_messageOfTheDayBuffer;
+    }
+
+    static size_t MessageOfTheDayBufferSize()
+    {
+        return sizeof(s_messageOfTheDayBuffer);
     }
 
     static bool HasSeenMessageOfTheDay()
@@ -105,6 +120,8 @@ public:
 private:
     /* 0x044 */ u8 _044[0xF34 - 0x044];
 
+    static const wchar_t* s_messageOfTheDay;
+    static wchar_t s_messageOfTheDayBuffer[256];
     static bool s_hasSeenMessageOfTheDay;
 };
 
