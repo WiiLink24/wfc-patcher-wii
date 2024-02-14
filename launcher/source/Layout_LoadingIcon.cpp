@@ -37,6 +37,7 @@ static void DrawRectangle(float x, float y, float width, float height)
 void Layout_LoadingIcon::Draw()
 {
     // Set up for drawing f32 quads
+    GX_ClearVtxDesc();
     GX_SetVtxDesc(GX_VA_POS, GX_DIRECT);
     GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
 

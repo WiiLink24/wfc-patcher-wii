@@ -1,6 +1,7 @@
 #include "Apploader.hpp"
 #include "DI.hpp"
 #include "Layout_LoadingIcon.hpp"
+#include "Layout_TextBox.hpp"
 #include "Util.hpp"
 #include <cassert>
 #include <cstdio>
@@ -226,26 +227,37 @@ static Rect GetProjectionRect()
     }
 }
 
+static sys_fontheader* s_fontHeader = nullptr;
 static Layout_LoadingIcon s_loadingIcon;
+static Layout_TextBox s_textBox;
 
 void LayoutInit()
 {
+    s_fontHeader =
+        reinterpret_cast<sys_fontheader*>(AllocMEM1(SYS_FONTSIZE_SJIS));
+    s32 ret = SYS_InitFont(s_fontHeader);
+    assert(ret == 1);
+
     s_loadingIcon.Init();
-    s_loadingIcon.m_width = 50.0f;
-    s_loadingIcon.m_height = 50.0f;
-    s_loadingIcon.m_x = -360.0f;
-    s_loadingIcon.m_y = -176.0f;
+    s_loadingIcon.m_width = 50.0;
+    s_loadingIcon.m_height = 50.0;
+    s_loadingIcon.m_x = GetProjectionRect().left + 56.0;
+    s_loadingIcon.m_y = -176.0;
     s_loadingIcon.m_alpha = 0xFF;
+
+    s_textBox.Init(s_fontHeader);
 }
 
 void LayoutCalc()
 {
     s_loadingIcon.Calc();
+    s_textBox.Calc();
 }
 
 void LayoutDraw()
 {
     s_loadingIcon.Draw();
+    s_textBox.Draw();
 }
 
 enum class ShutdownType {
@@ -295,6 +307,7 @@ int main(int argc, char** argv)
     // Initialize WPAD
     WPAD_Init();
 
+    // Set event handlers for face buttons
     STM_RegisterEventHandler([](u32 event) {
         if (event == STM_EVENT_RESET) {
             s_shutdownType = ShutdownType::EXIT;
@@ -375,7 +388,6 @@ int main(int argc, char** argv)
         GX_SetCullMode(0);
         GX_SetZMode(GX_TRUE, GX_LEQUAL, GX_TRUE);
 
-        // TODO: Do drawing here
         LayoutDraw();
 
         GX_SetCopyClear(bgColor, 0xFFFFFF);

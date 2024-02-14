@@ -5,7 +5,7 @@
 class Layout_LoadingIcon : public Layout
 {
 public:
-    void Init() override;
+    void Init();
     void Calc() override;
     void Draw() override;
 
