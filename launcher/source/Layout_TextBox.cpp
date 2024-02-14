@@ -8,7 +8,7 @@
 
 void Layout_TextBox::Init(const sys_fontheader* fontHeader)
 {
-    m_text = L"Test message.\nLine 2\nLine 3";
+    m_text = L"";
     m_fontSize = 1.5f;
     m_fontColor = (GXColor){0xFF, 0xFF, 0xFF, 0xFF};
     m_fontHeader = fontHeader;

@@ -243,13 +243,78 @@ void LayoutInit()
     s_loadingIcon.m_height = 50.0;
     s_loadingIcon.m_x = GetProjectionRect().left + 56.0;
     s_loadingIcon.m_y = -176.0;
-    s_loadingIcon.m_alpha = 0xFF;
+    s_loadingIcon.StopAnimation();
 
     s_textBox.Init(s_fontHeader);
+    s_textBox.SetText(L"Please insert a disc.");
+    s_textBox.SetFontSize(1.5f);
+    s_textBox.SetFontColor((GXColor){0xFF, 0xFF, 0xFF, 0xFF});
+    s_textBox.SetMonospace(false);
+    s_textBox.SetKerning(-3.0);
+    s_textBox.SetLeading(6.0);
+    s_textBox.m_width = 500.0;
+    s_textBox.m_height = 400.0;
+    s_textBox.m_x = 0;
+    s_textBox.m_y = -176.0;
+    s_textBox.m_alpha = 0xFF;
 }
 
 void LayoutCalc()
 {
+    auto state = Apploader::GetState();
+
+    switch (state) {
+    case Apploader::State::INITIALIZING:
+        s_loadingIcon.StopAnimation();
+        s_textBox.m_visible = false;
+        break;
+
+    case Apploader::State::DISC_SPINUP:
+        s_loadingIcon.StartAnimation();
+        s_textBox.m_visible = true;
+        s_textBox.SetText(L"Starting up the disc drive...");
+        break;
+
+    case Apploader::State::READING_DISC:
+        s_loadingIcon.StartAnimation();
+        s_textBox.m_visible = true;
+        s_textBox.SetText(L"Reading the disc...");
+        break;
+
+    case Apploader::State::LAUNCHING:
+        s_loadingIcon.StartAnimation();
+        s_textBox.m_visible = true;
+        s_textBox.SetText(L"Launching the game...");
+        break;
+
+    case Apploader::State::NO_DISC:
+        s_loadingIcon.StopAnimation();
+        s_textBox.m_visible = true;
+        s_textBox.SetText(L"Please insert a disc.");
+        break;
+
+    case Apploader::State::READ_ERROR:
+        s_loadingIcon.StopAnimation();
+        s_textBox.m_visible = true;
+        s_textBox.SetText(L"Unable the read the disc.");
+        break;
+
+    case Apploader::State::UNSUPPORTED_GAME:
+        s_loadingIcon.StopAnimation();
+        s_textBox.m_visible = true;
+        s_textBox.SetText(L"This game is not supported by WiiLink WFC.");
+        break;
+
+    case Apploader::State::FATAL_ERROR:
+        s_loadingIcon.StopAnimation();
+        s_textBox.m_visible = true;
+        s_textBox.SetText(L"An error has occurred");
+        break;
+
+    case Apploader::State::SHUTTING_DOWN:
+        break;
+    }
+
     s_loadingIcon.Calc();
     s_textBox.Calc();
 }

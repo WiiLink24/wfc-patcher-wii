@@ -16,7 +16,9 @@ void Layout_LoadingIcon::Init()
 
 void Layout_LoadingIcon::Calc()
 {
-    m_frame++;
+    if (m_animate) {
+        m_frame++;
+    }
 }
 
 static void DrawRectangle(float x, float y, float width, float height)
@@ -36,6 +38,10 @@ static void DrawRectangle(float x, float y, float width, float height)
 
 void Layout_LoadingIcon::Draw()
 {
+    if (!m_visible || m_alpha == 0) {
+        return;
+    }
+
     // Set up for drawing f32 quads
     GX_ClearVtxDesc();
     GX_SetVtxDesc(GX_VA_POS, GX_DIRECT);
@@ -69,10 +75,15 @@ void Layout_LoadingIcon::Draw()
         );
     }
 
-    static constexpr u32 ANIM_DELAY = 5;
-    static constexpr u8 LOADING_ORDER[8] = {0, 1, 2, 5, 8, 7, 6, 3};
+    u8 current = 0xFF;
 
-    u8 current = LOADING_ORDER[(-m_frame / ANIM_DELAY) % sizeof(LOADING_ORDER)];
+    if (m_animate) {
+        static constexpr u32 ANIM_DELAY = 5;
+        static constexpr u8 LOADING_ORDER[8] = {0, 1, 2, 5, 8, 7, 6, 3};
+
+        current =
+            LOADING_ORDER[(-m_frame / ANIM_DELAY) % sizeof(LOADING_ORDER)];
+    }
 
     // Draw 9 rectangles in a 3x3 grid
     for (int i = 0; i < 9; i++) {

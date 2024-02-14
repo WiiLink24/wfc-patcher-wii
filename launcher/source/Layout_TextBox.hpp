@@ -11,17 +11,48 @@ public:
     void Calc() override;
     void Draw() override;
 
-    void SetText(const wchar_t* text);
+    void SetText(const wchar_t* text)
+    {
+        m_text = text;
+    }
+
+    void SetFontSize(float fontSize)
+    {
+        m_fontSize = fontSize;
+    }
+
+    void SetFontColor(GXColor fontColor)
+    {
+        m_fontColor = fontColor;
+    }
+
+    void SetMonospace(bool monospace)
+    {
+        m_monospace = monospace;
+    }
+
+    void SetKerning(float kerning)
+    {
+        m_kerning = kerning;
+    }
+
+    void SetLeading(float leading)
+    {
+        m_leading = leading;
+    }
+
+    void SetTextAnchor(Anchor textAnchor)
+    {
+        m_textAnchor = textAnchor;
+    }
 
 private:
     const wchar_t* m_text;
     float m_fontSize;
     GXColor m_fontColor;
-
     const sys_fontheader* m_fontHeader;
 
     bool m_monospace = false;
-
     float m_kerning = 0;
     float m_leading = 6;
 
