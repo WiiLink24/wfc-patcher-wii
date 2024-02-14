@@ -7,7 +7,7 @@ namespace mkw::Net
 
 #if RMC
 
-struct RacePacket {
+struct __attribute__((packed)) RacePacket {
     enum EType {
         Header,
         MatchHeader,
@@ -110,6 +110,18 @@ public:
         default:
             return false;
         }
+    }
+
+    bool inVanillaRaceScene()
+    {
+        using namespace mkw::System;
+
+        int sceneId = RKSystem::Instance().sceneManager()->getCurrentSceneID();
+        if (static_cast<RKScene::SceneID>(sceneId) != RKScene::SceneID::Race) {
+            return false;
+        }
+
+        return inVanillaMatch();
     }
 
     static RKNetController* Instance()

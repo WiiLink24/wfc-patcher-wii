@@ -5,6 +5,8 @@
 namespace mkw::HostSystem
 {
 
+#if RMC
+
 class SystemManager
 {
 public:
@@ -38,5 +40,7 @@ private:
 };
 
 static_assert(sizeof(SystemManager) == 0x1100);
+
+#endif
 
 } // namespace mkw::HostSystem

@@ -253,13 +253,7 @@ static bool IsMatchHeaderPacketDataValid(
     const MatchHeaderHandler::Packet* matchHeaderPacket =
         reinterpret_cast<const MatchHeaderHandler::Packet*>(packet);
 
-    if (!RKNetController::Instance()->inVanillaMatch()) {
-        return true;
-    }
-
-    if (static_cast<RKScene::SceneID>(
-            RKSystem::Instance().sceneManager()->getCurrentSceneID()
-        ) != RKScene::SceneID::Race) {
+    if (!RKNetController::Instance()->inVanillaRaceScene()) {
         return true;
     }
 
@@ -430,15 +424,7 @@ static bool IsUserPacketDataValid(
     const UserHandler::Packet* userPacket =
         reinterpret_cast<const UserHandler::Packet*>(packet);
 
-    if (!userPacket->isMiiGroupCountValid()) {
-        return false;
-    }
-
-    if (!userPacket->isVersusRatingValid()) {
-        return false;
-    }
-
-    if (!userPacket->isBattleRatingValid()) {
+    if (!userPacket->isValid()) {
         return false;
     }
 
@@ -451,13 +437,7 @@ IsItemPacketDataValid(const void* packet, u8 packetSize, u8 /* playerAid */)
     using namespace mkw::Item;
     using namespace mkw::System;
 
-    if (!RKNetController::Instance()->inVanillaMatch()) {
-        return true;
-    }
-
-    if (static_cast<RKScene::SceneID>(
-            RKSystem::Instance().sceneManager()->getCurrentSceneID()
-        ) != RKScene::SceneID::Race) {
+    if (!RKNetController::Instance()->inVanillaRaceScene()) {
         return true;
     }
     // Ensure that the table which controls the behaviour of items is loaded

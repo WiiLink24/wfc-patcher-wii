@@ -11,7 +11,7 @@ namespace mkw::Net
 class RoomHandler
 {
 public:
-    struct Packet {
+    struct __attribute__((packed)) Packet {
         enum class Event : u8 {
             StartRoom = 1,
             RegisterFriend = 2,

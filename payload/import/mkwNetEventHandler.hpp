@@ -12,7 +12,7 @@ namespace mkw::Net
 class EventHandler
 {
 public:
-    struct Packet {
+    struct __attribute__((packed)) Packet {
         struct EventInfo {
             enum class EventType : u8 {
                 NoEvent = 0,

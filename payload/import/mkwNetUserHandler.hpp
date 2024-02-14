@@ -10,7 +10,7 @@ namespace mkw::Net
 class UserHandler
 {
 public:
-    struct Packet {
+    struct __attribute__((packed)) Packet {
         bool isMiiGroupCountValid() const
         {
             return miiGroupCount == maxMiis;
@@ -24,6 +24,23 @@ public:
         bool isBattleRatingValid() const
         {
             return br >= minRating && br <= maxRating;
+        }
+
+        bool isValid() const
+        {
+            if (!isMiiGroupCountValid()) {
+                return false;
+            }
+
+            if (!isVersusRatingValid()) {
+                return false;
+            }
+
+            if (!isBattleRatingValid()) {
+                return false;
+            }
+
+            return true;
         }
 
         /* 0x00 */ u32 miiGroupBitflags;
