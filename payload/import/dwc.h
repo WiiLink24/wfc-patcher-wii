@@ -101,6 +101,14 @@ LONGCALL s32 DWC_Base64Encode( //
     const void* in, u32 inSize, char* out, u32 outMaxSize
 ) AT(ADDRESS_DWC_Base64Encode);
 
+#if RMC
+
+LONGCALL s32 DWC_Base64Decode(
+    const void* source, u32 sourceSize, char* destination, u32 destinationSize
+) AT(RMCXD_PORT(0x800CC974, 0x800CC8D4, 0x800CC894, 0x800CC9D4));
+
+#endif
+
 #ifdef __cplusplus
 }
 }
