@@ -11,7 +11,7 @@ namespace mkw::Net
 class SelectHandler
 {
 public:
-    struct Packet {
+    struct __attribute__((packed)) Packet {
         enum class Character : u8 {
             NotSelected = 0x30,
         };

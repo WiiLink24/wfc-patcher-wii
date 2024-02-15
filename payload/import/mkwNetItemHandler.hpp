@@ -11,7 +11,7 @@ namespace mkw::Net
 class ItemHandler
 {
 public:
-    struct Packet {
+    struct __attribute__((packed)) Packet {
         /* 0x00 */ u8 _00;
         /* 0x01 */ u8 heldItem;
         /* 0x02 */ u8 trailedItem;

@@ -10,7 +10,7 @@ namespace mkw::Net
 class MatchHeaderHandler
 {
 public:
-    struct Packet {
+    struct __attribute__((packed)) Packet {
         enum class Vehicle : u8 {
             None = 0xFF,
         };
