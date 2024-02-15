@@ -1,5 +1,6 @@
 #include "Apploader.hpp"
 #include "DI.hpp"
+#include "Layout_Divider.hpp"
 #include "Layout_LoadingIcon.hpp"
 #include "Layout_TextBox.hpp"
 #include "Util.hpp"
@@ -230,6 +231,7 @@ static Rect GetProjectionRect()
 static sys_fontheader* s_fontHeader = nullptr;
 static Layout_LoadingIcon s_loadingIcon;
 static Layout_TextBox s_textBox;
+static Layout_Divider s_divider;
 
 void LayoutInit()
 {
@@ -248,7 +250,7 @@ void LayoutInit()
     s_textBox.Init(s_fontHeader);
     s_textBox.SetText(L"Please insert a disc.");
     s_textBox.SetFontSize(1.5f);
-    s_textBox.SetFontColor((GXColor){0xFF, 0xFF, 0xFF, 0xFF});
+    s_textBox.SetFontColor((GXColor){0x80, 0xFF, 0xFF, 0xFF});
     s_textBox.SetMonospace(false);
     s_textBox.SetKerning(-3.0);
     s_textBox.SetLeading(6.0);
@@ -257,6 +259,8 @@ void LayoutInit()
     s_textBox.m_x = 0;
     s_textBox.m_y = -176.0;
     s_textBox.m_alpha = 0xFF;
+
+    s_divider.Init();
 }
 
 void LayoutCalc()
@@ -317,10 +321,12 @@ void LayoutCalc()
 
     s_loadingIcon.Calc();
     s_textBox.Calc();
+    s_divider.Calc();
 }
 
 void LayoutDraw()
 {
+    s_divider.Draw();
     s_loadingIcon.Draw();
     s_textBox.Draw();
 }

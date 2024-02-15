@@ -89,32 +89,9 @@ void Layout_TextBox::Draw()
     posWidth *= squishX;
     posHeight *= squishY;
 
-    // Set up for drawing f32 quads with tex map
-    GX_ClearVtxDesc();
-    GX_SetVtxDesc(GX_VA_POS, GX_DIRECT);
-    GX_SetVtxDesc(GX_VA_TEX0, GX_DIRECT);
-    GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XY, GX_F32, 0);
-    GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
-
-    // Set material channels, TEV, texture
-    GX_SetNumChans(1);
-    GX_SetNumTexGens(1);
-    GX_SetTevOp(GX_TEVSTAGE0, GX_REPLACE);
-    GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
-    GX_SetTexCoordGen(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY);
-
-    GX_InvalidateTexAll();
-
-    // Blending
-    GX_SetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_SET);
-
-    GX_SetColorUpdate(GX_TRUE);
-    GX_SetAlphaUpdate(GX_TRUE);
-
-    // Draw text
-    // TODO: Anchor each line
     float startX = GetAnchoredX(), startY = GetAnchoredY();
 
+    // TODO: Anchor each line
     switch (m_textAnchor) {
     case Anchor::TOP_LEFT:
     case Anchor::MIDDLE_LEFT:
@@ -155,6 +132,39 @@ void Layout_TextBox::Draw()
         break;
     }
 
+    // Set up for drawing f32 quads with tex map
+    GX_ClearVtxDesc();
+    GX_SetVtxDesc(GX_VA_POS, GX_DIRECT);
+    GX_SetVtxDesc(GX_VA_TEX0, GX_DIRECT);
+    GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XY, GX_F32, 0);
+    GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
+
+    // Set material channels, TEV, texture
+    GX_SetNumChans(1);
+    GX_SetNumTexGens(1);
+    GX_SetTevOp(GX_TEVSTAGE0, GX_REPLACE);
+    GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLORNULL);
+    GX_SetTevColorIn(GX_TEVSTAGE0, GX_CC_C0, GX_CC_C1, GX_CC_TEXC, GX_CC_ZERO);
+    GX_SetTevAlphaIn(GX_TEVSTAGE0, GX_CA_A0, GX_CA_A1, GX_CA_TEXA, GX_CA_ZERO);
+    GX_SetTexCoordGen(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY);
+
+    GX_SetTevColor(
+        GX_TEVREG0, (GXColor){0x00, 0x00, 0x00, 0x00}
+    ); // Black color
+    GX_SetTevColor(GX_TEVREG1, m_fontColor); // White color
+    GX_SetTevColor(
+        GX_TEVREG2, (GXColor){0x00, 0x00, 0x00, 0x00}
+    ); // Alpha color
+
+    GX_InvalidateTexAll();
+
+    // Blending
+    GX_SetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_SET);
+
+    GX_SetColorUpdate(GX_TRUE);
+    GX_SetAlphaUpdate(GX_TRUE);
+
+    // Draw text
     float x = startX, y = startY - posHeight;
     for (u32 i = 0; i < len; i++) {
         if (m_text[i] == L'\n') {
