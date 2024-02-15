@@ -243,14 +243,14 @@ void LayoutInit()
     s_loadingIcon.Init();
     s_loadingIcon.m_width = 50.0;
     s_loadingIcon.m_height = 50.0;
-    s_loadingIcon.m_x = GetProjectionRect().left + 56.0;
+    s_loadingIcon.m_x = GetProjectionRect().right - 56.0;
     s_loadingIcon.m_y = -176.0;
     s_loadingIcon.StopAnimation();
 
     s_textBox.Init(s_fontHeader);
     s_textBox.SetText(L"Please insert a disc.");
     s_textBox.SetFontSize(1.5f);
-    s_textBox.SetFontColor((GXColor){0x80, 0xFF, 0xFF, 0xFF});
+    s_textBox.SetFontColor((GXColor){0xFF, 0xFF, 0xFF, 0xFF});
     s_textBox.SetMonospace(false);
     s_textBox.SetKerning(-3.0);
     s_textBox.SetLeading(6.0);
@@ -359,9 +359,9 @@ int main(int argc, char** argv)
         s_consoleXfb, 20, 20, s_rmode.fbWidth, s_rmode.xfbHeight,
         s_rmode.fbWidth * VI_DISPLAY_PIX_SZ
     );
-    VIDEO_SetNextFramebuffer(s_consoleXfb);
-    VIDEO_SetBlack(false);
-    VIDEO_Flush();
+    // VIDEO_SetNextFramebuffer(s_consoleXfb);
+    // VIDEO_SetBlack(false);
+    // VIDEO_Flush();
 
     // Adjust to row 2 column 0
     std::printf("\x1b[%d;%dH", 2, 0);
@@ -417,7 +417,11 @@ int main(int argc, char** argv)
     // Main loop
     while (true) {
         if (Apploader::GetState() == Apploader::State::SHUTTING_DOWN) {
-            break;
+            s_divider.StartFadeOutBack();
+
+            if (s_divider.IsFadeDone()) {
+                break;
+            }
         }
 
         WPAD_ScanPads();
@@ -482,6 +486,10 @@ int main(int argc, char** argv)
         // Swap framebuffers
         s_currXfb ^= 1;
     }
+
+    VIDEO_SetBlack(true);
+    VIDEO_Flush();
+    VIDEO_WaitVSync();
 
     Apploader::Shutdown();
 

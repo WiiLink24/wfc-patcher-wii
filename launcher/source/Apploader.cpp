@@ -643,7 +643,7 @@ void Apploader::StartThread()
 
     s_threadStarted = true;
     LWP_CreateThread(
-        &s_thread, ApploaderProcess, nullptr, nullptr, 0x40000, 64
+        &s_thread, ApploaderProcess, nullptr, nullptr, 0x40000, 20
     );
 }
 
