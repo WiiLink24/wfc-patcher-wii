@@ -3,6 +3,7 @@
 #include "ES.hpp"
 #include "GameAddresses.hpp"
 #include "IOS.hpp"
+#include "Scene.hpp"
 #include "Stage1Payload.hpp"
 #include "Util.hpp"
 #include <cstdio>
@@ -225,9 +226,7 @@ static void PatchAndLaunchDol(
         IOS_CloseAsync(i, nullptr, nullptr);
     }
 
-    VIDEO_SetBlack(true);
-    VIDEO_Flush();
-    VIDEO_WaitVSync();
+    Scene::Shutdown(Scene::ShutdownType::LAUNCH);
 
     IRQ_Disable();
 

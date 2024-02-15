@@ -1,8 +1,11 @@
 #pragma once
 
+#include <cassert>
 #include <gctypes.h>
 #include <gcutil.h>
+#include <ogc/cache.h>
 #include <ogc/machine/processor.h>
+#include <ogc/system.h>
 
 template <typename T>
 constexpr T AlignUp(T num, unsigned int align)
@@ -155,3 +158,21 @@ public:
 private:
     u32 m_level;
 };
+
+static inline void* AllocMEM1(s32 size)
+{
+    InterruptsLock lock{};
+
+    u8* start = reinterpret_cast<u8*>(SYS_GetArenaLo());
+    u8* end = reinterpret_cast<u8*>(SYS_GetArenaHi());
+
+    assert(start != nullptr);
+    assert(end != nullptr);
+    assert(size <= (end - start));
+
+    start = AlignUp(start, 32);
+    SYS_SetArena1Lo(AlignUp(start + size, 32));
+
+    DCZeroRange(start, size);
+    return start;
+}
