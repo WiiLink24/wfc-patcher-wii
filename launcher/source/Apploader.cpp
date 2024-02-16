@@ -124,6 +124,14 @@ extern Stage1Param g_wwfcPatchStage1Data;
 extern u32 g_wwfcPatchEnd[];
 }
 
+static Apploader::State s_state = Apploader::State::INITIALIZING;
+static bool s_shutdown = false;
+
+Apploader::State Apploader::GetState()
+{
+    return s_state;
+}
+
 static void PatchAndLaunchDol(
     DOL* dol, const GameAddresses* game, const void* bi2, u32 mem1Hi
 )
@@ -275,12 +283,20 @@ static void PatchAndLaunchDol(
     }
 }
 
-static Apploader::State s_state = Apploader::State::INITIALIZING;
-static bool s_shutdown = false;
-
-Apploader::State Apploader::GetState()
+static bool NeedIOSReload(const GameAddresses* game, u32 iosExpected)
 {
-    return s_state;
+    u32 iosCurrent = IOS_GetVersion();
+
+    if (iosCurrent == iosExpected) {
+        return false;
+    }
+
+    // Mario Kart Wii can run under IOS58
+    if (std::memcmp(game->gameId, "RMC", 3) == 0 && iosCurrent == 58) {
+        return false;
+    }
+
+    return true;
 }
 
 static Apploader::State LaunchDisc()
@@ -491,54 +507,66 @@ static Apploader::State LaunchDisc()
     CHECK_SHUTDOWN();
 
     s_state = Apploader::State::LAUNCHING;
-    IOS::WaitForPatchIOS();
+
     WPAD_Shutdown();
 
-    std::printf("Reloading into IOS%d\n", U64Lo(tmd.iosTitleId));
+    if (NeedIOSReload(game, U64Lo(tmd.iosTitleId))) {
+        IOS::WaitForPatchIOS();
 
-    LWP_SetThreadPriority(LWP_GetSelf(), 1);
-    s32 ret = IOS_ReloadIOS(U64Lo(tmd.iosTitleId));
-    if (ret != 0) {
-        std::fprintf(stderr, "Failed to reload IOS: %d\n", ret);
-        return Apploader::State::FATAL_ERROR;
-    }
-    LWP_SetThreadPriority(LWP_GetSelf(), 80);
+        std::printf("Reloading into IOS%d\n", U64Lo(tmd.iosTitleId));
 
-    // Reopen the partition
-    if (!DI::Init()) {
-        std::printf("Failed to reopen DI\n");
-        return Apploader::State::FATAL_ERROR;
-    }
+        LWP_SetThreadPriority(LWP_GetSelf(), 1);
+        s32 ret = IOS_ReloadIOS(U64Lo(tmd.iosTitleId));
+        if (ret != 0) {
+            std::fprintf(stderr, "Failed to reload IOS: %d\n", ret);
+            return Apploader::State::FATAL_ERROR;
+        }
+        LWP_SetThreadPriority(LWP_GetSelf(), 80);
 
-    if ((diskId.gameId[3] == 'K' || diskId.gameId[3] == 'C') &&
-        !IOS::IsDolphin()) {
-        // Needs Korean key
-        IOS::PatchIOS(IOS::PATCH_IOSC_KOREAN_KEY);
-    }
+        // Reopen the partition
+        if (!DI::Init()) {
+            std::printf("Failed to reopen DI\n");
+            return Apploader::State::FATAL_ERROR;
+        }
 
-    // Read the disk ID to the top of MEM1
-    diRet = DI::ReadDiskID(reinterpret_cast<DI::DiskID*>(0x80000000));
-    if (diRet != DI::DIError::OK) {
-        std::fprintf(stderr, "Failed to reread disk ID: 0x%X\n", u32(diRet));
-        return Apploader::State::FATAL_ERROR;
-    }
+        if ((diskId.gameId[3] == 'K' || diskId.gameId[3] == 'C') &&
+            !IOS::IsDolphin()) {
+            // Needs Korean key
+            IOS::PatchIOS(IOS::PATCH_IOSC_KOREAN_KEY);
+        }
 
-    if (!IOS::IsDolphin()) {
-        diRet = DI::OpenPartitionWithTmdAndTicketView(partOffset, &tmd, &esRet);
+        // Read the disk ID to the top of MEM1
+        diRet = DI::ReadDiskID(reinterpret_cast<DI::DiskID*>(0x80000000));
+        if (diRet != DI::DIError::OK) {
+            std::fprintf(
+                stderr, "Failed to reread disk ID: 0x%X\n", u32(diRet)
+            );
+            return Apploader::State::FATAL_ERROR;
+        }
+
+        if (!IOS::IsDolphin()) {
+            diRet =
+                DI::OpenPartitionWithTmdAndTicketView(partOffset, &tmd, &esRet);
+        } else {
+            // Dolphin doesn't implement that version of OpenPartition
+            diRet = DI::OpenPartition(partOffset, &tmd, &esRet);
+        }
+
+        if (diRet != DI::DIError::OK) {
+            std::fprintf(
+                stderr,
+                "Failed to reopen partition at offset %08X: 0x%X, ES: %d\n",
+                partOffset, u32(diRet), s32(esRet)
+            );
+            return Apploader::State::FATAL_ERROR;
+        }
+
+        std::printf("Reopened partition at offset %08X\n", partOffset);
     } else {
-        // Dolphin doesn't implement that version of OpenPartition
-        diRet = DI::OpenPartition(partOffset, &tmd, &esRet);
-    }
-
-    if (diRet != DI::DIError::OK) {
-        std::fprintf(
-            stderr, "Failed to reopen partition at offset %08X: 0x%X, ES: %d\n",
-            partOffset, u32(diRet), s32(esRet)
+        std::memcpy(
+            reinterpret_cast<void*>(0x80000000), &diskId, sizeof(DI::DiskID)
         );
-        return Apploader::State::FATAL_ERROR;
     }
-
-    std::printf("Reopened partition at offset %08X\n", partOffset);
 
     WriteU32(0x80000038, fstDest); // Start of FST (varies in all games)
     PatchAndLaunchDol(dol, game, bi2Data, fstDest);
