@@ -136,7 +136,7 @@ void Layout_TextBox::Draw()
     GX_ClearVtxDesc();
     GX_SetVtxDesc(GX_VA_POS, GX_DIRECT);
     GX_SetVtxDesc(GX_VA_TEX0, GX_DIRECT);
-    GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XY, GX_F32, 0);
+    GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
     GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
 
     // Set material channels, TEV, texture
@@ -192,13 +192,13 @@ void Layout_TextBox::Draw()
 
         GX_Begin(GX_QUADS, GX_VTXFMT0, 4);
         {
-            GX_Position2f32(x, y); // top left
+            GX_Position3f32(x, y, -15.0); // top left
             GX_TexCoord2f32(texX, texY + texHeight);
-            GX_Position2f32(x + posWidth, y); // top right
+            GX_Position3f32(x + posWidth, y, -15.0); // top right
             GX_TexCoord2f32(texX + texWidth, texY + texHeight);
-            GX_Position2f32(x + posWidth, y + posHeight); // bottom right
+            GX_Position3f32(x + posWidth, y + posHeight, -15.0); // bottom right
             GX_TexCoord2f32(texX + texWidth, texY);
-            GX_Position2f32(x, y + posHeight); // bottom left
+            GX_Position3f32(x, y + posHeight, -15.0); // bottom left
             GX_TexCoord2f32(texX, texY);
         }
         GX_End();

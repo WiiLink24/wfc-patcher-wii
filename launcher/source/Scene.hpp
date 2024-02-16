@@ -1,6 +1,7 @@
 #pragma once
 
 #include <ogc/gx.h>
+#include "Util.hpp"
 
 class Scene
 {
@@ -17,4 +18,6 @@ public:
     static void StartThread();
     static void ShutdownAsync(ShutdownType type);
     static void Shutdown(ShutdownType type);
+
+    static Rect GetProjectionRect();
 };

@@ -176,3 +176,10 @@ static inline void* AllocMEM1(s32 size)
     DCZeroRange(start, size);
     return start;
 }
+
+struct Rect {
+    float left;
+    float top;
+    float right;
+    float bottom;
+};

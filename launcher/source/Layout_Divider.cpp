@@ -1,13 +1,16 @@
 #include "Layout_Divider.hpp"
+#include "Scene.hpp"
 #include <cstdio>
 #include <ogc/gx.h>
 
 void Layout_Divider::Init()
 {
-    m_width = 900.0 * 2;
-    m_height = 3.0f;
+    auto rect = Scene::GetProjectionRect();
 
-    m_x = -900.0;
+    m_width = rect.right - rect.left + 300.0 * 2;
+    m_height = 3.0;
+
+    m_x = rect.left - 300.0;
     m_y = -130.0;
 }
 
@@ -22,10 +25,12 @@ void Layout_Divider::Calc()
 
 void Layout_Divider::Draw()
 {
-    if (!m_visible || m_alpha == 0) {
-        return;
-    }
+    DrawBack();
+    DrawFront();
+}
 
+static void SetupGX()
+{
     // Set up for drawing f32 quads
     GX_ClearVtxDesc();
     GX_SetVtxDesc(GX_VA_POS, GX_DIRECT);
@@ -54,9 +59,18 @@ void Layout_Divider::Draw()
     GX_SetColorUpdate(GX_TRUE);
     GX_SetAlphaUpdate(GX_TRUE);
 
+    GX_SetColorUpdate(GX_TRUE);
+    GX_SetAlphaUpdate(GX_TRUE);
+}
+
+void Layout_Divider::DrawBack()
+{
+    if (!m_visible || m_alpha == 0) {
+        return;
+    }
+
     float x = m_x;
     float animStep = m_width / float(ANIM_LINE_FRAMES);
-    u32 quadCount = 12;
     if (m_animState == AnimState::IN) {
         x += m_width - m_animFrame * animStep;
     } else if (m_animState == AnimState::OUT_BACK) {
@@ -65,16 +79,13 @@ void Layout_Divider::Draw()
         x -= m_animFrame * animStep;
     } else {
         x = m_x;
-        quadCount = 8;
     }
 
     const u8 bgColor = 0x20;
-    const float fadeWidth = 300.0;
 
-    GX_SetColorUpdate(GX_TRUE);
-    GX_SetAlphaUpdate(GX_TRUE);
+    SetupGX();
 
-    GX_Begin(GX_QUADS, GX_VTXFMT0, quadCount);
+    GX_Begin(GX_QUADS, GX_VTXFMT0, 8);
     {
         // Line
         GX_Position3f32(x, m_y, -5.0f); // top left
@@ -86,22 +97,88 @@ void Layout_Divider::Draw()
         GX_Position3f32(x, m_y - m_height, -10.0f); // bottom left
         GX_Color4u8(0xF0, 0xF0, 0xF0, m_alpha);
 
-        // Background fade
-        if (m_animState == AnimState::IN ||
-            m_animState == AnimState::OUT_BACK) {
+        // Background solid
+        GX_Position3f32(m_x, m_y - m_height, -20.0f); // top left
+        GX_Color4u8(bgColor, bgColor, bgColor, m_alpha);
+        GX_Position3f32(m_x + m_width, m_y - m_height, -20.0f); // top right
+        GX_Color4u8(bgColor, bgColor, bgColor, m_alpha);
+        GX_Position3f32(m_x + m_width, m_y - 500.0, -20.0f); // bottom right
+        GX_Color4u8(bgColor, bgColor, bgColor, m_alpha);
+        GX_Position3f32(m_x, m_y - 500.0, -20.0f); // bottom left
+        GX_Color4u8(bgColor, bgColor, bgColor, m_alpha);
+    }
+    GX_End();
+}
+
+void Layout_Divider::DrawFront()
+{
+    if (!m_visible || m_alpha == 0) {
+        return;
+    }
+
+    float x = m_x;
+    float animStep = m_width / float(ANIM_LINE_FRAMES);
+    if (m_animState == AnimState::IN) {
+        x += m_width - m_animFrame * animStep;
+    } else if (m_animState == AnimState::OUT_BACK) {
+        x += m_animFrame * animStep;
+    } else if (m_animState == AnimState::OUT) {
+        x -= m_animFrame * animStep;
+    } else {
+        return;
+    }
+
+    const float fadeWidth = 300.0;
+
+    SetupGX();
+
+    // Draw background fade
+    if (m_animState == AnimState::IN || m_animState == AnimState::OUT_BACK) {
+        GX_Begin(GX_QUADS, GX_VTXFMT0, 8);
+        {
+            // Draw black to the left of the fade
+            GX_Position3f32(m_x, m_y - m_height, -10.0f); // top left
+            GX_Color4u8(0, 0, 0, m_alpha);
+            GX_Position3f32(x, m_y - m_height, -10.0f); // top right
+            GX_Color4u8(0, 0, 0, m_alpha);
+            GX_Position3f32(x, m_y - 500.0, -10.0f); // bottom right
+            GX_Color4u8(0, 0, 0, m_alpha);
+            GX_Position3f32(m_x, m_y - 500.0, -10.0f); // bottom left
+            GX_Color4u8(0, 0, 0, m_alpha);
+
+            // Draw fade
             GX_Position3f32(x, m_y - m_height, -10.0f); // top left
             GX_Color4u8(0, 0, 0, m_alpha);
             GX_Position3f32(x + fadeWidth, m_y - m_height, -10.0f); // top right
-            GX_Color4u8(bgColor, bgColor, bgColor, m_alpha);
+            GX_Color4u8(0, 0, 0, 0);
             GX_Position3f32(x + fadeWidth, m_y - 500.0, -10.0f); // bottom right
-            GX_Color4u8(bgColor, bgColor, bgColor, m_alpha);
+            GX_Color4u8(0, 0, 0, 0);
             GX_Position3f32(x, m_y - 500.0, -10.0f); // bottom left
             GX_Color4u8(0, 0, 0, m_alpha);
-        } else if (m_animState == AnimState::OUT) {
+        }
+        GX_End();
+    } else if (m_animState == AnimState::OUT) {
+        GX_Begin(GX_QUADS, GX_VTXFMT0, 8);
+        {
+            // Draw black to the right of the fade
+            GX_Position3f32(x + m_width, m_y - m_height, -10.0f); // top left
+            GX_Color4u8(0, 0, 0, m_alpha);
+            GX_Position3f32(
+                x + m_width * 2, m_y - m_height, -10.0f
+            ); // top right
+            GX_Color4u8(0, 0, 0, m_alpha);
+            GX_Position3f32(
+                x + m_width * 2, m_y - 500.0, -10.0f
+            ); // bottom right
+            GX_Color4u8(0, 0, 0, m_alpha);
+            GX_Position3f32(x + m_width, m_y - 500.0, -10.0f); // bottom left
+            GX_Color4u8(0, 0, 0, m_alpha);
+
+            // Draw fade
             GX_Position3f32(
                 x + m_width - fadeWidth, m_y - m_height, -10.0f
             ); // top left
-            GX_Color4u8(bgColor, bgColor, bgColor, m_alpha);
+            GX_Color4u8(0, 0, 0, 0);
             GX_Position3f32(x + m_width, m_y - m_height, -10.0f); // top right
             GX_Color4u8(0, 0, 0, m_alpha);
             GX_Position3f32(x + m_width, m_y - 500.0, -10.0f); // bottom right
@@ -109,22 +186,8 @@ void Layout_Divider::Draw()
             GX_Position3f32(
                 x + m_width - fadeWidth, m_y - 500.0, -10.0f
             ); // bottom left
-            GX_Color4u8(bgColor, bgColor, bgColor, m_alpha);
+            GX_Color4u8(0, 0, 0, 0);
         }
-
-        // Background solid
-        GX_Position3f32(x + fadeWidth, m_y - m_height, -20.0f); // top left
-        GX_Color4u8(bgColor, bgColor, bgColor, m_alpha);
-        GX_Position3f32(
-            x + m_width - fadeWidth, m_y - m_height, -20.0f
-        ); // top right
-        GX_Color4u8(bgColor, bgColor, bgColor, m_alpha);
-        GX_Position3f32(
-            x + m_width - fadeWidth, m_y - 500.0, -20.0f
-        ); // bottom right
-        GX_Color4u8(bgColor, bgColor, bgColor, m_alpha);
-        GX_Position3f32(x + fadeWidth, m_y - 500.0, -20.0f); // bottom left
-        GX_Color4u8(bgColor, bgColor, bgColor, m_alpha);
+        GX_End();
     }
-    GX_End();
 }

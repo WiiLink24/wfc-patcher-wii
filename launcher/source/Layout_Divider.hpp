@@ -7,7 +7,10 @@ class Layout_Divider : public Layout
 public:
     void Init();
     void Calc() override;
+
     void Draw() override;
+    void DrawBack();
+    void DrawFront();
 
     static constexpr u32 ANIM_LINE_FRAMES = 16;
 
@@ -41,7 +44,7 @@ public:
         m_animFrame = 0;
     }
 
-        bool IsFadeDone() const
+    bool IsFadeDone() const
     {
         return m_animFrame >= ANIM_LINE_FRAMES;
     }

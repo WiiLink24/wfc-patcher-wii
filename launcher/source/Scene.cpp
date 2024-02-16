@@ -17,13 +17,6 @@
 #include <wchar.h>
 #include <wiiuse/wpad.h>
 
-struct Rect {
-    float left;
-    float top;
-    float right;
-    float bottom;
-};
-
 static void* s_xfb[2] = {nullptr, nullptr};
 static u32 s_currXfb = 0;
 static sys_fontheader* s_fontHeader = nullptr;
@@ -33,7 +26,7 @@ static Layout_Divider s_divider;
 static u8 s_aspectRatio = 0;
 static Scene::ShutdownType s_shutdownType = Scene::ShutdownType::NONE;
 
-static Rect GetProjectionRect()
+Rect Scene::GetProjectionRect()
 {
     if (s_aspectRatio == 1) {
         return Rect{-416, 228, 416, -228};
@@ -67,7 +60,7 @@ void Scene::Init(GXRModeObj* rmode)
     GX_SetViewport(0, 0, rmode->fbWidth, rmode->efbHeight, 0, 1);
 }
 
-void LayoutInit()
+static void LayoutInit()
 {
 
     s_fontHeader =
@@ -78,7 +71,7 @@ void LayoutInit()
     s_loadingIcon.Init();
     s_loadingIcon.m_width = 50.0;
     s_loadingIcon.m_height = 50.0;
-    s_loadingIcon.m_x = GetProjectionRect().right - 56.0;
+    s_loadingIcon.m_x = Scene::GetProjectionRect().right - 56.0;
     s_loadingIcon.m_y = -176.0;
     s_loadingIcon.StopAnimation();
 
@@ -98,7 +91,7 @@ void LayoutInit()
     s_divider.Init();
 }
 
-void LayoutCalc()
+static void LayoutCalc()
 {
     auto state = Apploader::GetState();
 
@@ -159,11 +152,14 @@ void LayoutCalc()
     s_divider.Calc();
 }
 
-void LayoutDraw()
+static void LayoutDraw()
 {
-    s_divider.Draw();
+    s_divider.DrawBack();
+
     s_loadingIcon.Draw();
     s_textBox.Draw();
+
+    s_divider.DrawFront();
 }
 
 static void* ThreadFunc(void* arg)
@@ -213,7 +209,7 @@ static void* ThreadFunc(void* arg)
 
         {
             float mtx[4][4];
-            auto rect = GetProjectionRect();
+            auto rect = Scene::GetProjectionRect();
             guOrtho(mtx, rect.top, rect.bottom, rect.left, rect.right, 0, 500);
             GX_LoadProjectionMtx(mtx, GX_ORTHOGRAPHIC);
         }

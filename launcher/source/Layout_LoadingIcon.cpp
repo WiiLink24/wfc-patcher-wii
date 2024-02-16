@@ -28,10 +28,10 @@ static void DrawRectangle(float x, float y, float width, float height)
 
     GX_Begin(GX_QUADS, GX_VTXFMT0, 4);
     {
-        GX_Position3f32(x, y, 0.0f); // top left
-        GX_Position3f32(x + width, y, 0.0f); // top right
-        GX_Position3f32(x + width, y + height, 0.0f); // bottom right
-        GX_Position3f32(x, y + height, 0.0f); // bottom left
+        GX_Position3f32(x, y, -15.0); // top left
+        GX_Position3f32(x + width, y, -15.0); // top right
+        GX_Position3f32(x + width, y + height, -15.0); // bottom right
+        GX_Position3f32(x, y + height, -15.0); // bottom left
     }
     GX_End();
 }
