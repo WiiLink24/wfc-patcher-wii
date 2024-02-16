@@ -12,7 +12,7 @@ public:
     void DrawBack();
     void DrawFront();
 
-    static constexpr u32 ANIM_LINE_FRAMES = 16;
+    static constexpr u32 ANIM_LINE_FRAMES = 19;
 
     void StartFadeIn()
     {

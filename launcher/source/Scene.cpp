@@ -104,43 +104,43 @@ static void LayoutCalc()
     case Apploader::State::DISC_SPINUP:
         s_loadingIcon.StartAnimation();
         s_textBox.m_visible = true;
-        s_textBox.SetText(L"Starting up the disc drive...");
+        s_textBox.SetNextText(L"Starting up the disc drive...");
         break;
 
     case Apploader::State::READING_DISC:
         s_loadingIcon.StartAnimation();
         s_textBox.m_visible = true;
-        s_textBox.SetText(L"Reading the disc...");
+        s_textBox.SetNextText(L"Reading the disc...");
         break;
 
     case Apploader::State::LAUNCHING:
         s_loadingIcon.StartAnimation();
         s_textBox.m_visible = true;
-        s_textBox.SetText(L"Launching the game...");
+        s_textBox.SetNextText(L"Launching the game...");
         break;
 
     case Apploader::State::NO_DISC:
         s_loadingIcon.StopAnimation();
         s_textBox.m_visible = true;
-        s_textBox.SetText(L"Please insert a disc.");
+        s_textBox.SetNextText(L"Please insert a disc.");
         break;
 
     case Apploader::State::READ_ERROR:
         s_loadingIcon.StopAnimation();
         s_textBox.m_visible = true;
-        s_textBox.SetText(L"Unable the read the disc.");
+        s_textBox.SetNextText(L"Unable the read the disc.");
         break;
 
     case Apploader::State::UNSUPPORTED_GAME:
         s_loadingIcon.StopAnimation();
         s_textBox.m_visible = true;
-        s_textBox.SetText(L"This game is not supported by WiiLink WFC.");
+        s_textBox.SetNextText(L"This game is not supported by WiiLink WFC.");
         break;
 
     case Apploader::State::FATAL_ERROR:
         s_loadingIcon.StopAnimation();
         s_textBox.m_visible = true;
-        s_textBox.SetText(L"An error has occurred");
+        s_textBox.SetNextText(L"An error has occurred");
         break;
 
     case Apploader::State::SHUTTING_DOWN:

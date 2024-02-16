@@ -8,17 +8,37 @@
 
 void Layout_TextBox::Init(const sys_fontheader* fontHeader)
 {
-    m_text = L"";
+    m_text = nullptr;
     m_fontSize = 1.5f;
     m_fontColor = (GXColor){0xFF, 0xFF, 0xFF, 0xFF};
     m_fontHeader = fontHeader;
 
     m_width = 400.0f;
     m_height = 400.0f;
+
+    m_nextText = nullptr;
+    m_fadeFrame = 0;
 }
 
 void Layout_TextBox::Calc()
 {
+    if (m_nextText != nullptr) {
+        m_fadeFrame++;
+        if (m_fadeFrame >= FADE_LENGTH) {
+            m_text = m_nextText;
+            m_nextText = nullptr;
+            m_fadeFrame = 0;
+            m_alpha = 0xFF;
+        } else if (m_fadeFrame == FADE_LENGTH / 2) {
+            m_text = m_nextText;
+            m_alpha = 0;
+        } else if (m_fadeFrame < FADE_LENGTH / 2) {
+            m_alpha = 0xFF - (0xFF * m_fadeFrame) / (FADE_LENGTH / 2);
+        } else {
+            m_alpha =
+                (0xFF * (m_fadeFrame - FADE_LENGTH / 2)) / (FADE_LENGTH / 2);
+        }
+    }
 }
 
 void Layout_TextBox::Draw()
@@ -151,7 +171,9 @@ void Layout_TextBox::Draw()
     GX_SetTevColor(
         GX_TEVREG0, (GXColor){0x00, 0x00, 0x00, 0x00}
     ); // Black color
-    GX_SetTevColor(GX_TEVREG1, m_fontColor); // White color
+    GXColor fontColor = m_fontColor;
+    fontColor.a = m_alpha;
+    GX_SetTevColor(GX_TEVREG1, fontColor); // White color
     GX_SetTevColor(
         GX_TEVREG2, (GXColor){0x00, 0x00, 0x00, 0x00}
     ); // Alpha color
