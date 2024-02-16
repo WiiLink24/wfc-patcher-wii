@@ -17,8 +17,11 @@
 #include <ogc/video.h>
 #include <wiiuse/wpad.h>
 
-static void* s_consoleXfb = nullptr;
 static GXRModeObj s_rmode = {};
+
+#ifdef DEBUG_CONSOLE
+static void* s_consoleXfb = nullptr;
+#endif
 
 /**
  * Get the render mode to use for the program.
@@ -199,19 +202,21 @@ int main(int argc, char** argv)
     // Initialize video
     VIDEO_Init();
     s_rmode = GetRenderMode();
-    s_consoleXfb = MEM_K0_TO_K1(SYS_AllocateFramebuffer(&s_rmode));
     VIDEO_Configure(&s_rmode);
 
     Scene::Init(&s_rmode);
 
+#ifdef DEBUG_CONSOLE
     // Initialize LibOGC console
+    s_consoleXfb = MEM_K0_TO_K1(SYS_AllocateFramebuffer(&s_rmode));
     CON_Init(
         s_consoleXfb, 20, 20, s_rmode.fbWidth, s_rmode.xfbHeight,
         s_rmode.fbWidth * VI_DISPLAY_PIX_SZ
     );
-    // VIDEO_SetNextFramebuffer(s_consoleXfb);
-    // VIDEO_SetBlack(false);
-    // VIDEO_Flush();
+    VIDEO_SetNextFramebuffer(s_consoleXfb);
+    VIDEO_SetBlack(false);
+    VIDEO_Flush();
+#endif
 
     // Adjust to row 2 column 0
     std::printf("\x1b[%d;%dH", 2, 0);
