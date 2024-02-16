@@ -3,6 +3,7 @@
 #include "Layout.hpp"
 #include "Layout_Divider.hpp"
 #include "Layout_LoadingIcon.hpp"
+#include "Layout_Logo.hpp"
 #include "Layout_TextBox.hpp"
 #include "Util.hpp"
 #include <cassert>
@@ -23,6 +24,7 @@ static sys_fontheader* s_fontHeader = nullptr;
 static Layout_LoadingIcon s_loadingIcon;
 static Layout_TextBox s_textBox;
 static Layout_Divider s_divider;
+static Layout_Logo s_logo;
 static u8 s_aspectRatio = 0;
 static Scene::ShutdownType s_shutdownType = Scene::ShutdownType::NONE;
 
@@ -62,15 +64,14 @@ void Scene::Init(GXRModeObj* rmode)
 
 static void LayoutInit()
 {
-
     s_fontHeader =
         reinterpret_cast<sys_fontheader*>(AllocMEM1(SYS_FONTSIZE_SJIS));
     s32 ret = SYS_InitFont(s_fontHeader);
     assert(ret == 1);
 
     s_loadingIcon.Init();
-    s_loadingIcon.m_width = 50.0;
-    s_loadingIcon.m_height = 50.0;
+    s_loadingIcon.m_width = 42.0;
+    s_loadingIcon.m_height = 42.0;
     s_loadingIcon.m_x = Scene::GetProjectionRect().right - 56.0;
     s_loadingIcon.m_y = -176.0;
     s_loadingIcon.StopAnimation();
@@ -89,6 +90,10 @@ static void LayoutInit()
     s_textBox.m_alpha = 0xFF;
 
     s_divider.Init();
+
+    s_logo.Init();
+    s_logo.m_x = Scene::GetProjectionRect().left + 56.0;
+    s_logo.m_y = 125.0;
 }
 
 static void LayoutCalc()
@@ -150,6 +155,7 @@ static void LayoutCalc()
     s_loadingIcon.Calc();
     s_textBox.Calc();
     s_divider.Calc();
+    s_logo.Calc();
 }
 
 static void LayoutDraw()
@@ -158,6 +164,7 @@ static void LayoutDraw()
 
     s_loadingIcon.Draw();
     s_textBox.Draw();
+    s_logo.Draw();
 
     s_divider.DrawFront();
 }
