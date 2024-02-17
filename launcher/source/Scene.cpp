@@ -92,8 +92,8 @@ static void LayoutInit()
     s_divider.Init();
 
     s_logo.Init();
-    s_logo.m_x = Scene::GetProjectionRect().left + 56.0;
-    s_logo.m_y = 125.0;
+    s_logo.m_x = Scene::GetProjectionRect().right - 32.0 - 251.0;
+    s_logo.m_y = 130.0;
 }
 
 static void LayoutCalc()
@@ -180,6 +180,7 @@ static void* ThreadFunc(void* arg)
     while (true) {
         if (Apploader::GetState() == Apploader::State::SHUTTING_DOWN) {
             s_divider.StartFadeOutBack();
+            s_logo.SetAnimState(false);
 
             if (s_divider.IsFadeDone()) {
                 break;
@@ -188,6 +189,7 @@ static void* ThreadFunc(void* arg)
 
         if (s_shutdownType == Scene::ShutdownType::LAUNCH) {
             s_divider.StartFadeOut();
+            s_logo.SetAnimState(false);
 
             if (s_divider.IsFadeDone()) {
                 break;
