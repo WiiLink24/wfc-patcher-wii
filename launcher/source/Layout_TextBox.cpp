@@ -43,7 +43,7 @@ void Layout_TextBox::Calc()
 
 void Layout_TextBox::Draw()
 {
-    if (!m_visible || m_alpha == 0 || m_text == nullptr ||
+    if (!m_visible || m_alpha < 1 || m_text == nullptr ||
         m_fontHeader == nullptr) {
         return;
     }

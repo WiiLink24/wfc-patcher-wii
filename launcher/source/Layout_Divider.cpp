@@ -65,7 +65,7 @@ static void SetupGX()
 
 void Layout_Divider::DrawBack()
 {
-    if (!m_visible || m_alpha == 0) {
+    if (!m_visible || m_alpha < 1 || m_width == 0 || m_height == 0) {
         return;
     }
 

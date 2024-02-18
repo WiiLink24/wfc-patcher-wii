@@ -38,7 +38,7 @@ static void DrawRectangle(float x, float y, float width, float height)
 
 void Layout_LoadingIcon::Draw()
 {
-    if (!m_visible || m_alpha == 0) {
+    if (!m_visible || m_alpha < 1 || m_width == 0 || m_height == 0) {
         return;
     }
 

@@ -105,7 +105,7 @@ void Layout_Logo::Calc()
 
 void Layout_Logo::Draw()
 {
-    if (!m_visible || m_alpha == 0 || m_width == 0 || m_height == 0) {
+    if (!m_visible || m_alpha < 1 || m_width == 0 || m_height == 0) {
         return;
     }
 
@@ -128,10 +128,10 @@ void Layout_Logo::Draw()
     GX_SetTevOp(GX_TEVSTAGE0, GX_REPLACE);
     GX_SetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
     GX_SetTevColorIn(
-        GX_TEVSTAGE0, GX_CC_RASC, GX_CC_RASC, GX_CC_TEXC, GX_CC_ZERO
+        GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_RASC, GX_CC_TEXC, GX_CC_ZERO
     );
     GX_SetTevAlphaIn(
-        GX_TEVSTAGE0, GX_CC_RASA, GX_CA_RASA, GX_CA_TEXA, GX_CA_ZERO
+        GX_TEVSTAGE0, GX_CA_RASA, GX_CA_RASA, GX_CA_TEXA, GX_CA_ZERO
     );
     GX_SetTexCoordGen(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY);
 
@@ -149,39 +149,42 @@ void Layout_Logo::Draw()
     GX_Begin(GX_QUADS, GX_VTXFMT0, 8);
     {
         // WiiLink
-        GX_Position3f32(m_x, m_y, 0); // top left
+        GX_Position3f32(m_x, m_y, -1.0); // top left
         GX_Color4u8(0xFF, 0xFF, 0xFF, m_alpha);
         GX_TexCoord2f32(0.0, 1.0);
 
-        GX_Position3f32(m_x + m_width * 0.55, m_y, 0); // top right
+        GX_Position3f32(m_x + m_width * 0.55, m_y, -1.0); // top right
         GX_Color4u8(0xFF, 0xFF, 0xFF, m_alpha);
         GX_TexCoord2f32(0.55, 1.0);
 
         GX_Position3f32(
-            m_x + m_width * 0.55, m_y + m_height, 0
+            m_x + m_width * 0.55, m_y + m_height, -1.0
         ); // bottom right
         GX_Color4u8(0xFF, 0xFF, 0xFF, m_alpha);
         GX_TexCoord2f32(0.55, 0.0);
 
-        GX_Position3f32(m_x, m_y + m_height, 0); // bottom left
+        GX_Position3f32(m_x, m_y + m_height, -1.0); // bottom left
         GX_Color4u8(0xFF, 0xFF, 0xFF, m_alpha);
         GX_TexCoord2f32(0.0, 0.0);
 
         // WFC
-        GX_Position3f32(m_x + m_width * 0.55, m_y, 0); // top left
+        GX_Position3f32(m_x + m_width * 0.55, m_y, -1.0); // top left
         GX_Color4u8(m_vtxColor[0].r, m_vtxColor[0].g, m_vtxColor[0].b, m_alpha);
         GX_TexCoord2f32(0.55, 1.0);
 
-        GX_Position3f32(m_x + m_width, m_y, 0); // top right
+        GX_Position3f32(m_x + m_width, m_y, -1.0); // top right
         GX_Color4u8(m_vtxColor[1].r, m_vtxColor[1].g, m_vtxColor[1].b, m_alpha);
         GX_TexCoord2f32(1.0, 1.0);
 
-        GX_Position3f32(m_x + m_width, m_y + m_height, 0); // bottom right
+        GX_Position3f32(m_x + m_width, m_y + m_height, -1.0); // bottom right
         GX_Color4u8(m_vtxColor[2].r, m_vtxColor[2].g, m_vtxColor[2].b, m_alpha);
         GX_TexCoord2f32(1.0, 0.0);
 
-        GX_Position3f32(m_x + m_width * 0.55, m_y + m_height, 0); // bottom left
+        GX_Position3f32(
+            m_x + m_width * 0.55, m_y + m_height, -1.0
+        ); // bottom left
         GX_Color4u8(m_vtxColor[3].r, m_vtxColor[3].g, m_vtxColor[3].b, m_alpha);
         GX_TexCoord2f32(0.55, 0.0);
     }
+    GX_End();
 }
