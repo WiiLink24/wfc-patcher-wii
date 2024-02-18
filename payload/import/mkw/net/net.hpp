@@ -1,6 +1,7 @@
 #pragma once
 
-#include "mkwHostSystem.hpp"
+#include "import/mkw/hostSystem.hpp"
+#include "import/mkw/system/system.hpp"
 
 namespace mkw::Net
 {

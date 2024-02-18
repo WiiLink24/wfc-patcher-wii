@@ -19,6 +19,8 @@ typedef unsigned long long u64;
 typedef float f32;
 typedef double f64;
 
+#define ARRAY_ELEMENT_COUNT(array) (sizeof(array) / sizeof((array)[0]))
+
 #ifndef SHA256_DIGEST_SIZE
 #  define SHA256_DIGEST_SIZE 32
 #endif

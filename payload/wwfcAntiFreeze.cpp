@@ -1,4 +1,4 @@
-#include "import/mkwSystem.hpp"
+#include "import/mkw/system/courseMap.hpp"
 #include "wwfcPatch.hpp"
 
 namespace wwfc::AntiFreeze
@@ -6,13 +6,14 @@ namespace wwfc::AntiFreeze
 
 #if RMC
 
-static const mkw::System::MapdataItemPoint::Data s_mapdataItemPointData = {
+using namespace mkw::System;
+
+static const MapdataItemPoint::Data s_mapdataItemPointData = {
     EGG::Vector3f{0.0f, 0.0f, 0.0f},
     0.0f,
     {0, 0},
 };
-static mkw::System::MapdataItemPoint s_mapdataItemPoint(&s_mapdataItemPointData
-);
+static MapdataItemPoint s_mapdataItemPoint(&s_mapdataItemPointData);
 
 // Prevent the game from crashing if a Bullet Bill is used during a Battle
 WWFC_DEFINE_PATCH = {
@@ -25,18 +26,17 @@ WWFC_DEFINE_PATCH = {
         WWFC_PATCH_LEVEL_BUGFIX,
         RMCXD_PORT(0x80514D78, 0x80510904, 0x805146F8, 0x80502D98), //
         [](void* /* mapdataItemPointAccessor */
-        ) -> mkw::System::MapdataItemPoint* { return &s_mapdataItemPoint; }
+        ) -> MapdataItemPoint* { return &s_mapdataItemPoint; }
     ),
 };
 
-static const mkw::System::MapdataCannonPoint::Data s_mapdataCannonPointData = {
+static const MapdataCannonPoint::Data s_mapdataCannonPointData = {
     EGG::Vector3f{0.0f, 0.0f, 0.0f},
     EGG::Vector3f{0.0f, 0.0f, 0.0f},
     0,
-    mkw::System::MapdataCannonPoint::CannonType::Default,
+    MapdataCannonPoint::CannonType::Default,
 };
-static mkw::System::MapdataCannonPoint
-    s_mapdataCannonPoint(&s_mapdataCannonPointData);
+static MapdataCannonPoint s_mapdataCannonPoint(&s_mapdataCannonPointData);
 
 // Prevent the game from crashing if a cannon is entered on a course without one
 WWFC_DEFINE_PATCH = {
@@ -49,7 +49,7 @@ WWFC_DEFINE_PATCH = {
         WWFC_PATCH_LEVEL_BUGFIX,
         RMCXD_PORT(0x80518B1C, 0x805146A8, 0x8051849C, 0x80506B3C), //
         [](void* /* mapdataCannonPointAccessor */
-        ) -> mkw::System::MapdataCannonPoint* { return &s_mapdataCannonPoint; }
+        ) -> MapdataCannonPoint* { return &s_mapdataCannonPoint; }
     ),
 };
 

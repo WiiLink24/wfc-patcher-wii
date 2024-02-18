@@ -1,13 +1,13 @@
 #include "import/dwc.h"
-#include "import/mkwNet.hpp"
-#include "import/mkwNetEventHandler.hpp"
-#include "import/mkwNetItemHandler.hpp"
-#include "import/mkwNetMatchHeaderHandler.hpp"
-#include "import/mkwNetRoomHandler.hpp"
-#include "import/mkwNetSelectHandler.hpp"
-#include "import/mkwNetUserHandler.hpp"
-#include "import/mkwRegistry.hpp"
-#include "import/mkwSystem.hpp"
+#include "import/mkw/net/eventHandler.hpp"
+#include "import/mkw/net/itemHandler.hpp"
+#include "import/mkw/net/matchHeaderHandler.hpp"
+#include "import/mkw/net/net.hpp"
+#include "import/mkw/net/roomHandler.hpp"
+#include "import/mkw/net/selectHandler.hpp"
+#include "import/mkw/net/userHandler.hpp"
+#include "import/mkw/registry.hpp"
+#include "import/mkw/system/system.hpp"
 #include "wwfcGPReport.hpp"
 #include "wwfcPatch.hpp"
 
@@ -259,9 +259,8 @@ static bool IsMatchHeaderPacketDataValid(
 
     RaceConfig::Scenario* scenario = &RaceConfig::Instance()->raceScenario();
 
-    for (size_t n = 0; n < sizeof(MatchHeaderHandler::Packet::player) /
-                               sizeof(MatchHeaderHandler::Packet::Player);
-         n++) {
+    for (size_t n = 0;
+         n < ARRAY_ELEMENT_COUNT(MatchHeaderHandler::Packet::player); n++) {
         MatchHeaderHandler::Packet::Player player =
             matchHeaderPacket->player[n];
 
@@ -349,9 +348,8 @@ IsRoomSelectPacketDataValid(const void* packet, u8 packetSize, u8 playerAid)
 
         const SelectHandler::Packet* selectPacket =
             reinterpret_cast<const SelectHandler::Packet*>(packet);
-        for (size_t n = 0; n < sizeof(SelectHandler::Packet::player) /
-                                   sizeof(SelectHandler::Packet::Player);
-             n++) {
+        for (size_t n = 0;
+             n < ARRAY_ELEMENT_COUNT(SelectHandler::Packet::player); n++) {
             SelectHandler::Packet::Player player = selectPacket->player[n];
 
             SelectHandler::Packet::Character selectedCharacter =
@@ -545,7 +543,7 @@ static bool IsRacePacketValid(
     }
 
     u32 expectedPacketSize = 0;
-    for (size_t n = 0; n < sizeof(RacePacket::sizes); n++) {
+    for (size_t n = 0; n < ARRAY_ELEMENT_COUNT(RacePacket::sizes); n++) {
         RacePacket::EType packetType = static_cast<RacePacket::EType>(n);
         u8 packetSize = racePacket->sizes[n];
 
@@ -561,7 +559,7 @@ static bool IsRacePacketValid(
     }
 
     expectedPacketSize = 0;
-    for (size_t n = 0; n < sizeof(RacePacket::sizes); n++) {
+    for (size_t n = 0; n < ARRAY_ELEMENT_COUNT(RacePacket::sizes); n++) {
         const IsPacketDataValid isPacketDataValid = s_isPacketDataValid[n];
         const void* packet =
             reinterpret_cast<const char*>(racePacket) + expectedPacketSize;

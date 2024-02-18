@@ -1,6 +1,6 @@
 #pragma once
 
-#include "mkwItem.hpp"
+#include "import/mkw/item.hpp"
 #include <cstddef>
 
 namespace mkw::Net

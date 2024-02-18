@@ -1,6 +1,6 @@
 #pragma once
 
-#include "mkwUISectionManager.hpp"
+#include "sectionManager.hpp"
 
 namespace mkw::UI
 {

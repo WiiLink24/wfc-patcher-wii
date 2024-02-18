@@ -1,7 +1,7 @@
+#include "import/revolution.h"
 #include "wwfcLog.hpp"
 #include "wwfcPatch.hpp"
 #include <cstring>
-#include <import/revolution.h>
 
 namespace wwfc::Support
 {

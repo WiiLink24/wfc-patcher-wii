@@ -1,7 +1,6 @@
 #pragma once
 
 #include "gamespy.h"
-#include <wwfcUtil.h>
 
 #ifdef __cplusplus
 extern "C" {

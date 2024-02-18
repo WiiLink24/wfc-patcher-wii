@@ -1,6 +1,6 @@
 #pragma once
 
-#include "mkwUISection.hpp"
+#include "section.hpp"
 #include <wwfcUtil.h>
 
 namespace mkw::UI

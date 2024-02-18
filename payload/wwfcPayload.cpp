@@ -1,9 +1,8 @@
-#include "import/eggException.hpp"
+#include "import/egg/exception.hpp"
 #include "wwfcLogin.hpp"
 #include "wwfcPatch.hpp"
 #include "wwfcSupport.hpp"
 #include "wwfcUtil.h"
-#include <wwfcCommon.h>
 #include <wwfcError.h>
 
 namespace wwfc::Payload
