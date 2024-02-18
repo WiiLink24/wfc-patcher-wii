@@ -1,4 +1,4 @@
-#include "import/mkwNetUserHandler.hpp"
+#include "import/mkw/net/userHandler.hpp"
 #include "wwfcGPReport.hpp"
 #include "wwfcPatch.hpp"
 
@@ -62,7 +62,9 @@ static void ClearMiiInfo(RFLiStoreData* miiData)
 
     // Creator names have the same issue, but we just clear them completely
     // because they're not needed
-    std::memset(miiData->data.creatorName, 0, RFL_CREATOR_LEN * sizeof(u16));
+    std::memset(
+        miiData->data.creatorName, 0, sizeof(miiData->data.creatorName)
+    );
 
     // Clear birthday
     miiData->data.birthMonth = 0;

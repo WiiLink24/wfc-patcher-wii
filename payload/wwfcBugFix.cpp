@@ -1,4 +1,5 @@
-#include "import/mkwNet.hpp"
+#include "import/mkw/net/net.hpp"
+#include "import/mkw/system/raceConfig.hpp"
 #include "wwfcPatch.hpp"
 
 namespace wwfc::BugFix
@@ -60,7 +61,8 @@ WWFC_DEFINE_PATCH = {
             blr;
             // clang-format on
         )
-    )};
+    )
+};
 
 u64 IsUltraShortcutCheckEnabled(u32 r3Discard, u32 r4Save)
 {

@@ -1,6 +1,6 @@
 #include "import/dwc.h"
 #include "import/gamespy.h"
-#include "import/mkwUI.hpp"
+#include "import/mkw/ui/ui.hpp"
 #include "wwfcPatch.hpp"
 #include <cstring>
 

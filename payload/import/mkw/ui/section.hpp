@@ -1,6 +1,6 @@
 #pragma once
 
-#include "mkwUIPageId.hpp"
+#include "pageId.hpp"
 #include <array>
 #include <wwfcCommon.h>
 

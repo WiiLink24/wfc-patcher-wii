@@ -5,7 +5,6 @@
 #include "wwfcLog.hpp"
 #include "wwfcPatch.hpp"
 #include "wwfcPayload.hpp"
-#include "wwfcUtil.h"
 #include <cstring>
 
 namespace wwfc::Login

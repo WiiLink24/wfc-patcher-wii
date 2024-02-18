@@ -1,8 +1,8 @@
 #include "import/dwc.h"
 #include "import/gamespy.h"
-#include "import/mkwNetSelectHandler.hpp"
-#include "import/mkwUIPage.hpp"
-#include "import/mkwUtil.hpp"
+#include "import/mkw/net/selectHandler.hpp"
+#include "import/mkw/ui/page.hpp"
+#include "import/mkw/util.hpp"
 #include <cstring>
 
 namespace mkw::UI

@@ -2,7 +2,6 @@
 #include <algorithm>
 #include <ctype.h>
 #include <string.h>
-#include <wwfcCommon.h>
 
 extern "C" {
 
