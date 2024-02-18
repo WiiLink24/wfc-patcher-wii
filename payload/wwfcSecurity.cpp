@@ -457,28 +457,40 @@ IsItemPacketDataValid(const void* packet, u8 packetSize, u8 /* playerAid */)
         ItemBox trailedItem = static_cast<ItemBox>(itemPacket->trailedItem);
 
         if (scenario->isOnlineVersusRace()) {
-            if (!IsHeldItemValidVS(heldItem)) {
+            if (heldItem != ItemBox::NoItem && !IsHeldItemValidVS(heldItem)) {
                 return false;
             }
-            if (!IsTrailedItemValidVS(trailedItem)) {
+            if (trailedItem != ItemBox::NoItem &&
+                !IsTrailedItemValidVS(trailedItem)) {
                 return false;
             }
         } else /* if (scenario->isOnlineBattle()) */ {
             if (scenario->isBalloonBattle()) {
-                if (!IsHeldItemValidBB(heldItem)) {
+                if (heldItem != ItemBox::NoItem &&
+                    !IsHeldItemValidBB(heldItem)) {
                     return false;
                 }
-                if (!IsTrailedItemValidBB(trailedItem)) {
+                if (trailedItem != ItemBox::NoItem &&
+                    !IsTrailedItemValidBB(trailedItem)) {
                     return false;
                 }
             } else /* if (scenario->isCoinRunners()) */ {
-                if (!IsHeldItemValidCR(heldItem)) {
+                if (heldItem != ItemBox::NoItem &&
+                    !IsHeldItemValidCR(heldItem)) {
                     return false;
                 }
-                if (!IsTrailedItemValidCR(trailedItem)) {
+                if (trailedItem != ItemBox::NoItem &&
+                    !IsTrailedItemValidCR(trailedItem)) {
                     return false;
                 }
             }
+        }
+
+        if (!itemPacket->isHeldPhaseValid()) {
+            return false;
+        }
+        if (!itemPacket->isTrailPhaseValid()) {
+            return false;
         }
     }
 

@@ -49,11 +49,6 @@ enum class ItemObject {
     NoObject = 0x10,
 };
 
-enum class UseType {
-    Use = 0,
-    Throw = 1,
-};
-
 class ItemDirector
 {
 public:
@@ -73,6 +68,11 @@ static_assert(sizeof(ItemDirector) == 0x430);
 
 // https://github.com/SeekyCt/mkw-structures/blob/master/itembehaviour.h
 struct ItemBehaviourEntry {
+    enum class UseType {
+        Use = 0,
+        Throw = 1,
+    };
+
     /* 0x00 */ u8 _00[0x14 - 0x00];
     /* 0x14 */ UseType useType;
     /* 0x18 */ void (*useFunction)(void* kartItem);
@@ -84,6 +84,46 @@ extern ItemBehaviourEntry itemBehaviourTable[0x13] AT(
     RMCXD_PORT(0x809C36A0, 0x809BEE98, 0x809C2700, 0x809B1CE0)
 );
 
+static bool IsItemValid(ItemBox item)
+{
+    switch (item) {
+    case ItemBox::GreenShell... ItemBox::TripleBananas: {
+        return true;
+    }
+    default: {
+        return false;
+    }
+    }
+}
+
+static bool CanHoldItem(ItemBox item)
+{
+    switch (item) {
+    case ItemBox::GreenShell... ItemBox::POWBlock:
+    case ItemBox::BulletBill... ItemBox::TripleBananas: {
+        return true;
+    }
+    default: {
+        return false;
+    }
+    }
+}
+
+static bool DoesItemHaveQuantity(ItemBox item)
+{
+    switch (item) {
+    case ItemBox::TripleMushrooms:
+    case ItemBox::TripleGreenShells:
+    case ItemBox::TripleRedShells:
+    case ItemBox::TripleBananas: {
+        return true;
+    }
+    default: {
+        return false;
+    }
+    }
+}
+
 static bool CanUseItem(ItemBox item)
 {
     if (item == ItemBox::NoItem) {
@@ -92,7 +132,8 @@ static bool CanUseItem(ItemBox item)
 
     u8 itemToUse = static_cast<u8>(item);
 
-    return itemBehaviourTable[itemToUse].useType == UseType::Use;
+    return itemBehaviourTable[itemToUse].useType ==
+           ItemBehaviourEntry::UseType::Use;
 }
 
 static bool CanThrowItem(ItemBox item)
@@ -103,7 +144,8 @@ static bool CanThrowItem(ItemBox item)
 
     u8 itemToThrow = static_cast<u8>(item);
 
-    return itemBehaviourTable[itemToThrow].useType == UseType::Throw;
+    return itemBehaviourTable[itemToThrow].useType ==
+           ItemBehaviourEntry::UseType::Throw;
 }
 
 static bool CanTrailItem(ItemBox item)
@@ -158,8 +200,7 @@ static bool CanDropItemObject(ItemObject itemObject)
 static bool IsHeldItemValidVS(ItemBox item)
 {
     switch (item) {
-    case ItemBox::GreenShell... ItemBox::TripleBananas:
-    case ItemBox::NoItem: {
+    case ItemBox::GreenShell... ItemBox::TripleBananas: {
         return true;
     }
     default: {
@@ -170,10 +211,6 @@ static bool IsHeldItemValidVS(ItemBox item)
 
 static bool IsTrailedItemValidVS(ItemBox item)
 {
-    if (item == ItemBox::NoItem) {
-        return true;
-    }
-
     if (!IsHeldItemValidVS(item)) {
         return false;
     }
@@ -186,8 +223,7 @@ static bool IsHeldItemValidBB(ItemBox item)
     switch (item) {
     case ItemBox::GreenShell... ItemBox::Star:
     case ItemBox::MegaMushroom... ItemBox::Blooper:
-    case ItemBox::TripleGreenShells... ItemBox::TripleBananas:
-    case ItemBox::NoItem: {
+    case ItemBox::TripleGreenShells... ItemBox::TripleBananas: {
         return true;
     }
     default: {
@@ -198,10 +234,6 @@ static bool IsHeldItemValidBB(ItemBox item)
 
 static bool IsTrailedItemValidBB(ItemBox item)
 {
-    if (item == ItemBox::NoItem) {
-        return true;
-    }
-
     if (!IsHeldItemValidBB(item)) {
         return false;
     }
@@ -214,8 +246,7 @@ static bool IsHeldItemValidCR(ItemBox item)
     switch (item) {
     case ItemBox::GreenShell... ItemBox::BlueShell:
     case ItemBox::Star... ItemBox::POWBlock:
-    case ItemBox::TripleGreenShells... ItemBox::TripleBananas:
-    case ItemBox::NoItem: {
+    case ItemBox::TripleGreenShells... ItemBox::TripleBananas: {
         return true;
     }
     default: {
@@ -226,10 +257,6 @@ static bool IsHeldItemValidCR(ItemBox item)
 
 static bool IsTrailedItemValidCR(ItemBox item)
 {
-    if (item == ItemBox::NoItem) {
-        return true;
-    }
-
     if (!IsHeldItemValidCR(item)) {
         return false;
     }
@@ -240,8 +267,7 @@ static bool IsTrailedItemValidCR(ItemBox item)
 static bool IsItemObjectValid(ItemObject itemObject)
 {
     switch (itemObject) {
-    case ItemObject::GreenShell... ItemObject::ThunderCloud:
-    case ItemObject::NoObject: {
+    case ItemObject::GreenShell... ItemObject::ThunderCloud: {
         return true;
     }
     default: {
