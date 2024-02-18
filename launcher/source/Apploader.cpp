@@ -544,11 +544,12 @@ static Apploader::State LaunchDisc()
             return Apploader::State::FATAL_ERROR;
         }
 
-        if (!IOS::IsDolphin()) {
+        if (!IOS::IsDolphin() && U64Lo(tmd.iosTitleId) >= 28) {
             diRet =
                 DI::OpenPartitionWithTmdAndTicketView(partOffset, &tmd, &esRet);
         } else {
-            // Dolphin doesn't implement that version of OpenPartition
+            // Dolphin and IOS versions prior to IOS28 don't implement that
+            // version of OpenPartition
             diRet = DI::OpenPartition(partOffset, &tmd, &esRet);
         }
 
