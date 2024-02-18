@@ -416,12 +416,22 @@ static Apploader::State LaunchDisc()
     std::printf("Opened partition at offset %08X\n", partOffset);
     CHECK_SHUTDOWN();
 
+    // Read the partition offsets
     PartitionOffsets hdrOffsets alignas(32) = {};
     diRet = DI::Read(&hdrOffsets, sizeof(hdrOffsets), 0x420 >> 2);
     if (diRet != DI::DIError::OK) {
         std::fprintf(
             stderr, "Failed to read from %08X: 0x%X\n", partOffset, u32(diRet)
         );
+        return Apploader::State::READ_ERROR;
+    }
+    CHECK_SHUTDOWN();
+
+    // Read the BI2
+    u8 bi2Data[0x2000] alignas(32);
+    diRet = DI::Read(bi2Data, 0x2000, 0x440 >> 2);
+    if (diRet != DI::DIError::OK) {
+        std::fprintf(stderr, "Failed to read BI2: 0x%X\n", u32(diRet));
         return Apploader::State::READ_ERROR;
     }
     CHECK_SHUTDOWN();
@@ -494,14 +504,6 @@ static Apploader::State LaunchDisc()
     );
     if (diRet != DI::DIError::OK) {
         std::fprintf(stderr, "Failed to read FST: 0x%X\n", u32(diRet));
-        return Apploader::State::READ_ERROR;
-    }
-    CHECK_SHUTDOWN();
-
-    u8 bi2Data[0x2000] alignas(32);
-    diRet = DI::Read(bi2Data, 0x2000, 0x440);
-    if (diRet != DI::DIError::OK) {
-        std::fprintf(stderr, "Failed to read BI2: 0x%X\n", u32(diRet));
         return Apploader::State::READ_ERROR;
     }
     CHECK_SHUTDOWN();
