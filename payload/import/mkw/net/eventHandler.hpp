@@ -27,7 +27,13 @@ public:
             {
                 using namespace mkw::Item;
 
-                return IsItemObjectValid(static_cast<ItemObject>(itemObject));
+                ItemObject item = static_cast<ItemObject>(itemObject);
+
+                if (item == ItemObject::NoObject) {
+                    return true;
+                }
+
+                return IsItemObjectValid(item);
             }
 
             bool isValid() const
