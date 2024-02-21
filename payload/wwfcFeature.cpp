@@ -1,6 +1,9 @@
 #include "import/dwc.h"
 #include "import/gamespy.h"
+#include "import/mkw/net/itemHandler.hpp"
+#include "import/mkw/net/net.hpp"
 #include "import/mkw/net/selectHandler.hpp"
+#include "import/mkw/system/raceManager.hpp"
 #include "import/mkw/ui/page.hpp"
 #include "import/mkw/util.hpp"
 #include <cstring>
@@ -23,42 +26,6 @@ namespace wwfc::Feature
 {
 
 #if RMC
-
-static void DecideEngineClass(
-    mkw::Net::SelectHandler* selectHandler, mkw::Util::Random* random
-)
-{
-    using namespace mkw::Net;
-
-    SelectHandler::Packet& sendPacket = selectHandler->sendPacket();
-
-    if (random->nextInt(100) < 65) {
-        sendPacket.engineClass = SelectHandler::Packet::EngineClass::e150cc;
-    } else {
-        sendPacket.engineClass =
-            SelectHandler::Packet::EngineClass::eMirrorMode;
-    }
-}
-
-// Remove the 100cc engine class from vanilla matches
-WWFC_DEFINE_PATCH = {
-    Patch::CallWithCTR( //
-        WWFC_PATCH_LEVEL_PARITY, //
-        RMCXD_PORT(0x806613F8, 0x806594BC, 0x80660A64, 0x8064F710), //
-        [](mkw::Util::Random* random) -> void {
-            using namespace mkw::Net;
-
-            SelectHandler* selectHandler = SelectHandler::Instance();
-            if (RKNetController::Instance()->inVanillaMatch()) {
-                DecideEngineClass(selectHandler, random);
-            } else {
-                selectHandler->decideEngineClass();
-            }
-
-            random->dt(random, -1);
-        }
-    ),
-};
 
 extern "C" {
 
@@ -131,7 +98,6 @@ ShowMessageOfTheDay(mkw::UI::WifiMenuPage* wifiMenuPage)
     }
 
     wifiMenuPage->showMessageOfTheDay();
-
     WifiMenuPage::SeenMessageOfTheDay();
 }
 }
@@ -153,6 +119,71 @@ WWFC_DEFINE_PATCH = {
             b         ShowMessageOfTheDay;
             // clang-format on
         )
+    ),
+};
+
+// Fix a bug that leads to the rejection of one's item request without
+// justification
+WWFC_DEFINE_PATCH = {
+    Patch::BranchWithCTR( //
+        WWFC_PATCH_LEVEL_BUGFIX | WWFC_PATCH_LEVEL_PARITY, //
+        RMCXD_PORT(0x8065C6C0, 0x8065D348, 0x8065BD2C, 0x8064A9D8), //
+        // clang-format off
+        [](mkw::Net::ItemHandler* itemHandler, u32 playerId,
+           mkw::Item::ItemBox item) -> void {
+            using namespace mkw::Net;
+            using namespace mkw::System;
+
+            u32 localPlayerIndex =
+                RacePacketHandler::Instance()->playerIdToLocalPlayerIndex(playerId);
+            ItemHandler::Packet& sendPacket = itemHandler->sendPacket(localPlayerIndex);
+            u32 timer = RaceManager::Instance()->timer();
+            u8 myAid = NetController::Instance()->myAid();
+
+            sendPacket.receivedTime = (myAid << 1) + localPlayerIndex;
+            sendPacket.heldItem = static_cast<u8>(item);
+            sendPacket.heldPhase = ItemHandler::Packet::HeldPhase::Decided;
+            itemHandler->setReceivedTime(timer & 0xFFFFFFF8, playerId);
+        }
+        // clang-format on
+    ),
+};
+
+static void DecideEngineClass(
+    mkw::Net::SelectHandler* selectHandler, mkw::Util::Random* random
+)
+{
+    using namespace mkw::Net;
+
+    SelectHandler::Packet& sendPacket = selectHandler->sendPacket();
+
+    if (random->nextInt(100) < 65) {
+        sendPacket.engineClass = SelectHandler::Packet::EngineClass::e150cc;
+    } else {
+        sendPacket.engineClass =
+            SelectHandler::Packet::EngineClass::eMirrorMode;
+    }
+}
+
+// Remove the 100cc engine class from vanilla matches
+WWFC_DEFINE_PATCH = {
+    Patch::CallWithCTR( //
+        WWFC_PATCH_LEVEL_PARITY, //
+        RMCXD_PORT(0x806613F8, 0x806594BC, 0x80660A64, 0x8064F710), //
+        // clang-format off
+        [](mkw::Util::Random* random) -> void {
+            using namespace mkw::Net;
+
+            SelectHandler* selectHandler = SelectHandler::Instance();
+            if (NetController::Instance()->inVanillaMatch()) {
+                DecideEngineClass(selectHandler, random);
+            } else {
+                selectHandler->decideEngineClass();
+            }
+
+            random->dt(random, -1);
+        }
+        // clang-format on
     ),
 };
 

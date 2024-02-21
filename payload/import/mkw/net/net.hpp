@@ -28,7 +28,7 @@ struct __attribute__((packed)) RacePacket {
 static_assert(sizeof(RacePacket) == 0x10);
 
 // https://github.com/SeekyCt/mkw-structures/blob/master/rknetcontroller.h
-class RKNetController
+class NetController
 {
 public:
     enum JoinType {
@@ -58,14 +58,14 @@ public:
     processRacePacket(u32 playerAid, RacePacket* racePacket, u32 packetSize)
     {
         LONGCALL void processRacePacket(
-            RKNetController * rkNetController, u32 playerAid,
+            NetController * netController, u32 playerAid,
             RacePacket * racePacket, u32 packetSize
         ) AT(RMCXD_PORT(0x80659A84, 0x806555FC, 0x806590F0, 0x80647D9C));
 
         processRacePacket(this, playerAid, racePacket, packetSize);
     }
 
-    ConnectionInfo& currentConnectionInfo()
+    const ConnectionInfo& currentConnectionInfo() const
     {
         return m_connectionInfo[m_currentConnectionInfoIndex];
     }
@@ -73,6 +73,21 @@ public:
     JoinType joinType() const
     {
         return m_joinType;
+    }
+
+    u8 myAid() const
+    {
+        return currentConnectionInfo().myAid;
+    }
+
+    bool isAidTheServer(u8 playerAid) const
+    {
+        return playerAid == currentConnectionInfo().serverAid;
+    }
+
+    bool amITheServer() const
+    {
+        return isAidTheServer(myAid());
     }
 
     bool inVanillaMatch() const
@@ -113,7 +128,7 @@ public:
         }
     }
 
-    bool inVanillaRaceScene()
+    bool inVanillaRaceScene() const
     {
         using namespace mkw::System;
 
@@ -125,7 +140,7 @@ public:
         return inVanillaMatch();
     }
 
-    static RKNetController* Instance()
+    static NetController* Instance()
     {
         return s_instance;
     }
@@ -138,11 +153,37 @@ private:
     /* 0x291C */ int m_currentConnectionInfoIndex;
     /* 0x2920 */ u8 _2920[0x29C8 - 0x2920];
 
-    static RKNetController* s_instance
+    static NetController* s_instance
         AT(RMCXD_PORT(0x809C20D8, 0x809BD918, 0x809C1138, 0x809B0718));
 };
 
-static_assert(sizeof(RKNetController) == 0x29C8);
+static_assert(sizeof(NetController) == 0x29C8);
+
+class RacePacketHandler
+{
+public:
+    u32 playerIdToLocalPlayerIndex(u32 playerId)
+    {
+        LONGCALL u32 playerIdToLocalPlayerIndex(
+            RacePacketHandler * racePacketHandler, u32 playerId
+        ) AT(RMCXD_PORT(0x80654918, 0x80650490, 0x80653F84, 0x80642C30));
+
+        return playerIdToLocalPlayerIndex(this, playerId);
+    }
+
+    static RacePacketHandler* Instance()
+    {
+        return s_instance;
+    }
+
+private:
+    /* 0x000 */ u8 _000[0x1C8 - 0x000];
+
+    static RacePacketHandler* s_instance
+        AT(RMCXD_PORT(0x809C1F50, 0x809BD790, 0x809C0FB0, 0x809B0590));
+};
+
+static_assert(sizeof(RacePacketHandler) == 0x1C8);
 
 #endif
 

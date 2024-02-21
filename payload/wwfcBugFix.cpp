@@ -71,8 +71,8 @@ u64 IsUltraShortcutCheckEnabled(u32 r3Discard, u32 r4Save)
     auto raceConfig = mkw::System::RaceConfig::Instance();
     if (raceConfig->raceScenario().isOnlineVersusRace()) {
         // Check if Worldwide or other vanilla match
-        auto rkNetController = mkw::Net::RKNetController::Instance();
-        if (rkNetController != nullptr && rkNetController->inVanillaMatch()) {
+        auto netController = mkw::Net::NetController::Instance();
+        if (netController && netController->inVanillaMatch()) {
             enabled = true;
         }
     }
