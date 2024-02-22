@@ -1,6 +1,7 @@
 #include "wwfcPatch.hpp"
 #include <cstring>
 #include <import/revolution.h>
+#include <wwfcCommon.h>
 
 namespace wwfc::Patch
 {
@@ -110,6 +111,16 @@ void ApplyPatch(u32 base, wwfc_patch& patch)
         address[2] = 0x7C0903A6 | (patch.arg1 << 21);
         address[3] = 0x4E800421;
         flushSize = sizeof(u32) * 4;
+        break;
+
+    /**
+     * Write a pointer specified in `arg0` to the destination `address`.
+     * @param arg0 Pointer destination address.
+     * @param arg1 Not used.
+     */
+    case WWFC_PATCH_TYPE_WRITE_POINTER:
+        *address = baseArg0;
+        flushSize = sizeof(u32);
         break;
     }
 

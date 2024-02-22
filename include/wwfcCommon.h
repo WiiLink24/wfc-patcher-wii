@@ -121,13 +121,19 @@ typedef enum {
      * @param arg1 Temporary register to use for call.
      */
     WWFC_PATCH_TYPE_BRANCH_CTR_LINK = 5,
+
+    /**
+     * Write a pointer specified in `arg0` to the destination `address`.
+     * @param arg0 Pointer destination address.
+     * @param arg1 Not used.
+     */
+    WWFC_PATCH_TYPE_WRITE_POINTER = 6,
 } wwfc_patch_type;
 
 /**
  * Flags for different patch levels.
  */
 typedef enum {
-
     /**
      * Critical, used for security patches and other things required to connect
      * to the server. This has no value and is always automatically applied.

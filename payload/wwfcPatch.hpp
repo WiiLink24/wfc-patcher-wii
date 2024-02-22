@@ -37,6 +37,16 @@ constexpr wwfc_patch WriteString(u8 level, u32 address, const char (&string)[N])
     };
 }
 
+constexpr wwfc_patch WritePointer(u8 level, u32 address, auto pointer)
+{
+    return wwfc_patch{
+        .level = level,
+        .type = WWFC_PATCH_TYPE_WRITE_POINTER,
+        .address = address,
+        .arg0 = u32(+pointer),
+    };
+}
+
 constexpr wwfc_patch
 WriteASM(u8 level, u32 address, u32 instructionCount, auto function)
 {
