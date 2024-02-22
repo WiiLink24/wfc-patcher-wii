@@ -149,7 +149,7 @@ static bool IsPacketSizeValid(RacePacket::EType packetType, u8 packetSize)
     }
 
     size_t* packetBufferSizesPointer;
-    if (!RKNetController::Instance()->inVanillaMatch()) {
+    if (!NetController::Instance()->inVanillaMatch()) {
         extern size_t packetBufferSizes[sizeof(RacePacket::sizes)] AT(
             RMCXD_PORT(0x8089A194, 0x80895AC4, 0x808992F4, 0x808885CC)
         );
@@ -253,7 +253,7 @@ static bool IsMatchHeaderPacketDataValid(
     const MatchHeaderHandler::Packet* matchHeaderPacket =
         reinterpret_cast<const MatchHeaderHandler::Packet*>(packet);
 
-    if (!RKNetController::Instance()->inVanillaRaceScene()) {
+    if (!NetController::Instance()->inVanillaRaceScene()) {
         return true;
     }
 
@@ -321,19 +321,22 @@ IsRoomSelectPacketDataValid(const void* packet, u8 packetSize, u8 playerAid)
         const RoomHandler::Packet* roomPacket =
             reinterpret_cast<const RoomHandler::Packet*>(packet);
 
-        if (roomPacket->event == RoomHandler::Packet::Event::StartRoom) {
-            RKNetController::ConnectionInfo& connectionInfo =
-                RKNetController::Instance()->currentConnectionInfo();
-
+        switch (roomPacket->event) {
+        case RoomHandler::Packet::Event::StartRoom: {
             // Ensure that guests can't start rooms
-            if (playerAid != connectionInfo.serverAid) {
+            if (!NetController::Instance()->isAidTheServer(playerAid)) {
                 return false;
             }
+            break;
+        }
+        default: {
+            break;
+        }
         }
     }
     // 'Select' packet
     else {
-        if (!RKNetController::Instance()->inVanillaMatch()) {
+        if (!NetController::Instance()->inVanillaMatch()) {
             return true;
         }
 
@@ -435,7 +438,7 @@ IsItemPacketDataValid(const void* packet, u8 packetSize, u8 /* playerAid */)
     using namespace mkw::Item;
     using namespace mkw::System;
 
-    if (!RKNetController::Instance()->inVanillaRaceScene()) {
+    if (!NetController::Instance()->inVanillaRaceScene()) {
         return true;
     }
     // Ensure that the table which controls the behaviour of items is loaded
@@ -523,7 +526,7 @@ static bool IsEventPacketDataValid(
         return false;
     }
 
-    if (!RKNetController::Instance()->inVanillaMatch()) {
+    if (!NetController::Instance()->inVanillaMatch()) {
         return true;
     }
 
@@ -597,7 +600,7 @@ static bool IsRacePacketValid(
 WWFC_DEFINE_PATCH = {Patch::BranchWithCTR( //
     WWFC_PATCH_LEVEL_CRITICAL, //
     RMCXD_PORT(0x80658604, 0x8065417C, 0x80657C70, 0x8064691C), //
-    [](RKNetController* rkNetController, RacePacket* racePacket, u32 packetSize,
+    [](NetController* netController, RacePacket* racePacket, u32 packetSize,
        u32 _, u8 playerAid) -> void {
     if (packetSize >= sizeof(RacePacket)) {
         LONGCALL u32 NETCalcCRC32( //
@@ -632,16 +635,14 @@ WWFC_DEFINE_PATCH = {Patch::BranchWithCTR( //
             );
         }
 
-        RKNetController::ConnectionInfo& connectionInfo =
-            RKNetController::Instance()->currentConnectionInfo();
-        if (connectionInfo.myAid == connectionInfo.serverAid) {
+        if (netController->amITheServer()) {
             DWC_CloseConnectionHard(playerAid);
         }
 
         return;
     }
 
-    rkNetController->processRacePacket(playerAid, racePacket, packetSize);
+    netController->processRacePacket(playerAid, racePacket, packetSize);
 }
 )};
 
