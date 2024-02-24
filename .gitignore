@@ -32,6 +32,7 @@
 # Output
 stage1/build
 patch/build
+patch/build_tool
 payload/build
 payload/binary
 exploit/build

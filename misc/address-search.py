@@ -126,6 +126,15 @@ def parse_file(file_path, title_name):
     assert(dol[index-0x50:index-0x4C] == b'\x94\x21\xFF\xE0')
     ADDRESS_IOS_Close = dol_to_real(hdr, index - 0x50)
 
+    index = dol.find(b'\x38\xA0\x00\x00\x38\x00\x00\x03\x90\xA3\x00\x20\x80\x81\x00\x08')
+    if index == -1:
+        index = dol.find(b'\x38\xA0\x00\x00\x90\xA3\x00\x20\x38\x00\x00\x03\x80\x81\x00\x08')
+        if index == -1:
+            exit('missing IOS_Read :( ' + title_name)
+
+    assert(dol[index-0x60:index-0x5C] == b'\x94\x21\xFF\xE0')
+    ADDRESS_IOS_Read = dol_to_real(hdr, index - 0x60)
+
     index = dol.find(b'\x40\x82\x00\x38\x80\x61\x00\x08\x7F\x64\xDB\x78\x7F\x85\xE3\x78')
     if index == -1:
         exit('missing IOS_Ioctlv :( ' + title_name)
@@ -404,8 +413,9 @@ def parse_file(file_path, title_name):
         else:
             addrStr = '0x{:04X}'.format(addr & ~0x8000)
 
-        LOAD_AUTH_REQ_INST_01 = "lwz r5, "+addrStr+"(r13)"
-        LOAD_AUTH_REQ_INST_02 = "addi r5, r5, 0x55D0"
+        LOAD_AUTH_REQ_INST_01 = "lwz %r5, "+addrStr+"(%r13)"
+        LOAD_AUTH_REQ_INST_02 = "addi %r5, %r5, 0x55D0"
+        LOAD_AUTH_REQ_INST_01_P = LOAD_AUTH_REQ_INST_01
     elif version == 'B':
         addrOf = real_to_dol(hdr, ADDRESS_DWCi_Auth_SendRequest)
         addr = struct.unpack('>H', dol[addrOf+0xB1A:addrOf+0xB1C])[0]
@@ -416,8 +426,9 @@ def parse_file(file_path, title_name):
         else:
             addrStr = '0x{:04X}'.format(addr & ~0x8000)
 
-        LOAD_AUTH_REQ_INST_01 = "lwz r5, "+addrStr+"(r13)"
-        LOAD_AUTH_REQ_INST_02 = "addi r5, r5, 0x{:04X}".format(STRUCT_REQ_OFFSET)
+        LOAD_AUTH_REQ_INST_01 = "lwz %r5, "+addrStr+"(%r13)"
+        LOAD_AUTH_REQ_INST_02 = "addi %r5, %r5, 0x{:04X}".format(STRUCT_REQ_OFFSET)
+        LOAD_AUTH_REQ_INST_01_P = LOAD_AUTH_REQ_INST_01
     elif version == 'C':
         addrOf = real_to_dol(hdr, ADDRESS_DWCi_Auth_SendRequest)
         addr = struct.unpack('>H', dol[addrOf+0xB16:addrOf+0xB18])[0]
@@ -429,15 +440,30 @@ def parse_file(file_path, title_name):
             addrStr = '0x{:04X}'.format(addr & ~0x8000)
 
 
-        LOAD_AUTH_REQ_INST_01 = "lwz r5, "+addrStr+"(r13)"
-        LOAD_AUTH_REQ_INST_02 = "addi r5, r5, 0x59C4"
+        LOAD_AUTH_REQ_INST_01 = "lwz %r5, "+addrStr+"(%r13)"
+        LOAD_AUTH_REQ_INST_02 = "addi %r5, %r5, 0x59C4"
+        LOAD_AUTH_REQ_INST_01_P = LOAD_AUTH_REQ_INST_01
     elif version == 'D' and response == 'D':
-        LOAD_AUTH_REQ_INST_01 = "lwz r5, 0x380(r26)"
-        LOAD_AUTH_REQ_INST_02 = "addi r5, r5, 0x59C4"
+        LOAD_AUTH_REQ_INST_01 = "lwz %r5, 0x380(%r26)"
+        LOAD_AUTH_REQ_INST_02 = "addi %r5, %r5, 0x59C4"
+
+        d = real_to_dol(hdr, ADDRESS_DWCi_Auth_HandleResponse)
+        ha = struct.unpack('>H', dol[d+0x16:d+0x18])[0]
+        lo = struct.unpack('>H', dol[d+0x1E:d+0x20])[0]
+        if lo & 0x8000:
+            ha -= 1
+        auth_work = ((ha << 16) | lo) + 0x380
+
+        lo_str = '0x{:04X}'.format(auth_work & 0xFFFF)
+        if auth_work & 0x8000:
+            lo_str = '-0x{:04X}'.format(0x10000 - (auth_work & 0xFFFF))
+
+        LOAD_AUTH_REQ_INST_01_P = "lis %r5, 0x{:04X}; lwz %r5, {}(%r5)".format((auth_work + 0x8000) >> 16, lo_str)
 
     elif version == 'PB':
-        LOAD_AUTH_REQ_INST_01 = "lwz r5, -0x5064(r13)"
-        LOAD_AUTH_REQ_INST_02 = "addi r5, r5, 0x55D4"
+        LOAD_AUTH_REQ_INST_01 = "lwz %r5, -0x5064(%r13)"
+        LOAD_AUTH_REQ_INST_02 = "addi %r5, %r5, 0x55D4"
+        LOAD_AUTH_REQ_INST_01_P = LOAD_AUTH_REQ_INST_01
     else:
         exit('NO AUTH RESPONSE COMPATIBILITY ' + version)
 
@@ -1324,6 +1350,7 @@ def parse_file(file_path, title_name):
         "ADDRESS_ICInvalidateRange":         fmthex(ADDRESS_ICInvalidateRange),
         "ADDRESS_IOS_Open":                  fmthex(ADDRESS_IOS_Open),
         "ADDRESS_IOS_Close":                 fmthex(ADDRESS_IOS_Close),
+        "ADDRESS_IOS_Read":                  fmthex(ADDRESS_IOS_Read),
         "ADDRESS_IOS_Ioctlv":                fmthex(ADDRESS_IOS_Ioctlv),
         "ADDRESS_NASWII_AC_URL":             fmthex(ADDRESS_NASWII_AC_URL),
         "ADDRESS_NASWII_AC_URL_POINTER":     fmthex(ADDRESS_NASWII_AC_URL_POINTER),
@@ -1341,6 +1368,7 @@ def parse_file(file_path, title_name):
         "AUTH_HANDLERESP_UNPATCH":           fmthex(AUTH_HANDLERESP_UNPATCH),
         "LOAD_AUTH_REQ_INST_01":             LOAD_AUTH_REQ_INST_01,
         "LOAD_AUTH_REQ_INST_02":             LOAD_AUTH_REQ_INST_02,
+        "LOAD_AUTH_REQ_INST_01_P":           LOAD_AUTH_REQ_INST_01_P,
         "ADDRESS_NHTTPCreateRequest":        fmthex(ADDRESS_NHTTPCreateRequest),
         "ADDRESS_NHTTPSendRequestAsync":     fmthex(ADDRESS_NHTTPSendRequestAsync),
         "ADDRESS_NHTTPDestroyResponse":      fmthex(ADDRESS_NHTTPDestroyResponse),
@@ -1424,6 +1452,7 @@ if __name__ == '__main__':
         "ADDRESS_ICInvalidateRange",
         "ADDRESS_IOS_Open",
         "ADDRESS_IOS_Close",
+        "ADDRESS_IOS_Read",
         "ADDRESS_IOS_Ioctlv",
         "ADDRESS_NASWII_AC_URL",
         "ADDRESS_NASWII_AC_URL_POINTER",
@@ -1441,6 +1470,7 @@ if __name__ == '__main__':
         "AUTH_HANDLERESP_UNPATCH",
         "LOAD_AUTH_REQ_INST_01",
         "LOAD_AUTH_REQ_INST_02",
+        "LOAD_AUTH_REQ_INST_01_P",
         "ADDRESS_NHTTPCreateRequest",
         "ADDRESS_NHTTPSendRequestAsync",
         "ADDRESS_NHTTPDestroyResponse",
