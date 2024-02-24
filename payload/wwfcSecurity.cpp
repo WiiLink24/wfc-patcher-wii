@@ -341,9 +341,9 @@ IsRoomSelectPacketDataValid(const void* packet, u8 packetSize, u8 playerAid)
         }
 
         RaceConfig::Scenario* scenario;
-        if (static_cast<RKScene::SceneID>(
-                RKSystem::Instance().sceneManager()->getCurrentSceneID()
-            ) == RKScene::SceneID::Race) {
+        if (static_cast<Scene::SceneID>(
+                System::Instance().sceneManager()->getCurrentSceneID()
+            ) == Scene::SceneID::Race) {
             scenario = &RaceConfig::Instance()->raceScenario();
         } else {
             scenario = &RaceConfig::Instance()->menuScenario();
@@ -506,9 +506,9 @@ static bool IsEventPacketDataValid(
 {
     using namespace mkw::System;
 
-    if (static_cast<RKScene::SceneID>(
-            RKSystem::Instance().sceneManager()->getCurrentSceneID()
-        ) != RKScene::SceneID::Race) {
+    if (static_cast<Scene::SceneID>(
+            System::Instance().sceneManager()->getCurrentSceneID()
+        ) != Scene::SceneID::Race) {
         return true;
     }
     // Ensure that the table which controls the behaviour of items is loaded

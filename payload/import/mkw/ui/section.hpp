@@ -1,16 +1,14 @@
 #pragma once
 
-#include "pageId.hpp"
+#include "page.hpp"
 #include <array>
-#include <wwfcCommon.h>
 
 namespace mkw::UI
 {
 
 #if RMC
 
-class Page;
-
+// https://github.com/mkw-sp/mkw-sp/blob/main/payload/game/ui/Section.hh
 class Section
 {
 public:

@@ -4,14 +4,21 @@
 #include "import/mkw/net/net.hpp"
 #include "import/mkw/net/selectHandler.hpp"
 #include "import/mkw/system/raceManager.hpp"
-#include "import/mkw/ui/page.hpp"
+#include "import/mkw/ui/wifiFriendMenuPage.hpp"
+#include "import/mkw/ui/wifiMenuPage.hpp"
 #include "import/mkw/util.hpp"
+#include "wwfcPatch.hpp"
 #include <cstring>
 
 namespace mkw::UI
 {
 
 #if RMC
+
+WifiFriendMenuPage::State WifiFriendMenuPage::s_state =
+    WifiFriendMenuPage::State::Previous;
+MenuInputManager::Handler<WifiFriendMenuPage>* WifiFriendMenuPage::s_onOption =
+    nullptr;
 
 const wchar_t* WifiMenuPage::s_messageOfTheDay =
     L"Welcome to\nWiiLink Wi-Fi Connection!";
@@ -28,7 +35,6 @@ namespace wwfc::Feature
 #if RMC
 
 extern "C" {
-
 __attribute__((__used__)) static GameSpy::GPResult
 GetMessageOfTheDay(const char* message)
 {
@@ -86,22 +92,6 @@ WWFC_DEFINE_PATCH = {
     ),
 };
 
-extern "C" {
-
-__attribute__((__used__)) static void
-ShowMessageOfTheDay(mkw::UI::WifiMenuPage* wifiMenuPage)
-{
-    using namespace mkw::UI;
-
-    if (WifiMenuPage::HasSeenMessageOfTheDay()) {
-        return;
-    }
-
-    wifiMenuPage->showMessageOfTheDay();
-    WifiMenuPage::SeenMessageOfTheDay();
-}
-}
-
 // Display a "Message Of The Day" when a client connects to the server
 WWFC_DEFINE_PATCH = {
     Patch::BranchWithCTR(
@@ -116,7 +106,7 @@ WWFC_DEFINE_PATCH = {
             mtlr      r0;
             addi      r1, r1, 0x10;
             
-            b         ShowMessageOfTheDay;
+            b         WifiMenuPage_showMessageOfTheDay;
             // clang-format on
         )
     ),
@@ -184,6 +174,29 @@ WWFC_DEFINE_PATCH = {
             random->dt(random, -1);
         }
         // clang-format on
+    ),
+};
+
+// Allow for the "Open Host" feature to be enabled via the press of a button
+WWFC_DEFINE_PATCH = {
+    Patch::WritePointer(
+        WWFC_PATCH_LEVEL_FEATURE,
+        RMCXD_PORT(0x808BFE7C, 0x808B97CC, 0x808BEFCC, 0x808AE2EC), //
+        WifiFriendMenu_onActivate
+    ),
+};
+WWFC_DEFINE_PATCH = {
+    Patch::WritePointer(
+        WWFC_PATCH_LEVEL_FEATURE,
+        RMCXD_PORT(0x808BFE80, 0x808B97D0, 0x808BEFD0, 0x808AE2F0), //
+        WifiFriendMenu_onDeactivate
+    ),
+};
+WWFC_DEFINE_PATCH = {
+    Patch::WritePointer(
+        WWFC_PATCH_LEVEL_FEATURE,
+        RMCXD_PORT(0x808BFEA0, 0x808B97F0, 0x808BEFF0, 0x808AE310), //
+        WifiFriendMenu_onRefocus
     ),
 };
 

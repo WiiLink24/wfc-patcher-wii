@@ -132,8 +132,9 @@ public:
     {
         using namespace mkw::System;
 
-        int sceneId = RKSystem::Instance().sceneManager()->getCurrentSceneID();
-        if (static_cast<RKScene::SceneID>(sceneId) != RKScene::SceneID::Race) {
+        int sceneId =
+            System::System::Instance().sceneManager()->getCurrentSceneID();
+        if (static_cast<Scene::SceneID>(sceneId) != Scene::SceneID::Race) {
             return false;
         }
 
