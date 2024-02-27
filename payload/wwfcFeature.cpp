@@ -1,5 +1,3 @@
-#include "import/dwc.h"
-#include "import/gamespy.h"
 #include "import/mkw/net/itemHandler.hpp"
 #include "import/mkw/net/net.hpp"
 #include "import/mkw/net/selectHandler.hpp"
@@ -19,6 +17,10 @@ WifiFriendMenuPage::State WifiFriendMenuPage::s_state =
     WifiFriendMenuPage::State::Previous;
 MenuInputManager::Handler<WifiFriendMenuPage>* WifiFriendMenuPage::s_onOption =
     nullptr;
+YesNoPage::Handler<WifiFriendMenuPage>* WifiFriendMenuPage::s_onYesOrNo =
+    nullptr;
+bool WifiFriendMenuPage::s_enableOpenHost = false;
+bool WifiFriendMenuPage::s_sentOpenHostValue = false;
 
 const wchar_t* WifiMenuPage::s_messageOfTheDay =
     L"Welcome to\nWiiLink Wi-Fi Connection!";
