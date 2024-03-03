@@ -1,6 +1,6 @@
 #pragma once
 
-#include <wwfcUtil.h>
+#include <wwfcCommon.h>
 
 namespace mkw::Item
 {
@@ -49,40 +49,30 @@ enum class ItemObject {
     NoObject = 0x10,
 };
 
-class ItemDirector
-{
-public:
-    static ItemDirector* Instance()
-    {
-        return s_instance;
-    }
-
-private:
-    /* 0x000 */ u8 _000[0x430 - 0x000];
-
-    static ItemDirector* s_instance
-        AT(RMCXD_PORT(0x809C3618, 0x809BEE20, 0x809C2678, 0x809B1C58));
-};
-
-static_assert(sizeof(ItemDirector) == 0x430);
-
-// https://github.com/SeekyCt/mkw-structures/blob/master/itembehaviour.h
-struct ItemBehaviourEntry {
+struct ItemBehaviour {
     enum class UseType {
         Use = 0,
         Throw = 1,
+        Trail = 2,
+        Circle = 3,
     };
 
-    /* 0x00 */ u8 _00[0x14 - 0x00];
-    /* 0x14 */ UseType useType;
-    /* 0x18 */ void (*useFunction)(void* kartItem);
+    static constexpr UseType s_useType[0x13] = {
+        UseType::Throw,  UseType::Throw,  UseType::Throw, UseType::Throw,
+        UseType::Use,    UseType::Use,    UseType::Throw, UseType::Throw,
+        UseType::Use,    UseType::Use,    UseType::Use,   UseType::Use,
+        UseType::Use,    UseType::Use,    UseType::Use,   UseType::Use,
+        UseType::Circle, UseType::Circle, UseType::Trail,
+    };
+
+    static constexpr bool s_hasUseFunction[0x13] = {
+        false, false, false, false, //
+        true,  true,  false, true, //
+        true,  true,  true,  true, //
+        true,  true,  true,  true, //
+        false, false, false,
+    };
 };
-
-static_assert(sizeof(ItemBehaviourEntry) == 0x1C);
-
-extern ItemBehaviourEntry itemBehaviourTable[0x13] AT(
-    RMCXD_PORT(0x809C36A0, 0x809BEE98, 0x809C2700, 0x809B1CE0)
-);
 
 static bool IsItemValid(ItemBox item)
 {
@@ -132,8 +122,7 @@ static bool CanUseItem(ItemBox item)
 
     u8 itemToUse = static_cast<u8>(item);
 
-    return itemBehaviourTable[itemToUse].useType ==
-           ItemBehaviourEntry::UseType::Use;
+    return ItemBehaviour::s_useType[itemToUse] == ItemBehaviour::UseType::Use;
 }
 
 static bool CanThrowItem(ItemBox item)
@@ -144,8 +133,8 @@ static bool CanThrowItem(ItemBox item)
 
     u8 itemToThrow = static_cast<u8>(item);
 
-    return itemBehaviourTable[itemToThrow].useType ==
-           ItemBehaviourEntry::UseType::Throw;
+    return ItemBehaviour::s_useType[itemToThrow] ==
+           ItemBehaviour::UseType::Throw;
 }
 
 static bool CanTrailItem(ItemBox item)
@@ -156,7 +145,7 @@ static bool CanTrailItem(ItemBox item)
 
     u8 itemToTrail = static_cast<u8>(item);
 
-    return !itemBehaviourTable[itemToTrail].useFunction;
+    return !ItemBehaviour::s_hasUseFunction[itemToTrail];
 }
 
 static bool CanHitItemObject(ItemObject itemObject)
