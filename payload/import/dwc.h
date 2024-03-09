@@ -10,9 +10,16 @@ namespace DWC
 #endif
 
 typedef struct {
-    FILL(0x00, 0x1C);
-    u32 profileId;
+    /* 0x00 */ FILL(0x00, 0x1C);
+    /* 0x1C */ int profileId;
+    /* 0x20 */ FILL(0x20, 0x24);
+    /* 0x24 */ u32 gameCode;
+    /* 0x28 */ FILL(0x28, 0x40);
 } DWCUserData;
+
+#ifdef __cplusplus
+static_assert(sizeof(DWCUserData) == 0x40);
+#endif
 
 typedef struct {
     /* 0x000 / 0x802F1CB8 */ s32 error;
@@ -82,11 +89,13 @@ static_assert(sizeof(DWCiNodeInfo) == 0x30);
 LONGCALL DWCiNodeInfo* DWCi_NodeInfoList_GetNodeInfoForAid(u8 playerAid)
     AT(RMCXD_PORT(0x800E7EE0, 0x800E7E40, 0x800E7E00, 0x800E7F40));
 
+LONGCALL int DWC_CheckFriendKey(const DWCUserData* userData, u64 friendKey)
+    AT(RMCXD_PORT(0x800EB8D8, 0x800EB838, 0x800EB7F8, 0x800EB950));
+
 typedef struct {
     /* 0x0 */ GameSpy::GPConnection* connection;
 } DWCMatchContext;
 
-// 0x8038630C
 extern DWCMatchContext*
     stpMatchCnt AT(RMCXD_PORT(0x8038630C, 0x80381F8C, 0x80385C8C, 0x8037432C));
 
