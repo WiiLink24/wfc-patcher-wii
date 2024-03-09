@@ -614,8 +614,7 @@ WWFC_DEFINE_PATCH = {Patch::BranchWithCTR( //
 
         if (realChecksum != savedChecksum) {
             LOG_WARN_FMT(
-                "Invalid Race packet from aid %u (checksum mismatch)\n",
-                playerAid
+                "Invalid Race packet from aid %u (checksum mismatch)", playerAid
             );
             return;
         }
@@ -625,7 +624,7 @@ WWFC_DEFINE_PATCH = {Patch::BranchWithCTR( //
         using namespace DWC;
 
         LOG_WARN_FMT(
-            "Invalid Race packet from aid %u (malicious packet)\n", playerAid
+            "Invalid Race packet from aid %u (malicious packet)", playerAid
         );
 
         DWCiNodeInfo* nodeInfo = DWCi_NodeInfoList_GetNodeInfoForAid(playerAid);

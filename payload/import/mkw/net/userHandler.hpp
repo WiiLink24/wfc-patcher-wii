@@ -1,5 +1,6 @@
 #pragma once
 
+#include "import/dwc.h"
 #include <wwfcMii.hpp>
 
 namespace mkw::Net
@@ -11,24 +12,52 @@ class UserHandler
 {
 public:
     struct __attribute__((packed)) Packet {
+        int miiCount() const
+        {
+            return std::countr_one(miiGroupBitFlags);
+        }
+
+        bool isMiiGroupBitFlagsValid() const
+        {
+            int numMiis = miiCount();
+
+            return numMiis >= 1 && numMiis <= 2;
+        }
+
         bool isMiiGroupCountValid() const
         {
-            return miiGroupCount == maxMiis;
+            return miiGroupCount == s_maxMiis;
+        }
+
+        bool isFriendCodeValid() const
+        {
+            DWC::DWCUserData userData{};
+            userData.gameCode = 0x524D434A; // RMCJ
+
+            return DWC::DWC_CheckFriendKey(&userData, friendCode);
         }
 
         bool isVersusRatingValid() const
         {
-            return vr >= minRating && vr <= maxRating;
+            return vr >= s_minRating && vr <= s_maxRating;
         }
 
         bool isBattleRatingValid() const
         {
-            return br >= minRating && br <= maxRating;
+            return br >= s_minRating && br <= s_maxRating;
         }
 
         bool isValid() const
         {
+            if (!isMiiGroupBitFlagsValid()) {
+                return false;
+            }
+
             if (!isMiiGroupCountValid()) {
+                return false;
+            }
+
+            if (!isFriendCodeValid()) {
                 return false;
             }
 
@@ -43,7 +72,7 @@ public:
             return true;
         }
 
-        /* 0x00 */ u32 miiGroupBitflags;
+        /* 0x00 */ u32 miiGroupBitFlags;
         /* 0x04 */ u16 miiGroupCount;
         /* 0x06 */ u16 _0x06;
         /* 0x08 */ wwfc::Mii::RFLiStoreData miiData[2];
@@ -61,9 +90,9 @@ public:
         /* 0xBE */ u16 _0xBE;
 
     private:
-        static const u16 maxMiis = 2;
-        static const u16 minRating = 1;
-        static const u16 maxRating = 9999;
+        static const u16 s_maxMiis = 2;
+        static const u16 s_minRating = 1;
+        static const u16 s_maxRating = 9999;
     };
 
     static_assert(sizeof(Packet) == 0xC0);
