@@ -1,12 +1,14 @@
 #pragma once
 
-#include "sectionManager.hpp"
+#include "menuInputManager.hpp"
+#include "pageId.hpp"
 
 namespace mkw::UI
 {
 
 #if RMC
 
+// https://github.com/mkw-sp/mkw-sp/blob/main/payload/game/ui/Page.hh
 class Page
 {
 public:
@@ -16,6 +18,7 @@ public:
         Previous = 1,
     };
 
+    Page();
     virtual ~Page();
     virtual void dt(s32 type);
     virtual void vf_0C();
@@ -27,8 +30,8 @@ public:
     virtual void push(PageId pageId, Animation animation);
     virtual void vf_28();
     virtual void vf_2C();
-    virtual void vf_30();
-    virtual void vf_34();
+    virtual void onActivate();
+    virtual void onDeactivate();
     virtual void vf_38();
     virtual void vf_3C();
     virtual void vf_40();
@@ -36,96 +39,23 @@ public:
     virtual void vf_48();
     virtual void vf_4C();
     virtual void vf_50();
-    virtual void vf_54();
+    virtual void onRefocus();
     virtual void vf_58();
     virtual void vf_5C();
     virtual void vf_60();
 
+    MenuInputManager* menuInputManager()
+    {
+        return m_menuInputManager;
+    }
+
 private:
-    /* 0x04 */ u8 _04[0x44 - 0x04];
+    /* 0x04 */ u8 _04[0x38 - 0x04];
+    /* 0x38 */ MenuInputManager* m_menuInputManager;
+    /* 0x3C */ u8 _3C[0x44 - 0x3C];
 };
 
 static_assert(sizeof(Page) == 0x44);
-
-class MessagePage : public Page
-{
-public:
-    virtual void reset();
-    virtual void
-    setWindowMessage(u32 messageId, FormatParam* formatParam = nullptr) = 0;
-    virtual void vf_6C() = 0;
-
-private:
-    /* 0x44 */ u8 _044[0x1A8 - 0x044];
-};
-
-static_assert(sizeof(MessagePage) == 0x1A8);
-
-class MessagePopupPage : public MessagePage
-{
-public:
-    void reset() override;
-    void setWindowMessage(u32 messageId, FormatParam* formatParam = nullptr)
-        override;
-
-private:
-    /* 0x1A8 */ u8 _1A8[0x604 - 0x1A8];
-};
-
-static_assert(sizeof(MessagePopupPage) == 0x604);
-
-class WifiMenuPage : public Page
-{
-public:
-    void showMessageOfTheDay()
-    {
-        Section* section = SectionManager::Instance()->currentSection();
-        MessagePopupPage* messagePopupPage =
-            section->page<MessagePopupPage>(PageId::MessagePopup);
-
-        FormatParam formatParam{};
-        formatParam.strings[0] = s_messageOfTheDay;
-
-        messagePopupPage->reset();
-        messagePopupPage->setWindowMessage(0x19CA, &formatParam);
-
-        push(PageId::MessagePopup, Animation::Next);
-    }
-
-    static void SetMessageOfTheDay(wchar_t* messageOfTheDay)
-    {
-        s_messageOfTheDay = messageOfTheDay;
-    }
-
-    static wchar_t* MessageOfTheDayBuffer()
-    {
-        return s_messageOfTheDayBuffer;
-    }
-
-    static size_t MessageOfTheDayBufferSize()
-    {
-        return sizeof(s_messageOfTheDayBuffer);
-    }
-
-    static bool HasSeenMessageOfTheDay()
-    {
-        return s_hasSeenMessageOfTheDay;
-    }
-
-    static void SeenMessageOfTheDay()
-    {
-        s_hasSeenMessageOfTheDay = true;
-    }
-
-private:
-    /* 0x044 */ u8 _044[0xF34 - 0x044];
-
-    static const wchar_t* s_messageOfTheDay;
-    static wchar_t s_messageOfTheDayBuffer[256];
-    static bool s_hasSeenMessageOfTheDay;
-};
-
-static_assert(sizeof(WifiMenuPage) == 0xF34);
 
 #endif
 

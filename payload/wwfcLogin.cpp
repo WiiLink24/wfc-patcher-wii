@@ -11,20 +11,22 @@ namespace wwfc::Login
 {
 
 int gpiSendLoginHook( //
-    void* connection, GameSpy::GPIConnectData* data, void* outputBuffer
+    GameSpy::GPConnection* connection, GameSpy::GPIConnectData* data,
+    GameSpy::GPIBuffer* outputBuffer
 ) asm("gpiSendLoginHook");
 
 int gpiAddLocalInfoHook( //
-    void* connection, void* outputBuffer
+    GameSpy::GPConnection* connection, GameSpy::GPIBuffer* outputBuffer
 ) asm("gpiAddLocalInfoHook");
 
 static void SendExtendedLogin( //
-    void* connection, const char* authToken, void* outputBuffer,
-    bool sendProfileId
+    GameSpy::GPConnection* connection, const char* authToken,
+    GameSpy::GPIBuffer* outputBuffer, bool sendProfileId
 );
 
 static void SendAuthTokenSignature( //
-    void* connection, const char* authToken, void* outputBuffer, s32 esFd
+    GameSpy::GPConnection* connection, const char* authToken,
+    GameSpy::GPIBuffer* outputBuffer, s32 esFd
 );
 
 static bool g_sendExLogin = false;
@@ -70,14 +72,17 @@ WWFC_DEFINE_PATCH = {
 };
 
 int gpiSendLoginHook(
-    void* connection, GameSpy::GPIConnectData* data, void* outputBuffer
+    GameSpy::GPConnection* connection, GameSpy::GPIConnectData* data,
+    GameSpy::GPIBuffer* outputBuffer
 )
 {
     SendExtendedLogin(connection, data->authtoken, outputBuffer, true);
     return 0;
 }
 
-int gpiAddLocalInfoHook(void* connection, void* outputBuffer)
+int gpiAddLocalInfoHook(
+    GameSpy::GPConnection* connection, GameSpy::GPIBuffer* outputBuffer
+)
 {
     if (g_sendExLogin) {
         GameSpy::gpiAppendStringToBuffer(
@@ -92,8 +97,8 @@ int gpiAddLocalInfoHook(void* connection, void* outputBuffer)
 }
 
 void SendExtendedLogin(
-    void* connection, const char* authToken, void* outputBuffer,
-    bool sendProfileId
+    GameSpy::GPConnection* connection, const char* authToken,
+    GameSpy::GPIBuffer* outputBuffer, bool sendProfileId
 )
 {
     g_sendExLogin = false;
@@ -170,7 +175,8 @@ static bool IsZeroBlock(const void* block, u32 size)
 }
 
 static void SendAuthTokenSignature(
-    void* connection, const char* authToken, void* outputBuffer, s32 esFd
+    GameSpy::GPConnection* connection, const char* authToken,
+    GameSpy::GPIBuffer* outputBuffer, s32 esFd
 )
 {
     struct IOSCECCCert {

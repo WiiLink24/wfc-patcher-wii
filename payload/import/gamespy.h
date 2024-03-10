@@ -9,6 +9,8 @@ namespace GameSpy
 {
 #endif
 
+typedef void* GPConnection;
+
 typedef enum {
     GPNoError = 0,
 } GPResult;
@@ -54,6 +56,17 @@ static_assert(sizeof(GPIBool) == 0x4);
 #endif
 
 typedef struct {
+    char* buffer;
+    int size;
+    int length;
+    int position;
+} GPIBuffer;
+
+#ifdef __cplusplus
+static_assert(sizeof(GPIBuffer) == 0x10);
+#endif
+
+typedef struct {
     char serverChallenge[128];
     char userChallenge[33];
     char passwordHash[33];
@@ -69,15 +82,17 @@ static_assert(sizeof(GPIConnectData) == 0x308);
 
 typedef struct {
     FILL(0x000, 0x210);
-    u32 outputBuffer;
+    GPIBuffer outputBuffer;
+    FILL(0x220, 0x5E0);
+    GPIBuffer updateproBuffer;
 } GPIConnection;
 
-LONGCALL int gpiAppendStringToBuffer( //
-    void* connection, void* outputBuffer, const char* buffer
+LONGCALL GPResult gpiAppendStringToBuffer( //
+    GPConnection* connection, GPIBuffer* outputBuffer, const char* buffer
 ) AT(ADDRESS_gpiAppendStringToBuffer);
 
 LONGCALL int gpiAppendIntToBuffer( //
-    void* connection, void* outputBuffer, int num
+    GPConnection* connection, GPIBuffer* outputBuffer, int num
 ) AT(ADDRESS_gpiAppendIntToBuffer);
 
 #if RMC
@@ -86,9 +101,27 @@ LONGCALL GPIBool gpiValueForKey( //
     const char* command, const char* key, char* value, int length
 ) AT(RMCXD_PORT(0x80108FB4, 0x80108F14, 0x80108ED4, 0x8010902C));
 
-#endif
+GPResult
+gpiSendLocalInfo(GPConnection* gpConnection, const char* key, const char* value)
+{
+    GameSpy::GPIConnection* gpiConnection =
+        reinterpret_cast<GameSpy::GPIConnection*>(*gpConnection);
 
-typedef void* GPConnection;
+    {
+        GPResult gpResult = gpiAppendStringToBuffer(
+            gpConnection, &gpiConnection->updateproBuffer, key
+        );
+        if (gpResult != GPNoError) {
+            return gpResult;
+        }
+    }
+
+    return gpiAppendStringToBuffer(
+        gpConnection, &gpiConnection->updateproBuffer, value
+    );
+}
+
+#endif
 
 LONGCALL GT2Result gt2CreateSocket( //
     void* sock, const char* localAddress, int outgoingBufferSize,
