@@ -1,10 +1,7 @@
 #include "import/mkw/net/itemHandler.hpp"
-#include "import/mkw/net/net.hpp"
 #include "import/mkw/net/selectHandler.hpp"
-#include "import/mkw/system/raceManager.hpp"
 #include "import/mkw/ui/wifiFriendMenuPage.hpp"
 #include "import/mkw/ui/wifiMenuPage.hpp"
-#include "import/mkw/util.hpp"
 #include "wwfcPatch.hpp"
 #include <cstring>
 
@@ -123,39 +120,11 @@ WWFC_DEFINE_PATCH = {
         // clang-format off
         [](mkw::Net::ItemHandler* itemHandler, u32 playerId,
            mkw::Item::ItemBox item) -> void {
-            using namespace mkw::Net;
-            using namespace mkw::System;
-
-            u32 localPlayerIndex =
-                RacePacketHandler::Instance()->playerIdToLocalPlayerIndex(playerId);
-            ItemHandler::Packet& sendPacket = itemHandler->sendPacket(localPlayerIndex);
-            u32 timer = RaceManager::Instance()->timer();
-            u8 myAid = NetController::Instance()->myAid();
-
-            sendPacket.receivedTime = (myAid << 1) + localPlayerIndex;
-            sendPacket.heldItem = static_cast<u8>(item);
-            sendPacket.heldPhase = ItemHandler::Packet::HeldPhase::Decided;
-            itemHandler->setReceivedTime(timer & 0xFFFFFFF8, playerId);
+            itemHandler->broadcastDecidedItem(playerId, item);
         }
         // clang-format on
     ),
 };
-
-static void DecideEngineClass(
-    mkw::Net::SelectHandler* selectHandler, mkw::Util::Random* random
-)
-{
-    using namespace mkw::Net;
-
-    SelectHandler::Packet& sendPacket = selectHandler->sendPacket();
-
-    if (random->nextInt(100) < 65) {
-        sendPacket.engineClass = SelectHandler::Packet::EngineClass::e150cc;
-    } else {
-        sendPacket.engineClass =
-            SelectHandler::Packet::EngineClass::eMirrorMode;
-    }
-}
 
 // Remove the 100cc engine class from vanilla matches
 WWFC_DEFINE_PATCH = {
@@ -168,7 +137,7 @@ WWFC_DEFINE_PATCH = {
 
             SelectHandler* selectHandler = SelectHandler::Instance();
             if (NetController::Instance()->inVanillaMatch()) {
-                DecideEngineClass(selectHandler, random);
+                selectHandler->decideEngineClassNo100cc(random);
             } else {
                 selectHandler->decideEngineClass();
             }
