@@ -1,7 +1,7 @@
 #pragma once
 
+#include "import/mkw/ui/ui.hpp"
 #include "page.hpp"
-#include "ui.hpp"
 #include <wwfcUtil.h>
 
 namespace mkw::UI

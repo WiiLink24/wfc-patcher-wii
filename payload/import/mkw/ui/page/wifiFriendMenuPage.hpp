@@ -4,9 +4,9 @@
 #include "import/dwc.h"
 #include "import/gamespy.h"
 #include "import/mkw/system/system.hpp"
+#include "import/mkw/ui/multiMenuInputManager.hpp"
+#include "import/mkw/ui/section/sectionManager.hpp"
 #include "messagePopupPage.hpp"
-#include "multiMenuInputManager.hpp"
-#include "sectionManager.hpp"
 #include "yesNoPopupPage.hpp"
 
 namespace mkw::UI
