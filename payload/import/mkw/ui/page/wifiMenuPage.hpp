@@ -1,7 +1,7 @@
 #pragma once
 
+#include "import/mkw/ui/section/sectionManager.hpp"
 #include "messagePopupPage.hpp"
-#include "sectionManager.hpp"
 #include <cstddef>
 
 namespace mkw::UI

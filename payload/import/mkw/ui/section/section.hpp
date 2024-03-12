@@ -1,6 +1,6 @@
 #pragma once
 
-#include "page.hpp"
+#include "import/mkw/ui/page/page.hpp"
 #include <array>
 
 namespace mkw::UI

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "menuInputManager.hpp"
+#include "import/mkw/ui/menuInputManager.hpp"
 #include "pageId.hpp"
 
 namespace mkw::UI

@@ -1,7 +1,7 @@
 #include "import/mkw/net/itemHandler.hpp"
 #include "import/mkw/net/selectHandler.hpp"
-#include "import/mkw/ui/wifiFriendMenuPage.hpp"
-#include "import/mkw/ui/wifiMenuPage.hpp"
+#include "import/mkw/ui/page/wifiFriendMenuPage.hpp"
+#include "import/mkw/ui/page/wifiMenuPage.hpp"
 #include "wwfcPatch.hpp"
 #include <cstring>
 
