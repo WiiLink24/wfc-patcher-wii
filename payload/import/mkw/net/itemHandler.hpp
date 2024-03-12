@@ -1,6 +1,8 @@
 #pragma once
 
 #include "import/mkw/item.hpp"
+#include "import/mkw/system/raceManager.hpp"
+#include "net.hpp"
 
 namespace mkw::Net
 {
@@ -116,6 +118,20 @@ public:
     void setReceivedTime(u32 receivedTime, u32 playerIndex)
     {
         m_receivedTime[playerIndex] = receivedTime;
+    }
+
+    void broadcastDecidedItem(u32 playerId, mkw::Item::ItemBox item)
+    {
+        u32 localPlayerIndex =
+            RacePacketHandler::Instance()->playerIdToLocalPlayerIndex(playerId);
+        u32 timer = mkw::System::RaceManager::Instance()->timer();
+        u8 myAid = NetController::Instance()->myAid();
+
+        Packet& packet = sendPacket(localPlayerIndex);
+        packet.receivedTime = (myAid << 1) + localPlayerIndex;
+        packet.heldItem = static_cast<u8>(item);
+        packet.heldPhase = Packet::HeldPhase::Decided;
+        setReceivedTime(timer & 0xFFFFFFF8, playerId);
     }
 
     static ItemHandler* Instance()

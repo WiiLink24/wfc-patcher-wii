@@ -1,6 +1,6 @@
 #pragma once
 
-#include <wwfcUtil.h>
+#include "import/mkw/util.hpp"
 
 namespace mkw::Net
 {
@@ -63,9 +63,13 @@ public:
         decideEngineClass(this);
     }
 
-    Packet& sendPacket()
+    void decideEngineClassNo100cc(mkw::Util::Random* random)
     {
-        return m_sendPacket;
+        if (random->nextInt(100) < 65) {
+            m_sendPacket.engineClass = Packet::EngineClass::e150cc;
+        } else {
+            m_sendPacket.engineClass = Packet::EngineClass::eMirrorMode;
+        }
     }
 
     static SelectHandler* Instance()
