@@ -1,5 +1,6 @@
 #include "import/mkw/net/itemHandler.hpp"
 #include "import/mkw/net/selectHandler.hpp"
+#include "import/mkw/ui/page/friendRoomPage.hpp"
 #include "import/mkw/ui/page/wifiFriendMenuPage.hpp"
 #include "import/mkw/ui/page/wifiMenuPage.hpp"
 #include "wwfcPatch.hpp"
@@ -10,14 +11,11 @@ namespace mkw::UI
 
 #if RMC
 
-WifiFriendMenuPage::State WifiFriendMenuPage::s_state =
-    WifiFriendMenuPage::State::Previous;
-MenuInputManager::Handler<WifiFriendMenuPage>* WifiFriendMenuPage::s_onOption =
-    nullptr;
-YesNoPage::Handler<WifiFriendMenuPage>* WifiFriendMenuPage::s_onYesOrNo =
-    nullptr;
-bool WifiFriendMenuPage::s_enableOpenHost = false;
-bool WifiFriendMenuPage::s_sentOpenHostValue = false;
+OpenHostPage::State OpenHostPage::s_state = OpenHostPage::State::Previous;
+MenuInputManager::Handler<OpenHostPage>* OpenHostPage::s_onOption = nullptr;
+YesNoPage::Handler<OpenHostPage>* OpenHostPage::s_onYesOrNo = nullptr;
+bool OpenHostPage::s_enableOpenHost = false;
+bool OpenHostPage::s_sentOpenHostValue = false;
 
 const wchar_t* WifiMenuPage::s_messageOfTheDay =
     L"Welcome to\nWiiLink Wi-Fi Connection!";
@@ -149,6 +147,27 @@ WWFC_DEFINE_PATCH = {
 };
 
 // Allow for the "Open Host" feature to be enabled via the press of a button
+WWFC_DEFINE_PATCH = {
+    Patch::WritePointer(
+        WWFC_PATCH_LEVEL_FEATURE,
+        RMCXD_PORT(0x808B9008, 0x808BABF8, 0x808B8158, 0x808A7470), //
+        FriendRoomPage_onActivate
+    ),
+};
+WWFC_DEFINE_PATCH = {
+    Patch::WritePointer(
+        WWFC_PATCH_LEVEL_FEATURE,
+        RMCXD_PORT(0x808B900C, 0x808BABFC, 0x808B815C, 0x808A7474), //
+        FriendRoomPage_onDeactivate
+    ),
+};
+WWFC_DEFINE_PATCH = {
+    Patch::WritePointer(
+        WWFC_PATCH_LEVEL_FEATURE,
+        RMCXD_PORT(0x808B902C, 0x808BAC1C, 0x808B817C, 0x808A7494), //
+        FriendRoomPage_onRefocus
+    ),
+};
 WWFC_DEFINE_PATCH = {
     Patch::WritePointer(
         WWFC_PATCH_LEVEL_FEATURE,

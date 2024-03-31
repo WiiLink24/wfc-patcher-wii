@@ -57,7 +57,7 @@ static_assert(sizeof(RacePacket) == 0x10);
 class NetController
 {
 public:
-    enum JoinType {
+    enum class JoinType {
         NotJoining = 0,
         WorldwideVersusRace = 1,
         ContinentalVersusRace = 2,
@@ -114,6 +114,11 @@ public:
     bool amITheServer() const
     {
         return isAidTheServer(myAid());
+    }
+
+    bool amITheRoomHost() const
+    {
+        return m_joinType == JoinType::RoomHost;
     }
 
     bool inVanillaMatch() const
