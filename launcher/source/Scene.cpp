@@ -54,7 +54,7 @@ void Scene::Init(GXRModeObj* rmode)
     float factor = GX_GetYScaleFactor(rmode->efbHeight, rmode->xfbHeight);
     u16 lines = GX_SetDispCopyYScale(factor);
 
-    GX_SetDispCopySrc(0, 0, rmode->fbWidth, rmode->xfbHeight);
+    GX_SetDispCopySrc(0, 0, rmode->fbWidth, rmode->efbHeight);
     GX_SetDispCopyDst(rmode->fbWidth, lines);
     GX_SetCopyFilter(rmode->aa, rmode->sample_pattern, 0, rmode->vfilter);
     GX_SetPixelFmt(0, 0);

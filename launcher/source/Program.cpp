@@ -36,6 +36,13 @@ GXRModeObj GetRenderMode()
     u8 aspect = CONF_GetAspectRatio();
     u32 mode = CONF_GetVideo();
 
+#ifdef FORCE_PAL50
+    dtv = false;
+    pal60 = false;
+    progressive = false;
+    mode = VI_PAL;
+#endif
+
     switch (mode) {
     case VI_NTSC:
     default:
