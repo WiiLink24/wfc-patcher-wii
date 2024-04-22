@@ -109,6 +109,21 @@ WWFC_DEFINE_PATCH = {
     ),
 };
 
+// Allow users to open rooms without having any friends added
+WWFC_DEFINE_PATCH = {
+    Patch::CallWithCTR( //
+        WWFC_PATCH_LEVEL_FEATURE, //
+        RMCXD_PORT(0x8064D358, 0x8061A044, 0x8064C9C4, 0x8063B670), //
+        // clang-format off
+        [](mkw::UI::WifiFriendMenuPage* /* wifiFriendMenuPage */, void* /* pushButton */) -> int {
+            constexpr int friendsAdded = 1;
+
+            return friendsAdded;
+        }
+        // clang-format on
+    ),
+};
+
 // Fix a bug that leads to the rejection of one's item request without
 // justification
 WWFC_DEFINE_PATCH = {
@@ -146,7 +161,7 @@ WWFC_DEFINE_PATCH = {
     ),
 };
 
-// Allow for the "Open Host" feature to be enabled via the press of a button
+// Allow the "Open Host" feature to be enabled via the press of a button
 WWFC_DEFINE_PATCH = {
     Patch::WritePointer(
         WWFC_PATCH_LEVEL_FEATURE,
