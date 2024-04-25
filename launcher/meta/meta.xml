@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!-- HBC application metadata for the WiiLink WFC Launcher -->
+<app version="1">
+    <name>WiiLink WFC Loader</name>
+    <version>1.0</version>
+    <!-- {year:04d}{month:02d}{day:02d}{hour:02d}{minute:02d}{second:02d} -->
+    <!-- 25th April 2024, 10:51:26 GMT -->
+    <release_date>20240425061126</release_date>
+    <author>WiiLink</author>
+    <!-- Separate coder credit, not displayed in HBC -->
+    <coder>mkwcat</coder>
+    <short_description>Revive WFC for disc-based games</short_description>
+    <long_description>WiiLink Wi-Fi Connection (WWFC) revives online services for Nintendo DS and Wii games, allowing you to compete in online leaderboards and play multiplayer with people around the world!
+
+© 2024 WiiLink - wfc.wiilink24.com</long_description>
+    <arguments></arguments>
+    <!-- These two tags have the same function -->
+    <!-- <ahb_access/> -->
+    <!-- <no_ios_reload/> -->
+</app>
