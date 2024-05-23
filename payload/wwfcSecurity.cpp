@@ -1,14 +1,11 @@
-#include "import/dwc.h"
 #include "import/mkw/net/eventHandler.hpp"
 #include "import/mkw/net/itemHandler.hpp"
 #include "import/mkw/net/matchHeaderHandler.hpp"
-#include "import/mkw/net/net.hpp"
 #include "import/mkw/net/roomHandler.hpp"
 #include "import/mkw/net/selectHandler.hpp"
 #include "import/mkw/net/userHandler.hpp"
 #include "import/mkw/registry.hpp"
 #include "import/mkw/system/system.hpp"
-#include "wwfcGPReport.hpp"
 #include "wwfcPatch.hpp"
 
 namespace wwfc::Security
@@ -355,13 +352,14 @@ IsRoomSelectPacketDataValid(const void* packet, u8 packetSize, u8 playerAid)
              n < ARRAY_ELEMENT_COUNT(SelectHandler::Packet::player); n++) {
             SelectHandler::Packet::Player player = selectPacket->player[n];
 
-            SelectHandler::Packet::Character selectedCharacter =
+            SelectHandler::Packet::Player::Character selectedCharacter =
                 player.character;
-            SelectHandler::Packet::Vehicle selectedVehicle = player.vehicle;
+            SelectHandler::Packet::Player::Vehicle selectedVehicle =
+                player.vehicle;
             if (selectedCharacter !=
-                    SelectHandler::Packet::Character::NotSelected ||
+                    SelectHandler::Packet::Player::Character::NotSelected ||
                 selectedVehicle !=
-                    SelectHandler::Packet::Vehicle::NotSelected) {
+                    SelectHandler::Packet::Player::Vehicle::NotSelected) {
                 Character character = static_cast<Character>(selectedCharacter);
                 Vehicle vehicle = static_cast<Vehicle>(selectedVehicle);
                 if (scenario->isOnlineVersusRace()) {
@@ -375,10 +373,12 @@ IsRoomSelectPacketDataValid(const void* packet, u8 packetSize, u8 playerAid)
                 }
             }
 
-            SelectHandler::Packet::CourseVote courseVote =
+            SelectHandler::Packet::Player::CourseVote courseVote =
                 selectPacket->player[n].courseVote;
-            if (courseVote == SelectHandler::Packet::CourseVote::NotSelected ||
-                courseVote == SelectHandler::Packet::CourseVote::Random) {
+            if (courseVote ==
+                    SelectHandler::Packet::Player::CourseVote::NotSelected ||
+                courseVote ==
+                    SelectHandler::Packet::Player::CourseVote::Random) {
                 continue;
             }
             Course course = static_cast<Course>(courseVote);
@@ -592,41 +592,39 @@ WWFC_DEFINE_PATCH = {Patch::BranchWithCTR( //
     RMCXD_PORT(0x80658604, 0x8065417C, 0x80657C70, 0x8064691C), //
     [](NetController* netController, RacePacket* racePacket, u32 packetSize,
        u32 _, u8 playerAid) -> void {
-    if (packetSize >= sizeof(RacePacket)) {
-        LONGCALL u32 NETCalcCRC32( //
-            const void* data, u32 size
-        ) AT(RMCXD_PORT(0x801D1CA0, 0x801D1C00, 0x801D1BC0, 0x801D1FFC));
+    if (packetSize < sizeof(RacePacket)) {
+        LOG_WARN_FMT(
+            "Invalid Race packet from aid %u (insufficient size)", playerAid
+        );
 
-        u32 savedChecksum = racePacket->checksum;
-        racePacket->checksum = 0;
-        u32 realChecksum = NETCalcCRC32(racePacket, packetSize);
-        racePacket->checksum = savedChecksum;
+        netController->reportAndKick("mkw_malicious_packet", playerAid);
 
-        if (realChecksum != savedChecksum) {
-            LOG_WARN_FMT(
-                "Invalid Race packet from aid %u (checksum mismatch)", playerAid
-            );
-            return;
-        }
+        return;
+    }
+
+    LONGCALL u32 NETCalcCRC32( //
+        const void* data, u32 size
+    ) AT(RMCXD_PORT(0x801D1CA0, 0x801D1C00, 0x801D1BC0, 0x801D1FFC));
+
+    u32 savedChecksum = racePacket->checksum;
+    racePacket->checksum = 0;
+    u32 realChecksum = NETCalcCRC32(racePacket, packetSize);
+    racePacket->checksum = savedChecksum;
+
+    if (realChecksum != savedChecksum) {
+        LOG_WARN_FMT(
+            "Invalid Race packet from aid %u (checksum mismatch)", playerAid
+        );
+
+        return;
     }
 
     if (!IsRacePacketValid(racePacket, packetSize, playerAid)) {
-        using namespace DWC;
-
         LOG_WARN_FMT(
             "Invalid Race packet from aid %u (malicious packet)", playerAid
         );
 
-        DWCiNodeInfo* nodeInfo = DWCi_NodeInfoList_GetNodeInfoForAid(playerAid);
-        if (nodeInfo) {
-            wwfc::GPReport::ReportU32(
-                "mkw_malicious_packet", nodeInfo->profileId
-            );
-        }
-
-        if (netController->amITheServer()) {
-            DWC_CloseConnectionHard(playerAid);
-        }
+        netController->reportAndKick("mkw_malicious_packet", playerAid);
 
         return;
     }

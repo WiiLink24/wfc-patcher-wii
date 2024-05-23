@@ -97,6 +97,14 @@ public:
 
     static_assert(sizeof(Packet) == 0xC0);
 
+    void calc()
+    {
+        LONGCALL void calc(UserHandler * userHandler)
+            AT(RMCXD_PORT(0x806629C0, 0x806608DC, 0x8066202C, 0x80650CD8));
+
+        calc(this);
+    }
+
     static UserHandler* Instance()
     {
         return s_instance;

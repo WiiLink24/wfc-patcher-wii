@@ -1,10 +1,22 @@
 #include "import/mkw/net/itemHandler.hpp"
 #include "import/mkw/net/selectHandler.hpp"
+#include "import/mkw/net/userHandler.hpp"
 #include "import/mkw/ui/page/friendRoomPage.hpp"
 #include "import/mkw/ui/page/wifiFriendMenuPage.hpp"
 #include "import/mkw/ui/page/wifiMenuPage.hpp"
 #include "wwfcPatch.hpp"
 #include <cstring>
+
+namespace mkw::Net
+{
+
+#if RMC
+
+u32 SelectHandler::s_kickTimerFrames = 0;
+
+#endif
+
+} // namespace mkw::Net
 
 namespace mkw::UI
 {
@@ -124,6 +136,28 @@ WWFC_DEFINE_PATCH = {
     ),
 };
 
+// Prevent clients from stalling rooms
+WWFC_DEFINE_PATCH = {
+    Patch::CallWithCTR( //
+        WWFC_PATCH_LEVEL_FEATURE, //
+        RMCXD_PORT(0x806579A0, 0x80653518, 0x8065700C, 0x80645CB8), //
+        // clang-format off
+        [](mkw::Net::NetController* netController) -> void {
+            using namespace mkw::Net;
+
+            netController->sendRacePacket();
+
+            UserHandler::Instance()->calc();
+
+            SelectHandler* selectHandler = SelectHandler::Instance();
+            if (selectHandler) {
+                selectHandler->processKicks();
+            }
+        }
+        // clang-format on
+    ),
+};
+
 // Fix a bug that leads to the rejection of one's item request without
 // justification
 WWFC_DEFINE_PATCH = {
@@ -134,6 +168,29 @@ WWFC_DEFINE_PATCH = {
         [](mkw::Net::ItemHandler* itemHandler, u32 playerId,
            mkw::Item::ItemBox item) -> void {
             itemHandler->broadcastDecidedItem(playerId, item);
+        }
+        // clang-format on
+    ),
+};
+
+// Reset the timer that is used to detect if clients are stalling the room
+WWFC_DEFINE_PATCH = {
+    Patch::CallWithCTR( //
+        WWFC_PATCH_LEVEL_FEATURE, //
+        RMCXD_PORT(0x8065FF34, 0x80657FF8, 0x8065F5A0, 0x8064E24C), //
+        // clang-format off
+        [](mkw::Net::SelectHandler* selectHandler,
+           mkw::Net::NetController* netController) -> mkw::Net::SelectHandler* {
+            using namespace mkw::Net;
+
+            netController->_29B0 = 0;
+            netController->_29B4 = 0;
+            netController->_29B8 = 0;
+            netController->_29BC = 0;
+
+            SelectHandler::ResetKickTimer();
+
+            return selectHandler;
         }
         // clang-format on
     ),
