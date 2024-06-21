@@ -278,3 +278,23 @@ GCT_STRING_END(AvailableURLOverride)
 GCT_STRING(ADDRESS_NASWII_AC_URL + 0x4, AuthURLOverride) // 0x8027A42C
     .ascii  "://nas." WWFC_DOMAIN "/w0\0"
 GCT_STRING_END(AuthURLOverride)
+
+
+// Undo some of the Wiimmfi patches to allow using a prepatched game
+#if RMCED00 | RMCJD00 | RMCKD00 | RMCPD00
+
+// Patch in DWCi_Auth_HandleResponse
+GCT_WRITE_INSTR(ADDRESS_AUTH_HANDLERESP_HOOK - 0x8, cmpwi r3, 0)
+
+// Patch in DWCi_Auth_InitInterface
+#  if RMCED00
+GCT_WRITE_INSTR(0x800ECA0C, mr r30, r3)
+#  elif RMCJD00
+GCT_WRITE_INSTR(0x800EC9CC, mr r30, r3)
+#  elif RMCKD00
+GCT_WRITE_INSTR(0x800ECB24, mr r30, r3)
+#  elif RMCPD00
+GCT_WRITE_INSTR(0x800ECAAC, mr r30, r3)
+#  endif
+
+#endif
