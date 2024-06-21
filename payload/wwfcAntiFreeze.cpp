@@ -11,13 +11,14 @@ using namespace mkw::System;
 
 static const MapdataItemPoint::Data s_mapdataItemPointData = {
     EGG::Vector3f{0.0f, 0.0f, 0.0f},
-    0.0f,
+    1.0f,
     {0, 0},
 };
 static MapdataItemPoint s_mapdataItemPoint(&s_mapdataItemPointData);
 
 // Prevent the game from crashing if a Bullet Bill is used during a Battle
 WWFC_DEFINE_PATCH = {
+    // Prevent returning a null pointer
     Patch::WriteASM(
         WWFC_PATCH_LEVEL_BUGFIX,
         RMCXD_PORT(0x80514D58, 0x805108E4, 0x805146D8, 0x80502D78), //
@@ -28,6 +29,15 @@ WWFC_DEFINE_PATCH = {
         RMCXD_PORT(0x80514D78, 0x80510904, 0x805146F8, 0x80502D98), //
         [](void* /* mapdataItemPointAccessor */
         ) -> MapdataItemPoint* { return &s_mapdataItemPoint; }
+    ),
+
+    // This one function does rely on it returning a null pointer though,
+    // although this patch now makes it rely on a volatile condition register
+    // field
+    Patch::WriteASM(
+        WWFC_PATCH_LEVEL_BUGFIX,
+        RMCXD_PORT(0x805845DC, 0x8057DDB8, 0x80583F5C, 0x80572634), //
+        1, ASM_LAMBDA(crnot 2, 0)
     ),
 };
 
