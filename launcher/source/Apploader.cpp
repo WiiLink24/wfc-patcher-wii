@@ -136,6 +136,11 @@ static void PatchAndLaunchDol(
     DOL* dol, const GameAddresses* game, const void* bi2, u32 mem1Hi
 )
 {
+    // Add payload block to MEM2
+    u32 mem2Hi = ReadU32(0x80003128);
+    const u32 payloadBlock = AlignDown(mem2Hi - 0x20000, 32);
+    mem2Hi = payloadBlock;
+
     // Add stage 1
     const u32 stage1Start = AlignDown(mem1Hi - sizeof(Stage1Payload), 32);
     std::memcpy(
@@ -146,9 +151,8 @@ static void PatchAndLaunchDol(
     ICInvalidateRange(
         reinterpret_cast<void*>(stage1Start), sizeof(Stage1Payload)
     );
-
-    const u32 payloadBlock = stage1Start - 0x20000;
-    const u32 wwfcAsm = payloadBlock - 0x100;
+    
+    const u32 wwfcAsm = stage1Start - 0x100;
 
     const u32 start = u32(g_wwfcPatchStart);
     const u32 loadAuthWork = u32(g_wwfcPatchLoadAuthWorkReq);
@@ -264,6 +268,7 @@ static void PatchAndLaunchDol(
 
     WriteU32(0x80003110, wwfcAsm); // MEM1 Arena End
     WriteU32(0x80003124, 0x90000800); // Usable MEM2 Start
+    WriteU32(0x80003128, mem2Hi); // Usable MEM2 End
     WriteU32(0x80003180, ReadU32(0x80000000)); // Game ID
     WriteU32(0x80003188, ReadU32(0x80003140)); // IOS Version + Revision
 
