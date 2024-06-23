@@ -122,6 +122,24 @@ public:
         return m_joinType == JoinType::RoomHost;
     }
 
+    bool usingCustomRegion() const
+    {
+        using namespace mkw::HostSystem;
+
+        // Allow clients to modify their region without having to change
+        // their matching area.
+        extern SystemManager::MatchingArea customMatchingArea AT(0x80005EFC);
+        if (customMatchingArea < SystemManager::MatchingArea::Japan ||
+            customMatchingArea > SystemManager::MatchingArea::China) {
+            return true;
+        }
+
+        SystemManager::MatchingArea matchingArea =
+            SystemManager::Instance()->matchingArea();
+        return matchingArea < SystemManager::MatchingArea::Japan ||
+               matchingArea > SystemManager::MatchingArea::China;
+    }
+
     bool inVanillaMatch() const
     {
         switch (m_joinType) {
@@ -135,21 +153,7 @@ public:
         case JoinType::ContinentalBattle:
         case JoinType::FriendContinentalVersusRace:
         case JoinType::FriendContinentalBattle: {
-            using namespace mkw::HostSystem;
-
-            // Allow clients to modify their region without having to change
-            // their matching area.
-            extern SystemManager::MatchingArea customMatchingArea AT(0x80005EFC
-            );
-            if (customMatchingArea < SystemManager::MatchingArea::Japan ||
-                customMatchingArea > SystemManager::MatchingArea::China) {
-                return false;
-            }
-
-            SystemManager::MatchingArea matchingArea =
-                SystemManager::Instance()->matchingArea();
-            return matchingArea >= SystemManager::MatchingArea::Japan &&
-                   matchingArea <= SystemManager::MatchingArea::China;
+            return !usingCustomRegion();
         }
         case JoinType::RoomHost:
         case JoinType::RoomGuest: {
