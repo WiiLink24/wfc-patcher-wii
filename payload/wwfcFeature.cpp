@@ -26,7 +26,7 @@ namespace mkw::UI
 OpenHostPage::State OpenHostPage::s_state = OpenHostPage::State::Previous;
 MenuInputManager::Handler<OpenHostPage>* OpenHostPage::s_onOption = nullptr;
 YesNoPage::Handler<OpenHostPage>* OpenHostPage::s_onYesOrNo = nullptr;
-bool OpenHostPage::s_enableOpenHost = false;
+bool OpenHostPage::s_openHostEnabled = false;
 bool OpenHostPage::s_sentOpenHostValue = false;
 
 const wchar_t* WifiMenuPage::s_messageOfTheDay =
@@ -118,6 +118,34 @@ WWFC_DEFINE_PATCH = {
             b         WifiMenuPage_showMessageOfTheDay;
             // clang-format on
         )
+    ),
+};
+
+// Display the current status of the "Open Host" feature
+WWFC_DEFINE_PATCH = {
+    Patch::CallWithCTR( //
+        WWFC_PATCH_LEVEL_FEATURE, //
+        RMCXD_PORT(0x8064CF48, 0x80619C34, 0x8064C5B4, 0x8063B260), //
+        // clang-format off
+        []() -> void {
+            using namespace mkw::UI;
+
+            Section* section = SectionManager::Instance()->currentSection();
+            WifiFriendMenuPage* wifiFriendMenuPage =
+                section->page<WifiFriendMenuPage>(PageId::WifiFriendMenu);
+
+            FormatParam formatParam{};
+            if (OpenHostPage::IsOpenHostEnabled()) {
+                formatParam.strings[0] = L"Open Host is enabled.";
+            } else {
+                formatParam.strings[0] = L"Open Host is disabled.";
+            }
+
+            MenuInstructionTextControl& menuIntructionTextControl =
+                wifiFriendMenuPage->menuInstructionTextControl();
+            menuIntructionTextControl.setMessage(0x19CA, &formatParam);
+        }
+        // clang-format on
     ),
 };
 

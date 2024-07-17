@@ -53,6 +53,11 @@ public:
         transition(resolve());
     }
 
+    static bool IsOpenHostEnabled()
+    {
+        return s_openHostEnabled;
+    }
+
 private:
     OpenHostPage();
 
@@ -121,7 +126,7 @@ private:
                                          L"the server.\n\n"
                                          L"Please try again later.";
             } else {
-                if (s_enableOpenHost) {
+                if (s_openHostEnabled) {
                     formatParam.strings[0] = L"Open Host is now enabled!";
                 } else {
                     formatParam.strings[0] = L"Open Host is now disabled!";
@@ -155,22 +160,22 @@ private:
         }
         s_sentOpenHostValue = true;
 
-        bool enableOpenHost = choice == 0;
+        bool openHostEnabled = choice == 0;
 
         char openHostValue[2];
-        openHostValue[0] = '0' + enableOpenHost;
+        openHostValue[0] = '0' + openHostEnabled;
         openHostValue[1] = '\0';
         GameSpy::gpiSendLocalInfo(
             gpConnection, "\\wwfc_openhost\\", openHostValue
         );
 
-        s_enableOpenHost = enableOpenHost;
+        s_openHostEnabled = openHostEnabled;
     }
 
     static State s_state;
     static mkw::UI::MenuInputManager::Handler<OpenHostPage>* s_onOption;
     static mkw::UI::YesNoPage::Handler<OpenHostPage>* s_onYesOrNo;
-    static bool s_enableOpenHost;
+    static bool s_openHostEnabled;
     static bool s_sentOpenHostValue;
 };
 

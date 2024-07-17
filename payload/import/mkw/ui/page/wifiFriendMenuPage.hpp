@@ -1,5 +1,6 @@
 #pragma once
 
+#include "import/mkw/ui/control/menuInstructionTextControl.hpp"
 #include "openHostPage.hpp"
 
 namespace mkw::UI
@@ -40,8 +41,15 @@ public:
         OpenHostPage::onRefocus();
     }
 
+    MenuInstructionTextControl& menuInstructionTextControl()
+    {
+        return m_menuInstructionTextControl;
+    }
+
 private:
-    /* 0x044 */ u8 _044[0xF34 - 0x044];
+    /* 0x044 */ u8 _044[0xB98 - 0x044];
+    /* 0xB98 */ MenuInstructionTextControl m_menuInstructionTextControl;
+    /* 0xD0C */ u8 _D0C[0xF34 - 0xD0C];
 };
 
 static_assert(sizeof(WifiFriendMenuPage) == 0xF34);

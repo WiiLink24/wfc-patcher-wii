@@ -34,7 +34,7 @@ public:
     class Handler final : public IHandler
     {
     public:
-        Handler(T* object, void (T::*function)(u32))
+        Handler(T* object, void (T::*function)(u32 localPlayerId))
         {
             m_object = object;
             m_function = function;
@@ -47,9 +47,10 @@ public:
 
     private:
         T* m_object;
-        void (T::*m_function)(u32);
+        void (T::*m_function)(u32 localPlayerId);
     };
 
+    MenuInputManager();
     virtual ~MenuInputManager();
 
 private:

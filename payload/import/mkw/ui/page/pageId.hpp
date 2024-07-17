@@ -9,6 +9,7 @@ namespace mkw::UI
 enum class PageId {
     MessagePopup = 0x4D,
     YesNoPopup = 0x4E,
+    WifiFriendMenu = 0x8D,
 };
 
 #endif
