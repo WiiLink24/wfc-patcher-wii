@@ -43,23 +43,15 @@ namespace wwfc::Feature
 
 #if RMC
 
-extern "C" {
-__attribute__((__used__)) static GameSpy::GPResult
-GetMessageOfTheDay(const char* message)
+// Get the Message Of The Day from a message
+static void GetMessageOfTheDay(const char* message)
 {
     using namespace mkw::UI;
-
-    const char loginChallenge2Message[] = "\\lc\\2";
-    if (strncmp(
-            message, loginChallenge2Message, sizeof(loginChallenge2Message) - 1
-        )) {
-        return GameSpy::GPNoError;
-    }
 
     const char motdKey[] = "\\wwfc_motd\\";
     char value[512];
     if (!GameSpy::gpiValueForKey(message, motdKey, value, sizeof(value))) {
-        return GameSpy::GPNoError;
+        return;
     }
 
     wchar_t* messageOfTheDayBuffer = WifiMenuPage::MessageOfTheDayBuffer();
@@ -71,31 +63,60 @@ GetMessageOfTheDay(const char* message)
     );
     if (messageOfTheDayLength == -1 ||
         messageOfTheDayLength == messageOfTheDayBufferSize) {
-        return GameSpy::GPNoError;
+        return;
     }
     messageOfTheDayBuffer[messageOfTheDayLength / sizeof(wchar_t)] = L'\0';
 
     WifiMenuPage::SetMessageOfTheDay(messageOfTheDayBuffer);
+}
 
-    return GameSpy::GPNoError;
+// Get the "Open Host" setting value from a message
+static void GetOpenHostValue(const char* message)
+{
+    const char openHostKey[] = "\\wwfc_openhost\\";
+    char value[2];
+    if (!GameSpy::gpiValueForKey(message, openHostKey, value, sizeof(value))) {
+        return;
+    }
+
+    bool openHostEnabled = value[0] == '1';
+    mkw::UI::OpenHostPage::SetOpenHostValue(openHostEnabled);
+}
+
+extern "C" {
+__attribute__((__used__)) static GameSpy::GPResult
+GetValuesFromLoginChallenge2Message(
+    GameSpy::GPResult gpResult, const char* message
+)
+{
+    const char loginChallenge2Message[] = "\\lc\\2";
+    if (strncmp(
+            message, loginChallenge2Message, sizeof(loginChallenge2Message) - 1
+        )) {
+        return gpResult;
+    }
+
+    GetMessageOfTheDay(message);
+    GetOpenHostValue(message);
+
+    return gpResult;
 }
 }
 
-// Get the "Message Of The Day" from the "Login Challenge" message
 WWFC_DEFINE_PATCH = {
     Patch::BranchWithCTR(
         WWFC_PATCH_LEVEL_FEATURE,
         RMCXD_PORT(0x80101074, 0x80100FD4, 0x80100F94, 0x801010EC), //
         ASM_LAMBDA(
             // clang-format off
-            mr        r3, r26;
+            mr        r4, r26;
 
             bl        _restgpr_26;
             lwz       r0, 0x2D4(r1);
             mtlr      r0;
             addi      r1, r1, 0x2D0;
             
-            b         GetMessageOfTheDay;
+            b         GetValuesFromLoginChallenge2Message;
             // clang-format on
         )
     ),

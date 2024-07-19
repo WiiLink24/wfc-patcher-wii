@@ -58,6 +58,11 @@ public:
         return s_openHostEnabled;
     }
 
+    static void SetOpenHostValue(bool openHostEnabled)
+    {
+        s_openHostEnabled = openHostEnabled;
+    }
+
 private:
     OpenHostPage();
 
