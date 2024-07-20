@@ -8,6 +8,7 @@ namespace EGG
 class Exception
 {
 public:
+    Exception();
     virtual ~Exception();
 
     static void SetUserCallBack(void* arg)

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "import/dwc.h"
+#include <bit>
 #include <wwfcMii.hpp>
 
 namespace mkw::Net
