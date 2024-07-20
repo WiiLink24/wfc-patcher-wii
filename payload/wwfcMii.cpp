@@ -1,6 +1,7 @@
 #include "import/mkw/net/userHandler.hpp"
 #include "wwfcGPReport.hpp"
 #include "wwfcPatch.hpp"
+#include <cstring>
 
 namespace wwfc::Mii
 {

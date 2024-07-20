@@ -2,6 +2,7 @@
 
 #include "import/mkw/item.hpp"
 #include <cstddef>
+#include <wwfcUtil.h>
 
 namespace mkw::Net
 {

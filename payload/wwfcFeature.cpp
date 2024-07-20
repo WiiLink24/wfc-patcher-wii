@@ -26,7 +26,7 @@ namespace mkw::UI
 OpenHostPage::State OpenHostPage::s_state = OpenHostPage::State::Previous;
 MenuInputManager::Handler<OpenHostPage>* OpenHostPage::s_onOption = nullptr;
 YesNoPage::Handler<OpenHostPage>* OpenHostPage::s_onYesOrNo = nullptr;
-bool OpenHostPage::s_enableOpenHost = false;
+bool OpenHostPage::s_openHostEnabled = false;
 bool OpenHostPage::s_sentOpenHostValue = false;
 
 const wchar_t* WifiMenuPage::s_messageOfTheDay =
@@ -45,7 +45,7 @@ namespace wwfc::Feature
 
 extern "C" {
 __attribute__((__used__)) static GameSpy::GPResult
-GetMessageOfTheDay(const char* message)
+GetMessageOfTheDay(GameSpy::GPResult gpResult, const char* message)
 {
     using namespace mkw::UI;
 
@@ -53,13 +53,13 @@ GetMessageOfTheDay(const char* message)
     if (strncmp(
             message, loginChallenge2Message, sizeof(loginChallenge2Message) - 1
         )) {
-        return GameSpy::GPNoError;
+        return gpResult;
     }
 
     const char motdKey[] = "\\wwfc_motd\\";
     char value[512];
     if (!GameSpy::gpiValueForKey(message, motdKey, value, sizeof(value))) {
-        return GameSpy::GPNoError;
+        return gpResult;
     }
 
     wchar_t* messageOfTheDayBuffer = WifiMenuPage::MessageOfTheDayBuffer();
@@ -71,24 +71,24 @@ GetMessageOfTheDay(const char* message)
     );
     if (messageOfTheDayLength == -1 ||
         messageOfTheDayLength == messageOfTheDayBufferSize) {
-        return GameSpy::GPNoError;
+        return gpResult;
     }
     messageOfTheDayBuffer[messageOfTheDayLength / sizeof(wchar_t)] = L'\0';
 
     WifiMenuPage::SetMessageOfTheDay(messageOfTheDayBuffer);
 
-    return GameSpy::GPNoError;
+    return gpResult;
 }
 }
 
-// Get the "Message Of The Day" from the "Login Challenge" message
+// Get the Message Of The Day from the "Login Challenge 2" message
 WWFC_DEFINE_PATCH = {
     Patch::BranchWithCTR(
         WWFC_PATCH_LEVEL_FEATURE,
         RMCXD_PORT(0x80101074, 0x80100FD4, 0x80100F94, 0x801010EC), //
         ASM_LAMBDA(
             // clang-format off
-            mr        r3, r26;
+            mr        r4, r26;
 
             bl        _restgpr_26;
             lwz       r0, 0x2D4(r1);
@@ -101,7 +101,7 @@ WWFC_DEFINE_PATCH = {
     ),
 };
 
-// Display a "Message Of The Day" when a client connects to the server
+// Display the Message Of The Day when a client connects to the server
 WWFC_DEFINE_PATCH = {
     Patch::BranchWithCTR(
         WWFC_PATCH_LEVEL_FEATURE,

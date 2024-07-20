@@ -5,7 +5,9 @@
 #include "import/mkw/net/selectHandler.hpp"
 #include "import/mkw/net/userHandler.hpp"
 #include "import/mkw/registry.hpp"
+#include "import/mkw/system/raceConfig.hpp"
 #include "import/mkw/system/system.hpp"
+#include "wwfcLog.hpp"
 #include "wwfcPatch.hpp"
 
 namespace wwfc::Security
