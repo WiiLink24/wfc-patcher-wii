@@ -27,8 +27,45 @@ public:
         return s_instance;
     }
 
+    static u16 LocalLagFrameCount()
+    {
+        return s_localLagFrameCount;
+    }
+
+    static void IncrementLocalLagFrameCount()
+    {
+        if (ReachedLocalLagFrameThreshold()) {
+            return;
+        }
+
+        s_localLagFrameCount++;
+    }
+
+    static bool ReachedLocalLagFrameThreshold()
+    {
+        return s_localLagFrameCount == s_localLagFrameThreshold;
+    }
+
+    static void ResetLocalLagFrameCount()
+    {
+        s_localLagFrameCount = 0;
+    }
+
 private:
-    /* 0x000 */ u8 _000[0x1C8 - 0x000];
+    /* 0x000 */ u8 _000[0x008 - 0x000];
+
+public:
+    /* 0x008 */ u32 _008;
+    /* 0x00C */ u32 _00C;
+    /* 0x010 */ u16 _010;
+    /* 0x012 */ u16 _012;
+
+private:
+    /* 0x014 */ u8 _014[0x1C8 - 0x014];
+
+    static u16 s_localLagFrameCount;
+
+    static constexpr u16 s_localLagFrameThreshold = 60;
 
     static RacePacketHandler* s_instance
         AT(RMCXD_PORT(0x809C1F50, 0x809BD790, 0x809C0FB0, 0x809B0590));
