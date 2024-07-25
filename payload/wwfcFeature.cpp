@@ -1,6 +1,7 @@
 #include "import/mkw/net/itemHandler.hpp"
 #include "import/mkw/net/selectHandler.hpp"
 #include "import/mkw/net/userHandler.hpp"
+#include "import/mkw/system/gameScene.hpp"
 #include "import/mkw/ui/page/friendRoomPage.hpp"
 #include "import/mkw/ui/page/wifiFriendMenuPage.hpp"
 #include "import/mkw/ui/page/wifiMenuPage.hpp"
@@ -12,6 +13,7 @@ namespace mkw::Net
 
 #if RMC
 
+u16 RacePacketHandler::s_localLagFrameCount = 0;
 u32 SelectHandler::s_kickTimerFrames = 0;
 
 #endif
@@ -29,8 +31,7 @@ YesNoPage::Handler<OpenHostPage>* OpenHostPage::s_onYesOrNo = nullptr;
 bool OpenHostPage::s_openHostEnabled = false;
 bool OpenHostPage::s_sentOpenHostValue = false;
 
-const wchar_t* WifiMenuPage::s_messageOfTheDay =
-    L"Welcome to\nWiiLink Wi-Fi Connection!";
+const wchar_t* WifiMenuPage::s_message = nullptr;
 wchar_t WifiMenuPage::s_messageOfTheDayBuffer[256] = {};
 bool WifiMenuPage::s_hasSeenMessageOfTheDay = false;
 
@@ -43,22 +44,29 @@ namespace wwfc::Feature
 
 #if RMC
 
+static const char s_loginChallenge2Message[] = "\\lc\\2";
+
 extern "C" {
 __attribute__((__used__)) static GameSpy::GPResult
 GetMessageOfTheDay(GameSpy::GPResult gpResult, const char* message)
 {
     using namespace mkw::UI;
 
-    const char loginChallenge2Message[] = "\\lc\\2";
+    if (WifiMenuPage::HasSeenMessageOfTheDay()) {
+        return gpResult;
+    }
+
     if (strncmp(
-            message, loginChallenge2Message, sizeof(loginChallenge2Message) - 1
+            message, s_loginChallenge2Message,
+            sizeof(s_loginChallenge2Message) - 1
         )) {
         return gpResult;
     }
 
-    const char motdKey[] = "\\wwfc_motd\\";
     char value[512];
-    if (!GameSpy::gpiValueForKey(message, motdKey, value, sizeof(value))) {
+    if (!GameSpy::gpiValueForKey(
+            message, "\\wwfc_motd\\", value, sizeof(value)
+        )) {
         return gpResult;
     }
 
@@ -75,7 +83,8 @@ GetMessageOfTheDay(GameSpy::GPResult gpResult, const char* message)
     }
     messageOfTheDayBuffer[messageOfTheDayLength / sizeof(wchar_t)] = L'\0';
 
-    WifiMenuPage::SetMessageOfTheDay(messageOfTheDayBuffer);
+    WifiMenuPage::SetMessage(messageOfTheDayBuffer);
+    WifiMenuPage::SeenMessageOfTheDay();
 
     return gpResult;
 }
@@ -83,8 +92,8 @@ GetMessageOfTheDay(GameSpy::GPResult gpResult, const char* message)
 
 // Get the Message Of The Day from the "Login Challenge 2" message
 WWFC_DEFINE_PATCH = {
-    Patch::BranchWithCTR(
-        WWFC_PATCH_LEVEL_FEATURE,
+    Patch::BranchWithCTR( //
+        WWFC_PATCH_LEVEL_FEATURE, //
         RMCXD_PORT(0x80101074, 0x80100FD4, 0x80100F94, 0x801010EC), //
         ASM_LAMBDA(
             // clang-format off
@@ -101,10 +110,10 @@ WWFC_DEFINE_PATCH = {
     ),
 };
 
-// Display the Message Of The Day when a client connects to the server
+// Display the message if there is one to display
 WWFC_DEFINE_PATCH = {
-    Patch::BranchWithCTR(
-        WWFC_PATCH_LEVEL_FEATURE,
+    Patch::BranchWithCTR( //
+        WWFC_PATCH_LEVEL_FEATURE, //
         RMCXD_PORT(0x8064BCD4, 0x806189C0, 0x8064B340, 0x80639FEC), //
         ASM_LAMBDA(
             // clang-format off
@@ -115,7 +124,7 @@ WWFC_DEFINE_PATCH = {
             mtlr      r0;
             addi      r1, r1, 0x10;
             
-            b         WifiMenuPage_showMessageOfTheDay;
+            b         WifiMenuPage_showMessage;
             // clang-format on
         )
     ),
@@ -133,6 +142,71 @@ WWFC_DEFINE_PATCH = {
             return friendsAdded;
         }
         // clang-format on
+    ),
+};
+
+// Reset the counter that is used to detect if this client is lagging the room
+WWFC_DEFINE_PATCH = {
+    Patch::CallWithCTR( //
+        WWFC_PATCH_LEVEL_FEATURE, //
+        RMCXD_PORT(0x80653250, 0x8064EDC8, 0x806528BC, 0x80641568), //
+        // clang-format off
+        [](mkw::Net::RacePacketHandler* racePacketHandler
+                ) -> mkw::Net::RacePacketHandler* {
+            racePacketHandler->_008 = 0;
+            racePacketHandler->_00C = 0;
+            racePacketHandler->_010 = 0;
+            racePacketHandler->_012 = 3000;
+
+            mkw::Net::RacePacketHandler::ResetLocalLagFrameCount();
+
+            return racePacketHandler;
+        }
+        // clang-format on
+    ),
+};
+
+extern "C" {
+__attribute__((used)) static void ProcessLocalLagFrames()
+{
+    using namespace mkw::Net;
+
+    if (!NetController::Instance()->inVanillaMatch()) {
+        return;
+    }
+
+    mkw::System::GameScene* gameScene = mkw::System::GameScene::Instance();
+    if (!gameScene->involuntarilySkippedFrame()) {
+        return;
+    }
+
+    RacePacketHandler::IncrementLocalLagFrameCount();
+    if (!RacePacketHandler::ReachedLocalLagFrameThreshold()) {
+        return;
+    }
+
+    wwfc::GPReport::ReportU32(
+        "mkw_too_many_frames_dropped", RacePacketHandler::LocalLagFrameCount()
+    );
+
+    RacePacketHandler::ResetLocalLagFrameCount();
+}
+}
+
+// Prevent this client from lagging rooms
+WWFC_DEFINE_PATCH = {
+    Patch::BranchWithCTR( //
+        WWFC_PATCH_LEVEL_FEATURE, //
+        RMCXD_PORT(0x80654CF8, 0x80650870, 0x80654364, 0x80643010), //
+        ASM_LAMBDA(
+            // clang-format off
+            lwz       r0, 0x24(r1);
+            mtlr      r0;
+            addi      r1, r1, 0x20;
+
+            b         ProcessLocalLagFrames;
+            // clang-format on
+        )
     ),
 };
 
@@ -247,43 +321,43 @@ WWFC_DEFINE_PATCH = {
 
 // Allow the "Open Host" feature to be enabled via the press of a button
 WWFC_DEFINE_PATCH = {
-    Patch::WritePointer(
-        WWFC_PATCH_LEVEL_FEATURE,
+    Patch::WritePointer( //
+        WWFC_PATCH_LEVEL_FEATURE, //
         RMCXD_PORT(0x808B9008, 0x808BABF8, 0x808B8158, 0x808A7470), //
         FriendRoomPage_onActivate
     ),
 };
 WWFC_DEFINE_PATCH = {
-    Patch::WritePointer(
-        WWFC_PATCH_LEVEL_FEATURE,
+    Patch::WritePointer( //
+        WWFC_PATCH_LEVEL_FEATURE, //
         RMCXD_PORT(0x808B900C, 0x808BABFC, 0x808B815C, 0x808A7474), //
         FriendRoomPage_onDeactivate
     ),
 };
 WWFC_DEFINE_PATCH = {
-    Patch::WritePointer(
-        WWFC_PATCH_LEVEL_FEATURE,
+    Patch::WritePointer( //
+        WWFC_PATCH_LEVEL_FEATURE, //
         RMCXD_PORT(0x808B902C, 0x808BAC1C, 0x808B817C, 0x808A7494), //
         FriendRoomPage_onRefocus
     ),
 };
 WWFC_DEFINE_PATCH = {
-    Patch::WritePointer(
-        WWFC_PATCH_LEVEL_FEATURE,
+    Patch::WritePointer( //
+        WWFC_PATCH_LEVEL_FEATURE, //
         RMCXD_PORT(0x808BFE7C, 0x808B97CC, 0x808BEFCC, 0x808AE2EC), //
         WifiFriendMenu_onActivate
     ),
 };
 WWFC_DEFINE_PATCH = {
-    Patch::WritePointer(
-        WWFC_PATCH_LEVEL_FEATURE,
+    Patch::WritePointer( //
+        WWFC_PATCH_LEVEL_FEATURE, //
         RMCXD_PORT(0x808BFE80, 0x808B97D0, 0x808BEFD0, 0x808AE2F0), //
         WifiFriendMenu_onDeactivate
     ),
 };
 WWFC_DEFINE_PATCH = {
-    Patch::WritePointer(
-        WWFC_PATCH_LEVEL_FEATURE,
+    Patch::WritePointer( //
+        WWFC_PATCH_LEVEL_FEATURE, //
         RMCXD_PORT(0x808BFEA0, 0x808B97F0, 0x808BEFF0, 0x808AE310), //
         WifiFriendMenu_onRefocus
     ),
