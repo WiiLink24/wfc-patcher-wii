@@ -13,6 +13,8 @@ function print_help {
     echo \
         "wfc-patcher-wii build script
 
+Usage: make.sh [OPTIONS] -- [ADITIONAL ARGS]
+
 Options:
  --clean             Remove 'dist' and build artifacts in 'patch', 'stage1', and 'payload'
  --clean-keys        Remove keys in 'misc'
@@ -22,6 +24,8 @@ Options:
  --payload           Build payloads
  --all               Builds payloads, stage1, and patches. Makes keys if none are present.
  -h|--help           Print this message and exit.
+
+ Note: Anything after '--' will be passed to the individual build scripts (except for --keys), such as -j8 to specify thread count.
 "
     exit 1
 }
@@ -60,6 +64,7 @@ keys=false
 patch=false
 stage1=false
 payload=false
+args=""
 while [[ $# -gt 0 ]]; do
     case "$1" in
     --clean)
@@ -85,6 +90,11 @@ while [[ $# -gt 0 ]]; do
         ;;
     --payload)
         payload=true
+        ;;
+    --)
+        shift
+        args="$*"
+        break
         ;;
     -h | --help)
         print_help
@@ -155,7 +165,8 @@ if $payload; then
     cd "$PAYLOAD_DIR"
     echo "Making payloads!"
 
-    python make-payload.py -j16
+    python make-payload.py $args
+
     if [ -e "$SCRIPT_DIR/dist/binary" ]; then
         rm -r "$SCRIPT_DIR/dist/binary"
     fi
@@ -168,7 +179,7 @@ if $stage1; then
     cd "$STAGE1_DIR"
     echo "Making stage1!"
 
-    python make-stage1.py
+    python make-stage1.py $args
 
     echo "Copying stage1.bin to dist!"
     cp "$SCRIPT_DIR/stage1/build/stage1.bin" "$SCRIPT_DIR/dist/stage1.bin"
@@ -178,5 +189,5 @@ if $patch; then
     cd "$PATCH_DIR"
     echo -e "Generating patches!"
 
-    python make-patch.py -j16
+    python make-patch.py $args
 fi
