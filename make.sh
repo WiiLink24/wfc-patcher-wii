@@ -7,6 +7,7 @@ MISC_DIR="$SCRIPT_DIR/misc"
 PATCH_DIR="$SCRIPT_DIR/patch"
 STAGE1_DIR="$SCRIPT_DIR/stage1"
 PAYLOAD_DIR="$SCRIPT_DIR/payload"
+EXPLOIT_DIR="$SCRIPT_DIR/exploit"
 DIST_DIR="$SCRIPT_DIR/dist"
 
 function print_help {
@@ -22,10 +23,13 @@ Options:
  --patch             Generate patches
  --stage1            Build stage1
  --payload           Build payloads
+ --exploit           Build exploit
  --all               Builds payloads, stage1, and patches. Makes keys if none are present.
  -h|--help           Print this message and exit.
 
- Note: Anything after '--' will be passed to the individual build scripts (except for --keys), such as -j8 to specify thread count.
+Note:
+ * Anything after '--' will be passed to the individual build scripts (except for --keys), such as -j8 to specify thread count.
+ * The files that make up the 'payload' directory of wfc-server will be placed in the 'dist' directory adjacent to the script.
 "
     exit 1
 }
@@ -64,6 +68,7 @@ keys=false
 patch=false
 stage1=false
 payload=false
+exploit=false
 args=""
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -90,6 +95,9 @@ while [[ $# -gt 0 ]]; do
         ;;
     --payload)
         payload=true
+        ;;
+    --exploit)
+        exploit=true
         ;;
     --)
         shift
@@ -131,6 +139,11 @@ if $clean; then
     if [ -d "$PAYLOAD_DIR/binary" ]; then
         echo "Removing $PAYLOAD_DIR/binary"
         rm -r "$PAYLOAD_DIR/binary"
+    fi
+
+    if [ -d "$EXPLOIT_DIR/build" ]; then
+        echo "Cleaning $EXPLOIT_DIR"
+        rm -r "$EXPLOIT_DIR/build"
     fi
 fi
 
@@ -190,4 +203,11 @@ if $patch; then
     echo -e "Generating patches!"
 
     python make-patch.py $args
+fi
+
+if $exploit; then
+    cd "$EXPLOIT_DIR"
+    echo -e "Making exploit!"
+
+    python make-sbcm-patch.py $args
 fi
