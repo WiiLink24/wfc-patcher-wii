@@ -238,6 +238,7 @@ static bool IsHeaderPacketDataValid(
     const void* /* packet */, u8 /* packetSize */, u8 /* playerAid */
 )
 {
+    // This packet is validated by the function 'IsRacePacketValid'
     return true;
 }
 
@@ -497,9 +498,8 @@ IsItemPacketDataValid(const void* packet, u8 packetSize, u8 /* playerAid */)
     return true;
 }
 
-static bool IsEventPacketDataValid(
-    const void* packet, u8 packetSize, u8 /* playerAid */
-)
+static bool
+IsEventPacketDataValid(const void* packet, u8 packetSize, u8 playerAid)
 {
     using namespace mkw::System;
 
@@ -522,7 +522,7 @@ static bool IsEventPacketDataValid(
         return true;
     }
 
-    if (!eventPacket->isValid(packetSize)) {
+    if (!eventPacket->isValid(packetSize, playerAid)) {
         return false;
     }
 
