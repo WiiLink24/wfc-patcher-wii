@@ -83,6 +83,29 @@ public:
 
         static_assert(sizeof(EventInfo) == 0x01);
 
+        struct ItemUsedEvent {
+            bool isValid(u8 itemObject, u8 playerAid) const
+            {
+                using namespace mkw::Item;
+
+                ItemObject item = static_cast<ItemObject>(itemObject);
+
+                switch (item) {
+                case ItemObject::ThunderCloud: {
+                    return this->playerAid == playerAid;
+                }
+                default: {
+                    return true;
+                }
+                }
+            }
+
+            /* 0x00 */ u8 _00[0x02 - 0x00];
+            /* 0x02 */ u8 playerAid;
+        };
+
+        static_assert(sizeof(ItemUsedEvent) == 0x03);
+
         bool containsInvalidItemObject() const
         {
             for (size_t n = 0; n < sizeof(eventInfo); n++) {
@@ -94,9 +117,9 @@ public:
             return false;
         }
 
-        bool isValid(u8 packetSize) const
+        bool isValid(u8 packetSize, u8 playerAid) const
         {
-            u32 expectedPacketSize = sizeof(eventInfo);
+            size_t expectedPacketSize = sizeof(eventInfo);
 
             for (size_t n = 0; n < sizeof(eventInfo); n++) {
                 if (!eventInfo[n].isValid()) {
@@ -106,11 +129,37 @@ public:
                 expectedPacketSize += eventInfo[n].getEventDataSize();
             }
 
-            return expectedPacketSize == packetSize;
+            if (expectedPacketSize != packetSize) {
+                return false;
+            }
+
+            expectedPacketSize = 0;
+            for (size_t n = 0; n < sizeof(eventInfo); n++) {
+                EventInfo info = eventInfo[n];
+                u8 itemObject = info.itemObject;
+                const u8* data = eventData + expectedPacketSize;
+
+                switch (info.eventType) {
+                case EventInfo::EventType::ItemUsed: {
+                    const ItemUsedEvent* itemUsedEvent =
+                        reinterpret_cast<const ItemUsedEvent*>(data);
+
+                    if (!itemUsedEvent->isValid(itemObject, playerAid)) {
+                        return false;
+                    }
+                }
+                default: {
+                }
+                }
+
+                expectedPacketSize += info.getEventDataSize();
+            }
+
+            return true;
         }
 
         /* 0x00 */ EventInfo eventInfo[0x18];
-        /* 0x18 */ u8 _18[0xF8 - 0x18];
+        /* 0x18 */ u8 eventData[0xF8 - 0x18];
     };
 
     static_assert(sizeof(Packet) == 0xF8);

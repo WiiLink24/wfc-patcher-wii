@@ -146,7 +146,7 @@ public:
 
         // Support modifications that allow for clients to be connected to more
         // than 11 peers at once.
-        for (u32 n = 0; n < sizeof(aidsStillLoading) * 8; n++) {
+        for (size_t n = 0; n < sizeof(aidsStillLoading) * 8; n++) {
             if (((aidsStillLoading >> n) & 1) == 0) {
                 continue;
             }
