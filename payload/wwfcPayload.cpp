@@ -1,4 +1,3 @@
-#include "import/egg/exception.hpp"
 #include "wwfcLogin.hpp"
 #include "wwfcPatch.hpp"
 #include "wwfcSupport.hpp"
@@ -115,8 +114,8 @@ static void CallCtors(const wwfc_payload* const payload)
             continue;
         }
 
-        ctor = (decltype(ctor)
-        ) (reinterpret_cast<const char*>(payload) + ctorOffset);
+        ctor = (decltype(ctor)) (reinterpret_cast<const char*>(payload) +
+                                 ctorOffset);
         (*ctor)();
     }
 }
@@ -142,8 +141,6 @@ s32 EntryAfterGOT(wwfc_payload* payload)
     }
 #  endif
 #endif
-
-    EGG::Exception::SetUserCallBack(nullptr);
 
     CallCtors(payload);
 
