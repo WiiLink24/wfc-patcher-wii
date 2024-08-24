@@ -12,6 +12,7 @@ namespace mkw::Net
 
 #if RMC
 
+u32 NetController::s_reportedAids = 0x00000000;
 u32 SelectHandler::s_kickTimerFrames = 0;
 
 #endif
@@ -155,6 +156,33 @@ WWFC_DEFINE_PATCH = {
             }
         }
         // clang-format on
+    ),
+};
+
+extern "C" {
+__attribute__((__used__)) static void ClearReportedAid(u8 playerAid)
+{
+    mkw::Net::NetController::ClearReportedAid(playerAid);
+}
+}
+
+// Clear the flag that indicates whether an aid was reported to the server
+// when closing the connection to them.
+WWFC_DEFINE_PATCH = {
+    Patch::BranchWithCTR( //
+        WWFC_PATCH_LEVEL_FEATURE, //
+        RMCXD_PORT(0x806588C8, 0x80654440, 0x80657F34, 0x80646BE0), //
+        ASM_LAMBDA(
+            // clang-format off
+            mr        r3, r28;
+
+            lwz       r28, 0x10(r1);
+            mtlr      r0;
+            addi      r1, r1, 0x20;
+
+            b         ClearReportedAid;
+            // clang-format on
+        )
     ),
 };
 

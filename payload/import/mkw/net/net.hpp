@@ -181,6 +181,12 @@ public:
     {
         using namespace DWC;
 
+        bool alreadyReportedAid = s_reportedAids & (1 << playerAid);
+        if (alreadyReportedAid) {
+            return;
+        }
+        s_reportedAids |= (1 << playerAid);
+
         DWCiNodeInfo* nodeInfo = DWCi_NodeInfoList_GetNodeInfoForAid(playerAid);
         if (nodeInfo) {
             wwfc::GPReport::ReportU32(key, nodeInfo->profileId);
@@ -189,6 +195,11 @@ public:
         if (amITheServer()) {
             DWC_CloseConnectionHard(playerAid);
         }
+    }
+
+    static void ClearReportedAid(u8 playerAid)
+    {
+        s_reportedAids &= ~(1 << playerAid);
     }
 
     static NetController* Instance()
@@ -228,6 +239,8 @@ public:
 
 private:
     /* 0x29C0 */ u8 _29C0[0x29C8 - 0x29C0];
+
+    static u32 s_reportedAids;
 
     static NetController* s_instance
         AT(RMCXD_PORT(0x809C20D8, 0x809BD918, 0x809C1138, 0x809B0718));
