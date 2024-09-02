@@ -29,6 +29,75 @@ MenuInputManager::Handler<OpenHostPage>* OpenHostPage::s_onOption = nullptr;
 YesNoPage::Handler<OpenHostPage>* OpenHostPage::s_onYesOrNo = nullptr;
 bool OpenHostPage::s_openHostEnabled = false;
 bool OpenHostPage::s_sentOpenHostValue = false;
+const wchar_t* OpenHostPage::s_openHostPromptMessages[RVL::SCLanguageCount] = {
+    L"こうかいホストをゆうこうにしますか？\n"
+    L"\n"
+    L"この機能はあなたのフレンドコードを\n"
+    L"追加したプレイヤーはあなたが追加し返さなくても\n"
+    L"フレンドとしてあなたと会えるようになる機能です",
+    L"Enable Open Host?\n"
+    L"\n"
+    L"This feature allows players who\n"
+    L"add your friend code to meet up with you,\n"
+    L"even if you don't add them back.",
+    nullptr,
+    L"Activer l'Open Host?\n"
+    L"\n"
+    L"Cette fonctionnalité permet aux joueurs qui\n"
+    L"ajoutent votre code ami de vous rejoindre,\n"
+    L"même si vous ne les avez pas ajoutés.",
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+};
+const wchar_t* OpenHostPage::s_connectionLostMessages[RVL::SCLanguageCount] = {
+    L"サーバーからの接続が切断されました\n"
+    L"\n"
+    L"もう一度やり直してください",
+    L"You have lost connection to\n"
+    L"the server.\n"
+    L"\n"
+    L"Please try again later.",
+    nullptr,
+    L"Vous avez perdu la connexion\n"
+    L"au serveur.\n"
+    L"\n"
+    L"Veuillez réessayer ultérieurement.",
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+};
+const wchar_t* OpenHostPage::s_openHostEnabledMessages[RVL::SCLanguageCount] = {
+    L"こうかいホストをゆうこうにしました！",
+    L"Open Host is now enabled!",
+    nullptr,
+    L"Open Host est maintenant activé!",
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+};
+const wchar_t* OpenHostPage::s_openHostDisabledMessages[RVL::SCLanguageCount] =
+    {
+        L"こうかいホストをむこうにしました！",
+        L"Open Host is now disabled!",
+        nullptr,
+        L"Open Host est maintenant désactivé!",
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+};
 
 const wchar_t* WifiMenuPage::s_messageOfTheDay =
     L"Welcome to\nWiiLink Wi-Fi Connection!";

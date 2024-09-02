@@ -5,6 +5,7 @@
 #include "import/mkw/system/system.hpp"
 #include "import/mkw/ui/multiMenuInputManager.hpp"
 #include "import/mkw/ui/section/sectionManager.hpp"
+#include "import/revolution.h"
 #include "messagePopupPage.hpp"
 #include "yesNoPopupPage.hpp"
 
@@ -62,6 +63,58 @@ private:
         Result,
     };
 
+    const wchar_t* openHostPromptMessage() const
+    {
+        u8 language = RVL::SCGetLanguage();
+
+        const wchar_t* openHostPromptMessage =
+            s_openHostPromptMessages[language];
+        if (openHostPromptMessage) {
+            return openHostPromptMessage;
+        }
+
+        return s_openHostPromptMessages[RVL::SCLanguageEnglish];
+    }
+
+    const wchar_t* connectionLostMessage() const
+    {
+        u8 language = RVL::SCGetLanguage();
+
+        const wchar_t* connectionLostMessage =
+            s_connectionLostMessages[language];
+        if (connectionLostMessage) {
+            return connectionLostMessage;
+        }
+
+        return s_connectionLostMessages[RVL::SCLanguageEnglish];
+    }
+
+    const wchar_t* openHostEnabledMessage() const
+    {
+        u8 language = RVL::SCGetLanguage();
+
+        const wchar_t* openHostEnabledMessage =
+            s_openHostEnabledMessages[language];
+        if (openHostEnabledMessage) {
+            return openHostEnabledMessage;
+        }
+
+        return s_openHostEnabledMessages[RVL::SCLanguageEnglish];
+    }
+
+    const wchar_t* openHostDisabledMessage() const
+    {
+        u8 language = RVL::SCGetLanguage();
+
+        const wchar_t* openHostDisabledMessage =
+            s_openHostDisabledMessages[language];
+        if (openHostDisabledMessage) {
+            return openHostDisabledMessage;
+        }
+
+        return s_openHostDisabledMessages[RVL::SCLanguageEnglish];
+    }
+
     State resolve() const
     {
         switch (s_state) {
@@ -93,11 +146,7 @@ private:
         }
         case State::Prompt: {
             FormatParam formatParam{};
-            formatParam.strings[0] =
-                L"Enable Open Host?\n\n"
-                L"This feature allows players who\n"
-                L"add your friend code to meet up with you,\n"
-                L"even if you don't add them back.";
+            formatParam.strings[0] = openHostPromptMessage();
 
             YesNoPopupPage* yesNoPopupPage =
                 section->page<YesNoPopupPage>(PageId::YesNoPopup);
@@ -117,14 +166,12 @@ private:
         case State::Result: {
             FormatParam formatParam{};
             if (!s_sentOpenHostValue) {
-                formatParam.strings[0] = L"You have lost connection to\n"
-                                         L"the server.\n\n"
-                                         L"Please try again later.";
+                formatParam.strings[0] = connectionLostMessage();
             } else {
                 if (s_openHostEnabled) {
-                    formatParam.strings[0] = L"Open Host is now enabled!";
+                    formatParam.strings[0] = openHostEnabledMessage();
                 } else {
-                    formatParam.strings[0] = L"Open Host is now disabled!";
+                    formatParam.strings[0] = openHostDisabledMessage();
                 }
             }
 
@@ -172,6 +219,10 @@ private:
     static mkw::UI::YesNoPage::Handler<OpenHostPage>* s_onYesOrNo;
     static bool s_openHostEnabled;
     static bool s_sentOpenHostValue;
+    static const wchar_t* s_openHostPromptMessages[RVL::SCLanguageCount];
+    static const wchar_t* s_connectionLostMessages[RVL::SCLanguageCount];
+    static const wchar_t* s_openHostEnabledMessages[RVL::SCLanguageCount];
+    static const wchar_t* s_openHostDisabledMessages[RVL::SCLanguageCount];
 };
 
 static_assert(sizeof(OpenHostPage) == sizeof(Page));
