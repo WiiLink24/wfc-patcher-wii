@@ -92,15 +92,15 @@ jobs:
         runs-on: ubuntu-latest
         container: devkitpro/devkitppc:latest
         steps:
-            - uses: actions/download-artifact@v4.1.0
+            - uses: actions/download-artifact@v4.1.7
               with:
                   name: exploit
                   path: ./payload/sbcm
-            - uses: actions/download-artifact@v4.1.0
+            - uses: actions/download-artifact@v4.1.7
               with:
                   name: payload
                   path: ./payload/binary
-            - uses: actions/download-artifact@v4.1.0
+            - uses: actions/download-artifact@v4.1.7
               with:
                   name: stage1
                   path: ./payload
