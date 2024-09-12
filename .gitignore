@@ -5,6 +5,8 @@
 *.bat
 *.sh
 
+!make.sh
+
 # Editor files
 .vscode
 *.kate-swp
@@ -43,4 +45,4 @@ launcher/build
 *.dol
 *.wad
 *.app
-
+dist/
