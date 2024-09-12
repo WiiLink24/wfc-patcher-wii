@@ -10,32 +10,6 @@ namespace mkw::Net
 
 #if RMC
 
-class RacePacketHandler
-{
-public:
-    u32 playerIdToLocalPlayerIndex(u32 playerId)
-    {
-        LONGCALL u32 playerIdToLocalPlayerIndex(
-            RacePacketHandler * racePacketHandler, u32 playerId
-        ) AT(RMCXD_PORT(0x80654918, 0x80650490, 0x80653F84, 0x80642C30));
-
-        return playerIdToLocalPlayerIndex(this, playerId);
-    }
-
-    static RacePacketHandler* Instance()
-    {
-        return s_instance;
-    }
-
-private:
-    /* 0x000 */ u8 _000[0x1C8 - 0x000];
-
-    static RacePacketHandler* s_instance
-        AT(RMCXD_PORT(0x809C1F50, 0x809BD790, 0x809C0FB0, 0x809B0590));
-};
-
-static_assert(sizeof(RacePacketHandler) == 0x1C8);
-
 struct __attribute__((packed)) RacePacket {
     enum EType {
         Header,

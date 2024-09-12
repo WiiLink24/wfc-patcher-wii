@@ -1,4 +1,3 @@
-#include "import/mkw/net/itemHandler.hpp"
 #include "import/mkw/net/selectHandler.hpp"
 #include "import/mkw/net/userHandler.hpp"
 #include "import/mkw/ui/page/friendRoomPage.hpp"
@@ -252,21 +251,6 @@ WWFC_DEFINE_PATCH = {
             b         ClearReportedAid;
             // clang-format on
         )
-    ),
-};
-
-// Fix a bug that leads to the rejection of one's item request without
-// justification
-WWFC_DEFINE_PATCH = {
-    Patch::BranchWithCTR( //
-        WWFC_PATCH_LEVEL_BUGFIX | WWFC_PATCH_LEVEL_PARITY, //
-        RMCXD_PORT(0x8065C6C0, 0x8065D348, 0x8065BD2C, 0x8064A9D8), //
-        // clang-format off
-        [](mkw::Net::ItemHandler* itemHandler, u32 playerId,
-           mkw::Item::ItemBox item) -> void {
-            itemHandler->broadcastDecidedItem(playerId, item);
-        }
-        // clang-format on
     ),
 };
 
