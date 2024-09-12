@@ -9,6 +9,20 @@ namespace RVL
 {
 #endif
 
+typedef enum {
+    SCLanguageJapanese = 0x00,
+    SCLanguageEnglish = 0x01,
+    SCLanguageGerman = 0x02,
+    SCLanguageFrench = 0x03,
+    SCLanguageSpanish = 0x04,
+    SCLanguageItalian = 0x05,
+    SCLanguageDutch = 0x06,
+    SCLanguageSimplifiedChinese = 0x07,
+    SCLanguageTraditionalChinese = 0x08,
+    SCLanguageKorean = 0x09,
+    SCLanguageCount,
+} SCLanguage;
+
 LONGCALL void OSReport( //
     const char* format, ...
 ) AT(ADDRESS_OSReport);
@@ -37,6 +51,14 @@ LONGCALL s32 IOS_Close( //
 LONGCALL s32 IOS_Ioctlv( //
     s32 fd, u32 cmd, u32 in_count, u32 out_count, IOVector* vec
 ) AT(ADDRESS_IOS_Ioctlv);
+
+#if RMC
+
+LONGCALL u8 SCGetLanguage( //
+    void
+) AT(RMCXD_PORT(0x801B1D0C, 0x801B1C6C, 0x801B1C2C, 0x801B2068));
+
+#endif
 
 LONGCALL bool SCGetProductSN( //
     u32* serial
