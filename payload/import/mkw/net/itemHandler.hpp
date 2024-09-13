@@ -1,8 +1,6 @@
 #pragma once
 
 #include "import/mkw/item.hpp"
-#include "import/mkw/system/raceManager.hpp"
-#include "net.hpp"
 
 namespace mkw::Net
 {
@@ -100,7 +98,7 @@ public:
             }
         }
 
-        /* 0x00 */ u8 receivedTime;
+        /* 0x00 */ u8 _00;
         /* 0x01 */ u8 heldItem;
         /* 0x02 */ u8 trailedItem;
         /* 0x03 */ HeldPhase heldPhase;
@@ -110,40 +108,13 @@ public:
 
     static_assert(sizeof(Packet) == 0x08);
 
-    Packet& sendPacket(u32 localPlayerIndex)
-    {
-        return m_sendPacket[localPlayerIndex];
-    }
-
-    void setReceivedTime(u32 receivedTime, u32 playerIndex)
-    {
-        m_receivedTime[playerIndex] = receivedTime;
-    }
-
-    void broadcastDecidedItem(u32 playerId, mkw::Item::ItemBox item)
-    {
-        u32 localPlayerIndex =
-            RacePacketHandler::Instance()->playerIdToLocalPlayerIndex(playerId);
-        u32 timer = mkw::System::RaceManager::Instance()->timer();
-        u8 myAid = NetController::Instance()->myAid();
-
-        Packet& packet = sendPacket(localPlayerIndex);
-        packet.receivedTime = (myAid << 1) + localPlayerIndex;
-        packet.heldItem = static_cast<u8>(item);
-        packet.heldPhase = Packet::HeldPhase::Decided;
-        setReceivedTime(timer & 0xFFFFFFF8, playerId);
-    }
-
     static ItemHandler* Instance()
     {
         return s_instance;
     }
 
 private:
-    /* 0x000 */ Packet m_sendPacket[2];
-    /* 0x010 */ u8 _010[0x0A0 - 0x010];
-    /* 0x0A0 */ u32 m_receivedTime[12];
-    /* 0x0D0 */ u8 _0D0[0x184 - 0x0D0];
+    /* 0x000 */ u8 _000[0x184 - 0x000];
 
     static ItemHandler* s_instance
         AT(RMCXD_PORT(0x809C20F8, 0x809BD950, 0x809C1158, 0x809B0738));
