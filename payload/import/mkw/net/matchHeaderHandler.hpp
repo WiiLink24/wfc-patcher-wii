@@ -11,27 +11,27 @@ class MatchHeaderHandler
 {
 public:
     struct __attribute__((packed)) Packet {
-        enum class Vehicle : u8 {
-            None = 0xFF,
-        };
-
-        enum class Character : u8 {
-            None = 0xFF,
-        };
-
         enum class Course : u8 {
             None = 0xFF,
         };
 
-        struct Player {
+        struct Combination {
+            enum class Character : u8 {
+                None = 0xFF,
+            };
+
+            enum class Vehicle : u8 {
+                None = 0xFF,
+            };
+
             /* 0x00 */ Vehicle vehicle;
             /* 0x01 */ Character character;
         };
 
-        static_assert(sizeof(Player) == 0x02);
+        static_assert(sizeof(Combination) == 0x02);
 
         /* 0x00 */ u8 _00[0x0E - 0x00];
-        /* 0x0E */ Player player[2];
+        /* 0x0E */ Combination combination[2];
         /* 0x12 */ u8 _12[0x16 - 0x12];
         /* 0x16 */ Course course;
         /* 0x17 */ u8 _17[0x28 - 0x17];
