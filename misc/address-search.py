@@ -467,14 +467,18 @@ def parse_file(file_path, title_name):
     else:
         exit('NO AUTH RESPONSE COMPATIBILITY ' + version)
 
+    ADDRESS_BMST_RSO_LOCATOR = 0
     ADDRESS_GH_ALLOC_FUNCTION = 0
     ADDRESS_PES_ALLOC_FUNCTION = 0
     ADDRESS_HBM_ALLOCATOR = 0
     # --- FIND HBM ALLOCATOR
     # Fortune Street uses an RSO
-    # I don't like this because it's a dynamic memory address, but it's fine?
-    if title_name == 'ST7ED00' or title_name == 'ST7JD00' or title_name == 'ST7PD00':
-        ADDRESS_HBM_ALLOCATOR = 0x81634B3C
+    if title_name == 'ST7ED00':
+        ADDRESS_BMST_RSO_LOCATOR = 0x8054CB0C
+    elif title_name == 'ST7JD00':
+        ADDRESS_BMST_RSO_LOCATOR = 0x8054CA0C
+    elif title_name == 'ST7PD00':
+        ADDRESS_BMST_RSO_LOCATOR = 0x8054CD0C
     # Battalion Wars uses an RSO loaded _in MEM2_, but it's luckily always in the same location
     elif title_name == 'RBWJD00' or title_name == 'RBWED00':
         ADDRESS_HBM_ALLOCATOR = 0x903FE054
@@ -1377,6 +1381,7 @@ def parse_file(file_path, title_name):
         "ADDRESS_DWCi_SetError":             fmthex(ADDRESS_DWCi_SetError),
         "ADDRESS_DWCi_HandleGPError":        fmthex(ADDRESS_DWCi_HandleGPError),
         "ADDRESS_HBM_ALLOCATOR":             fmthex(ADDRESS_HBM_ALLOCATOR),
+        "ADDRESS_BMST_RSO_LOCATOR":          fmthex(ADDRESS_BMST_RSO_LOCATOR),
         "ADDRESS_GH_ALLOC_FUNCTION":         fmthex(ADDRESS_GH_ALLOC_FUNCTION),
         "ADDRESS_PES_ALLOC_FUNCTION":        fmthex(ADDRESS_PES_ALLOC_FUNCTION),
         "ADDRESS_SSBB_GET_HEAP_FUNCTION":    fmthex(ADDRESS_SSBB_GET_HEAP_FUNCTION),
@@ -1479,6 +1484,7 @@ if __name__ == '__main__':
         "ADDRESS_DWCi_SetError",
         "ADDRESS_DWCi_HandleGPError",
         "ADDRESS_HBM_ALLOCATOR",
+        "ADDRESS_BMST_RSO_LOCATOR",
         "ADDRESS_GH_ALLOC_FUNCTION",
         "ADDRESS_PES_ALLOC_FUNCTION",
         "ADDRESS_SSBB_GET_HEAP_FUNCTION",
