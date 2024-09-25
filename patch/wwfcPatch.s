@@ -91,6 +91,8 @@ GCT_STRING(ADDRESS_DWC_AUTH_ADD_CSNUM, AuthStage0Code) // 0x800EE098
     // Mario Strikers Charged works the same way as Mario Sports Mix
 #if R4QKD00
     /* 0x04 */ lwz     r3, -0x1B90(r13) # HBM data (-0x4)
+#elif R4QPD01 | R4QPD02
+    /* 0x04 */ lwz     r3, -0x1B08(r13) # HBM data (-0x4)
 #else
     /* 0x04 */ lwz     r3, -0x1AE8(r13) # HBM data (-0x4)
 #endif
