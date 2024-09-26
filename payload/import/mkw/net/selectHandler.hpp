@@ -30,13 +30,20 @@ public:
         };
 
         struct Player {
-            enum class Character : u8 {
-                NotSelected = 0x30,
+            struct Combination {
+                enum class Character : u8 {
+                    NotSelected = 0x30,
+                };
+
+                enum class Vehicle : u8 {
+                    NotSelected = 0x24,
+                };
+
+                Character character;
+                Vehicle vehicle;
             };
 
-            enum class Vehicle : u8 {
-                NotSelected = 0x24,
-            };
+            static_assert(sizeof(Combination) == 0x02);
 
             enum class CourseVote : u8 {
                 NotSelected = 0x43,
@@ -44,8 +51,7 @@ public:
             };
 
             /* 0x00 */ u8 _00[0x04 - 0x00];
-            /* 0x04 */ Character character;
-            /* 0x05 */ Vehicle vehicle;
+            /* 0x04 */ Combination combination;
             /* 0x06 */ CourseVote courseVote;
             /* 0x07 */ u8 _07;
         };
@@ -62,6 +68,15 @@ public:
     };
 
     static_assert(sizeof(Packet) == 0x38);
+
+    Packet& packet(u8 playerAid)
+    {
+        if (playerAid == NetController::Instance()->myAid()) {
+            return m_sendPacket;
+        } else {
+            return m_receivePacket[playerAid];
+        }
+    }
 
     Packet& sendPacket()
     {
@@ -144,14 +159,12 @@ public:
         }
         }
 
-        // Support modifications that allow for clients to be connected to more
-        // than 11 peers at once.
-        for (size_t n = 0; n < sizeof(aidsStillLoading) * 8; n++) {
-            if (((aidsStillLoading >> n) & 1) == 0) {
+        for (u32 playerAid = 0; playerAid < 12; playerAid++) {
+            if (((aidsStillLoading >> playerAid) & 1) == 0) {
                 continue;
             }
 
-            netController->reportAndKick("mkw_room_stall", n);
+            netController->reportAndKick("mkw_room_stall", playerAid);
         }
     }
 
@@ -168,7 +181,8 @@ public:
 private:
     /* 0x000 */ u8 _000[0x008 - 0x000];
     /* 0x008 */ Packet m_sendPacket;
-    /* 0x040 */ u8 _040[0x3E0 - 0x040];
+    /* 0x040 */ Packet m_receivePacket[12];
+    /* 0x2E0 */ u8 _2E0[0x3E0 - 0x2E0];
     /* 0x3E0 */ u32 m_aidsWithNewSelectPacket;
     /* 0x3E4 */ u8 _3E4[0x3E8 - 0x3E4];
     /* 0x3E8 */ u32 m_aidsWithNewMatchSettings;

@@ -312,11 +312,44 @@ WWFC_DEFINE_PATCH = {
             selectHandler->decideCourse();
             selectHandler->initPlayerIdsToPlayerAids();
 
+            SelectHandler::Packet::Player::Combination combinations[12][2];
+            NetController* netController = NetController::Instance();
+            u32 availableAids = netController->availableAids();
+            for (u8 playerAid = 0; playerAid < 12; playerAid++) {
+                SelectHandler::Packet::Player::Combination* playerCombination =
+                    &combinations[playerAid][0];
+                SelectHandler::Packet::Player::Combination* guestCombination =
+                    &combinations[playerAid][1];
+
+                playerCombination->character = guestCombination->character =
+                    SelectHandler::Packet::Player::Combination::Character::NotSelected;
+                playerCombination->vehicle = guestCombination->vehicle =
+                    SelectHandler::Packet::Player::Combination::Vehicle::NotSelected;
+
+                if (((availableAids >> playerAid) & 1) == 0) {
+                    continue;
+                }
+
+                const SelectHandler::Packet& packet = selectHandler->packet(playerAid);
+                playerCombination->character = packet.player[0].combination.character;
+                playerCombination->vehicle = packet.player[0].combination.vehicle;
+
+                if (netController->consolePlayerCount(playerAid) == 1) {
+                    continue;
+                }
+
+                guestCombination->character = packet.player[1].combination.character;
+                guestCombination->vehicle = packet.player[1].combination.vehicle;
+            }
+
             SelectHandler::Packet::SelectedCourse selectedCourse =
                 selectHandler->sendPacket().selectedCourse;
             SelectHandler::Packet::EngineClass engineClass =
                 selectHandler->sendPacket().engineClass;
 
+            wwfc::GPReport::ReportB64Encode(
+                "mkw_select_combos", combinations, sizeof(combinations)
+            );
             wwfc::GPReport::ReportU32(
                 "mkw_select_course", static_cast<u32>(selectedCourse)
             );

@@ -260,20 +260,23 @@ static bool IsMatchHeaderPacketDataValid(
     RaceConfig::Scenario* scenario = &RaceConfig::Instance()->raceScenario();
 
     for (size_t n = 0;
-         n < ARRAY_ELEMENT_COUNT(MatchHeaderHandler::Packet::player); n++) {
-        MatchHeaderHandler::Packet::Player player =
-            matchHeaderPacket->player[n];
-
-        MatchHeaderHandler::Packet::Vehicle playerVehicle = player.vehicle;
-        MatchHeaderHandler::Packet::Character playerCharacter =
-            player.character;
-        if (playerVehicle == MatchHeaderHandler::Packet::Vehicle::None &&
-            playerCharacter == MatchHeaderHandler::Packet::Character::None) {
+         n < ARRAY_ELEMENT_COUNT(MatchHeaderHandler::Packet::combination);
+         n++) {
+        const MatchHeaderHandler::Packet::Combination* combination =
+            &matchHeaderPacket->combination[n];
+        MatchHeaderHandler::Packet::Combination::Vehicle selectedVehicle =
+            combination->vehicle;
+        MatchHeaderHandler::Packet::Combination::Character selectedCharacter =
+            combination->character;
+        if (selectedVehicle ==
+                MatchHeaderHandler::Packet::Combination::Vehicle::None &&
+            selectedCharacter ==
+                MatchHeaderHandler::Packet::Combination::Character::None) {
             continue;
         }
 
-        Vehicle vehicle = static_cast<Vehicle>(playerVehicle);
-        Character character = static_cast<Character>(playerCharacter);
+        Vehicle vehicle = static_cast<Vehicle>(selectedVehicle);
+        Character character = static_cast<Character>(selectedCharacter);
         if (scenario->isOnlineVersusRace()) {
             if (!IsCombinationValidVS(character, vehicle)) {
                 return false;
@@ -353,16 +356,16 @@ IsRoomSelectPacketDataValid(const void* packet, u8 packetSize, u8 playerAid)
             reinterpret_cast<const SelectHandler::Packet*>(packet);
         for (size_t n = 0;
              n < ARRAY_ELEMENT_COUNT(SelectHandler::Packet::player); n++) {
-            SelectHandler::Packet::Player player = selectPacket->player[n];
-
-            SelectHandler::Packet::Player::Character selectedCharacter =
-                player.character;
-            SelectHandler::Packet::Player::Vehicle selectedVehicle =
-                player.vehicle;
-            if (selectedCharacter !=
-                    SelectHandler::Packet::Player::Character::NotSelected ||
-                selectedVehicle !=
-                    SelectHandler::Packet::Player::Vehicle::NotSelected) {
+            const SelectHandler::Packet::Player* player =
+                &selectPacket->player[n];
+            SelectHandler::Packet::Player::Combination::Character
+                selectedCharacter = player->combination.character;
+            SelectHandler::Packet::Player::Combination::Vehicle
+                selectedVehicle = player->combination.vehicle;
+            if (selectedCharacter != SelectHandler::Packet::Player::
+                                         Combination::Character::NotSelected ||
+                selectedVehicle != SelectHandler::Packet::Player::Combination::
+                                       Vehicle::NotSelected) {
                 Character character = static_cast<Character>(selectedCharacter);
                 Vehicle vehicle = static_cast<Vehicle>(selectedVehicle);
                 if (scenario->isOnlineVersusRace()) {

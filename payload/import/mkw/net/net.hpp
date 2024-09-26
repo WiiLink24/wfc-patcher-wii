@@ -91,6 +91,17 @@ public:
         return isAidTheServer(myAid());
     }
 
+    u8 consolePlayerCount(u8 playerAid) const
+    {
+        const ConnectionInfo& connectionInfo = currentConnectionInfo();
+
+        if (playerAid == myAid()) {
+            return connectionInfo.consolePlayerCount;
+        } else {
+            return connectionInfo.aidInformation[playerAid].consolePlayerCount;
+        }
+    }
+
     bool amITheRoomHost() const
     {
         return m_joinType == JoinType::RoomHost;
@@ -183,12 +194,21 @@ public:
 
 private:
     struct ConnectionInfo {
+        struct AidInformation {
+            /* 0x00 */ u8 consolePlayerCount;
+            /* 0x01 */ u8 _01[0x04 - 0x01];
+        };
+
+        static_assert(sizeof(AidInformation) == 0x04);
+
         /* 0x00 */ u8 _00[0x10 - 0x00];
         /* 0x10 */ u32 availableAids;
-        /* 0x14 */ u8 _14[0x21 - 0x14];
+        /* 0x14 */ u8 _14[0x20 - 0x14];
+        /* 0x20 */ u8 consolePlayerCount;
         /* 0x21 */ u8 myAid;
         /* 0x22 */ u8 serverAid;
-        /* 0x23 */ u8 _23[0x58 - 0x23];
+        /* 0x23 */ AidInformation aidInformation[12];
+        /* 0x53 */ u8 _53[0x58 - 0x53];
     };
 
     static_assert(sizeof(ConnectionInfo) == 0x58);
