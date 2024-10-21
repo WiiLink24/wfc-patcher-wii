@@ -23,6 +23,14 @@ typedef enum {
     SCLanguageCount,
 } SCLanguage;
 
+LONGCALL bool OSDisableInterrupts( //
+    void
+) AT(ADDRESS_OSDisableInterrupts);
+
+LONGCALL void OSRestoreInterrupts( //
+    bool enabled
+) AT(ADDRESS_OSRestoreInterrupts);
+
 LONGCALL void OSReport( //
     const char* format, ...
 ) AT(ADDRESS_OSReport);

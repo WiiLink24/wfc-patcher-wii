@@ -124,11 +124,40 @@ void SendExtendedLogin(
 
     if (authToken[0] != '\0') {
         s32 fd = RVL::IOS_Open("/dev/es", 0);
+        bool usingEspHandle = false;
+        bool interruptsEnabled;
+
+        extern s32 EspFd AT(ADDRESS_ESP_FD);
+
+        // ES_MAX_OPEN
+        if (ADDRESS_ESP_FD != 0 && fd == -1016) {
+            // I don't like this because we don't own this handle, but it seems
+            // like somewhere on Wii U VC (the eShop Wii games) an ES handle is
+            // opened and never closed
+
+            interruptsEnabled = RVL::OSDisableInterrupts();
+
+            // Steal the handle from the ESP library (and set the handle to -1
+            // so it can't close it while we're using it)
+            fd = EspFd;
+            EspFd = -1;
+
+            usingEspHandle = true;
+        }
+
         if (fd >= 0) {
             SendAuthTokenSignature(connection, authToken, outputBuffer, fd);
-            RVL::IOS_Close(fd);
+
+            if (!usingEspHandle) {
+                RVL::IOS_Close(fd);
+            }
         } else {
             LOG_ERROR_FMT("Failed to open ES: %d", fd);
+        }
+
+        if (usingEspHandle) {
+            EspFd = fd;
+            RVL::OSRestoreInterrupts(interruptsEnabled);
         }
     }
 
@@ -206,9 +235,10 @@ static void SendAuthTokenSignature(
         /* 0x090:0x0CC */ u8 deviceSignature[0x3C];
         /* 0x0CC:0x108 */ u8 appPublicKey[0x3C];
         /* 0x108:0x144 */ u8 appSignature[0x3C];
+        /* 0x144:0x148 */ u32 appTimestamp;
     };
 
-    static_assert(sizeof(WWFCAuthSignature) == 0x144);
+    static_assert(sizeof(WWFCAuthSignature) == 0x148);
 
     static constexpr u32 ES_IOCTL_GET_DEVICE_CERT = 0x1E;
     static constexpr u32 ES_IOCTL_SIGN = 0x30;
@@ -243,8 +273,7 @@ static void SendAuthTokenSignature(
 
     if (authSig.caId == 0 || authSig.msId == 0 ||
         std::memcmp(eccCert.issuer, "Root-CA", 7) ||
-        std::memcmp(eccCert.issuer + 0xF, "-MS", 3) ||
-        !IsZeroBlock(eccCert.issuer + 0x1A, 0x40 - 0x1A)) {
+        std::memcmp(eccCert.issuer + 0xF, "-MS", 3)) {
         LOG_ERROR("Invalid device certificate issuer");
         return;
     }
@@ -268,6 +297,8 @@ static void SendAuthTokenSignature(
     }
     std::memcpy(authTokenAligned, authToken, authTokenSize);
 
+    eccCert = {};
+
     vec[0].data = &authTokenAligned;
     vec[0].size = authTokenSize;
     vec[1].data = eccSignature;
@@ -282,8 +313,9 @@ static void SendAuthTokenSignature(
     }
 
     authSig.appTitleId = DecodeUintString(eccCert.name + 2, 64);
+    authSig.appTimestamp = eccCert.timestamp;
 
-    if (authSig.appTitleId == 0 || eccCert.timestamp != 0 ||
+    if (authSig.appTitleId == 0 ||
         !IsZeroBlock(eccCert.signaturePad, sizeof(eccCert.signaturePad)) ||
         !IsZeroBlock(eccCert.publicKeyPad, sizeof(eccCert.publicKeyPad)) ||
         std::memcmp(eccCert.name, "AP", 2) ||
