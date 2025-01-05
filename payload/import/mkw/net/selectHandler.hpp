@@ -68,14 +68,6 @@ public:
         return m_sendPacket;
     }
 
-    void decideEngineClass()
-    {
-        LONGCALL void decideEngineClass(SelectHandler * selectHandler)
-            AT(RMCXD_PORT(0x80661A5C, 0x80659B20, 0x806610C8, 0x8064FD74));
-
-        decideEngineClass(this);
-    }
-
     void decideCourse()
     {
         LONGCALL void decideCourse(SelectHandler * selectHandler)
@@ -90,15 +82,6 @@ public:
             AT(RMCXD_PORT(0x80662034, 0x8065A0F8, 0x806616A0, 0x8065034C));
 
         initPlayerIdsToPlayerAids(this);
-    }
-
-    void decideEngineClassNo100cc(mkw::Util::Random* random)
-    {
-        if (random->nextInt(100) < 65) {
-            m_sendPacket.engineClass = Packet::EngineClass::e150cc;
-        } else {
-            m_sendPacket.engineClass = Packet::EngineClass::eMirrorMode;
-        }
     }
 
     // https://github.com/CLF78/OpenPayload/blob/master/payload/wiimmfi/RoomStall.cpp
