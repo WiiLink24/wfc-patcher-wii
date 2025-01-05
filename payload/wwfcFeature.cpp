@@ -277,28 +277,6 @@ WWFC_DEFINE_PATCH = {
     ),
 };
 
-// Remove the 100cc engine class from vanilla matches
-WWFC_DEFINE_PATCH = {
-    Patch::CallWithCTR( //
-        WWFC_PATCH_LEVEL_PARITY, //
-        RMCXD_PORT(0x806613F8, 0x806594BC, 0x80660A64, 0x8064F710), //
-        // clang-format off
-        [](mkw::Util::Random* random) -> void {
-            using namespace mkw::Net;
-
-            SelectHandler* selectHandler = SelectHandler::Instance();
-            if (NetController::Instance()->inVanillaMatch()) {
-                selectHandler->decideEngineClassNo100cc(random);
-            } else {
-                selectHandler->decideEngineClass();
-            }
-
-            random->dt(random, -1);
-        }
-        // clang-format on
-    ),
-};
-
 // Report information about the upcoming match to the server
 WWFC_DEFINE_PATCH = {
     Patch::CallWithCTR( //

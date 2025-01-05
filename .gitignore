@@ -6,6 +6,7 @@
 *.sh
 
 !make.sh
+dist/
 
 # Editor files
 .vscode
@@ -31,6 +32,11 @@
 *.a
 *.lib
 
+# OS generated files
+.DS_Store
+ehthumbs.db
+Thumbs.db
+
 # Output
 stage1/build
 patch/build
@@ -45,4 +51,3 @@ launcher/build
 *.dol
 *.wad
 *.app
-dist/
