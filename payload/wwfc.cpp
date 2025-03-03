@@ -1,4 +1,4 @@
-#include "game/RMC.h"
+#include "wwfcUtil.h"
 
 #include "wwfcAntiFreeze.cpp"
 #include "wwfcBugFix.cpp"

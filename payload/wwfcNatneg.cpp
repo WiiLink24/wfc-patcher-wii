@@ -89,4 +89,14 @@ WWFC_DEFINE_PATCH = {Patch::CallWithCTR(
 )};
 #endif // RMC
 
+#if RSB
+// Extend the latency limit in random matchmaking from 100 ms, due to the lack
+// of players sometimes preventing matchmaking completely.
+WWFC_DEFINE_PATCH = {Patch::WriteASM(
+    WWFC_PATCH_LEVEL_PARITY, //
+    RSBX_PORT(0x80149268, 0x801492E0, 0x8014A87C, 0x8014A89C), //
+    1, ASM_LAMBDA(li r3, 600) // 600 ms
+)};
+#endif
+
 } // namespace wwfc::Natneg
