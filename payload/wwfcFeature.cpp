@@ -296,9 +296,9 @@ WWFC_DEFINE_PATCH = {
                 selectHandler->sendPacket().engineClass;
 
             wwfc::GPReport::ReportU32(
-                "mkw_select_course", static_cast<u32>(selectedCourse)
+                "wl:mkw_select_course", static_cast<u32>(selectedCourse)
             );
-            wwfc::GPReport::ReportU32("mkw_select_cc", static_cast<u32>(engineClass));
+            wwfc::GPReport::ReportU32("wl:mkw_select_cc", static_cast<u32>(engineClass));
         }
         // clang-format on
     ),

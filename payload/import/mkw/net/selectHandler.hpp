@@ -134,7 +134,7 @@ public:
                 continue;
             }
 
-            netController->reportAndKick("mkw_room_stall", n);
+            netController->reportAndKick("wl:stall", n);
         }
     }
 

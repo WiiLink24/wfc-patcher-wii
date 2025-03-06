@@ -599,7 +599,7 @@ WWFC_DEFINE_PATCH = {Patch::BranchWithCTR( //
             "Invalid Race packet from aid %u (insufficient size)", playerAid
         );
 
-        netController->reportAndKick("mkw_malicious_packet", playerAid);
+        netController->reportAndKick("wl:bad_packet", playerAid);
 
         return;
     }
@@ -626,7 +626,7 @@ WWFC_DEFINE_PATCH = {Patch::BranchWithCTR( //
             "Invalid Race packet from aid %u (malicious packet)", playerAid
         );
 
-        netController->reportAndKick("mkw_malicious_packet", playerAid);
+        netController->reportAndKick("wl:bad_packet", playerAid);
 
         return;
     }
