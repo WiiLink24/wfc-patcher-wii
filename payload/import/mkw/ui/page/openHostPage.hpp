@@ -208,7 +208,7 @@ private:
         openHostValue[0] = '0' + openHostEnabled;
         openHostValue[1] = '\0';
         GameSpy::gpiSendLocalInfo(
-            gpConnection, "\\wwfc_openhost\\", openHostValue
+            gpConnection, "\\wl:oh\\", openHostValue
         );
 
         s_openHostEnabled = openHostEnabled;

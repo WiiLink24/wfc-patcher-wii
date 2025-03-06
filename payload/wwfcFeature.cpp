@@ -125,7 +125,7 @@ GetMessageOfTheDay(GameSpy::GPResult gpResult, const char* message)
         return gpResult;
     }
 
-    const char motdKey[] = "\\wwfc_motd\\";
+    const char motdKey[] = "\\wl:motd\\";
     char value[512];
     if (!GameSpy::gpiValueForKey(message, motdKey, value, sizeof(value))) {
         return gpResult;

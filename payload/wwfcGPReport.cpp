@@ -19,7 +19,7 @@ void Report(const char* key, const char* string)
     auto iconnection = reinterpret_cast<GameSpy::GPIConnection*>(*connection);
 
     GameSpy::gpiAppendStringToBuffer(
-        connection, &iconnection->outputBuffer, "\\wwfc_report\\\\"
+        connection, &iconnection->outputBuffer, "\\wl:report\\\\"
     );
     GameSpy::gpiAppendStringToBuffer(
         connection, &iconnection->outputBuffer, key

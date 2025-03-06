@@ -72,9 +72,8 @@ char* HandleWWFCErrorMessage(char* strstrResult, const char* command)
     }
 
     char value[512];
-    if (GameSpy::gpiValueForKey(
-            command, "\\wwfc_err\\", value, sizeof(value)
-        ) == GameSpy::GPIFalse) {
+    if (GameSpy::gpiValueForKey(command, "\\wl:err\\", value, sizeof(value)) ==
+        GameSpy::GPIFalse) {
         return strstrResult;
     }
 
@@ -84,7 +83,7 @@ char* HandleWWFCErrorMessage(char* strstrResult, const char* command)
     }
 
     if (GameSpy::gpiValueForKey(
-            command, "\\wwfc_errmsg\\", value, sizeof(value)
+            command, "\\wl:errmsg\\", value, sizeof(value)
         ) == GameSpy::GPIFalse) {
         return strstrResult;
     }

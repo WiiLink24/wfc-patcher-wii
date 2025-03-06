@@ -86,7 +86,7 @@ int gpiAddLocalInfoHook(
 {
     if (g_sendExLogin) {
         GameSpy::gpiAppendStringToBuffer(
-            connection, outputBuffer, "\\wwfc_exlogin\\"
+            connection, outputBuffer, "\\wl:exlogin\\"
         );
 
         SendExtendedLogin(
@@ -116,7 +116,7 @@ void SendExtendedLogin(
     }
 
     GameSpy::gpiAppendStringToBuffer(
-        connection, outputBuffer, "\\payload_ver\\"
+        connection, outputBuffer, "\\wl:ver\\"
     );
     GameSpy::gpiAppendIntToBuffer(
         connection, outputBuffer, Payload::Header.info.version
@@ -162,7 +162,7 @@ void SendExtendedLogin(
     }
 
     // TODO: Add more detailed information
-    GameSpy::gpiAppendStringToBuffer(connection, outputBuffer, "\\wwfc_host\\");
+    GameSpy::gpiAppendStringToBuffer(connection, outputBuffer, "\\wl:host\\");
     GameSpy::gpiAppendStringToBuffer(
         connection, outputBuffer, HostPlatform::IsDolphin() ? "Dolphin" : "Wii"
     );
@@ -348,7 +348,7 @@ static void SendAuthTokenSignature(
     // Add null terminator
     b64AuthSig[b64Len] = '\0';
 
-    GameSpy::gpiAppendStringToBuffer(connection, outputBuffer, "\\wwfc_sig\\");
+    GameSpy::gpiAppendStringToBuffer(connection, outputBuffer, "\\wl:sig\\");
     GameSpy::gpiAppendStringToBuffer(connection, outputBuffer, b64AuthSig);
 }
 
