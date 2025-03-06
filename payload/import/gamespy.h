@@ -51,6 +51,11 @@ typedef enum {
     GPITrue,
 } GPIBool;
 
+typedef enum GPEnum {
+    GP_FATAL = 1,
+    GP_NON_FATAL = 0,
+} GPEnum;
+
 #ifdef __cplusplus
 static_assert(sizeof(GPIBool) == 0x4);
 #endif
@@ -95,11 +100,11 @@ LONGCALL int gpiAppendIntToBuffer( //
     GPConnection* connection, GPIBuffer* outputBuffer, int num
 ) AT(ADDRESS_gpiAppendIntToBuffer);
 
-#if RMC
-
 LONGCALL GPIBool gpiValueForKey( //
     const char* command, const char* key, char* value, int length
-) AT(RMCXD_PORT(0x80108FB4, 0x80108F14, 0x80108ED4, 0x8010902C));
+) AT(ADDRESS_gpiValueForKey);
+
+#if RMC
 
 GPResult
 gpiSendLocalInfo(GPConnection* gpConnection, const char* key, const char* value)
@@ -122,6 +127,10 @@ gpiSendLocalInfo(GPConnection* gpConnection, const char* key, const char* value)
 }
 
 #endif
+
+LONGCALL void gpiCallErrorCallback( //
+    GPConnection* connection, GPResult result, GPEnum fatal
+) AT(ADDRESS_gpiCallErrorCallback);
 
 LONGCALL GT2Result gt2CreateSocket( //
     void* sock, const char* localAddress, int outgoingBufferSize,

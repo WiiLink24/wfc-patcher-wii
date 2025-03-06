@@ -117,6 +117,10 @@ LONGCALL s32 DWC_Base64Decode(
 
 #endif
 
+LONGCALL s32 DWCi_SetError( //
+    s32 errorClass, s32 errorCode
+) AT(ADDRESS_DWCi_SetError);
+
 #ifdef __cplusplus
 }
 }

@@ -15,7 +15,7 @@ def dol_to_real(hdr, offset):
         if offset >= sect_off and offset - sect_off < sect_size:
             sect_addr = struct.unpack('>I', hdr[sect+0x48:sect+0x48+4])[0]
             return sect_addr + (offset - sect_off)
-    panic('invalid dol section (1)')
+    exit('invalid dol section (1)')
 
 def real_to_dol(hdr, offset):
     for i in range(18):
@@ -41,6 +41,12 @@ def decode_bl(dol, index):
         branch = 0 - branch
 
     return srcOffs + branch
+
+def print_hex(dol, index, length):
+    strng = ""
+    for b in range(index, index+length):
+        strng += '{:02x} '.format(dol[b])
+    print(strng)
 
 
 
@@ -1370,6 +1376,47 @@ def parse_file(file_path, title_name):
                 offset -= 0x10000
             ADDRESS_ESP_FD = ADDRESS_R13_BASE + offset
 
+    
+    # find gpiCheckForError (MKW PAL: 0x80108f64)
+    TYPE_gpiCheckForError = 0
+    index = dol.find(b'\x7c\x03\x00\xd0\x38\x80\x00\x04\x7c\x00\x1b\x78\x7f\x83\xe3\x78\x54\x05\x0f\xfe')
+    if index == -1:
+        # type 1
+        TYPE_gpiCheckForError = 1
+        index = dol.find(b'\x7c\x03\x00\xd0\x38\x80\x00\x04\x7c\x00\x1b\x78\x7f\x63\xdb\x78\x54\x05\x0f\xfe')
+        if index == -1 or dol[index-0xC:index-0x8] != b'\x7f\x83\xe3\x78':
+            exit('No Find gpiCheckForError ' + title_name)
+    else:
+        assert(dol[index-0xC:index-0x8] == b'\x7f\xa3\xeb\x78')
+
+    ADDRESS_PATCH_gpiCheckForError = dol_to_real(hdr, index+0x14)
+    ADDRESS_gpiCallErrorCallback = decode_bl(dol, index+0x20)
+
+    if TYPE_gpiCheckForError == 0 or (dol[index - 0x28] & 0x48) == 0x48:
+        ADDRESS_gpiValueForKey = decode_bl(dol, index - 0x28)
+        if dol[index-0x44:index-0x40] == b'\x38\x61\x00\x08':
+            ADDRESS_atoi = decode_bl(dol, index - 0x40)
+        else:
+            ADDRESS_atoi = decode_bl(dol, index - 0x44)
+    else:
+        ADDRESS_atoi = decode_bl(dol, index - 0xAC)
+        index = dol.find(b'\x88\x04\x00\x00\x7c\x9b\x23\x78\x7c\xbc\x2b\x78\x7c\xdd\x33\x78\x7c\x1e\x07\x74')
+        if index == -1:
+            exit("No find gpiValueForKey " + title_name)
+        assert(dol[index-0x14:index-0x10] == b'\x94\x21\xff\xe0')
+        assert(dol[index+0x40:index+0x45] == b'\x38\xc0\x00\x00\x48')
+        ADDRESS_gpiValueForKey = dol_to_real(hdr, index - 0x14)
+
+    index = dol.find(b'\x48\x00\x00\x0c\x3f\xff\xff\xff\x3b\xff\x9c\x88\x7f\xc3\xf3\x78\x7f\xe4\xfb\x78')
+    if index == -1:
+        exit('No Find DWCi_HandleGPError ' + title_name)
+
+    print(title_name)
+    assert(dol[index+0x34:index+0x38] == b'\x4e\x80\x00\x20')
+
+    ADDRESS_PATCH_DWCi_HandleGPError = dol_to_real(hdr, index + 0x28)
+
+
 
     def fmthex(v):
         return "0x{:08X}".format(v)
@@ -1469,6 +1516,12 @@ def parse_file(file_path, title_name):
         "ADDRESS_gt2CreateSocket":           fmthex(ADDRESS_gt2CreateSocket),
         "ADDRESS_SCGetProductSN":            fmthex(ADDRESS_SCGetProductSN),
         "ADDRESS_ESP_FD":                    fmthex(ADDRESS_ESP_FD),
+        "ADDRESS_gpiValueForKey":            fmthex(ADDRESS_gpiValueForKey),
+        "ADDRESS_PATCH_gpiCheckForError":    fmthex(ADDRESS_PATCH_gpiCheckForError),
+        "TYPE_gpiCheckForError":             fmthex(TYPE_gpiCheckForError),
+        "ADDRESS_atoi":                      fmthex(ADDRESS_atoi),
+        "ADDRESS_gpiCallErrorCallback":      fmthex(ADDRESS_gpiCallErrorCallback),
+        "ADDRESS_PATCH_DWCi_HandleGPError":  fmthex(ADDRESS_PATCH_DWCi_HandleGPError),
     }
 
     games.append(game)
@@ -1575,6 +1628,12 @@ if __name__ == '__main__':
         "ADDRESS_gt2CreateSocket",
         "ADDRESS_SCGetProductSN",
         "ADDRESS_ESP_FD",
+        "ADDRESS_gpiValueForKey",
+        "ADDRESS_PATCH_gpiCheckForError",
+        "TYPE_gpiCheckForError",
+        "ADDRESS_atoi",
+        "ADDRESS_gpiCallErrorCallback",
+        "ADDRESS_PATCH_DWCi_HandleGPError",
     ]
 
     with open('gamedefs.csv', 'w', newline='') as csvfile:
