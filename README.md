@@ -16,3 +16,8 @@ Unless a file explicitly states otherwise, everything in this repository is lice
 license detailed in the [LICENSE](LICENSE) file. The purpose of this license is to allow easy integration into
 permissively licensed projects, while requiring strict attribution to discourage implementation into the existing
 closed-source, proprietary environment.
+
+The above license may not be compatible with copyleft licenses such as the GPL. For this reason, this software
+is also made available under the GNU General Public License version 2 (or any later version). You may choose the terms
+of the above license or the GPL, but not both. A copy of the GPL version 2 is available online at:
+https://www.gnu.org/licenses/gpl-2.0
