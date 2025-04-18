@@ -11,6 +11,24 @@ that makes patches to the running game, including important security patches and
 
 Each directory includes its own README file with more detailed information on the section.
 
+# Building
+
+You need:
+
+- Python 3.11+ with the `cryptography` module
+- devkitPPC
+- A domain name under which your WWFC server will be reachable (`${DOMAIN}`)
+
+To build everything, run the make script:
+
+```sh
+./make.sh --all -- -j8 -DWWFC_DOMAIN=\"${DOMAIN}\"
+```
+
+The script will create a directory `dist/` which contains the payload files necessary to run the server. Copy those files into a `payload/` directory located next to your `wwfc` binary.
+
+The gecko codes will be located in the `patch/build/` directory as `.txt` files.
+
 # License
 Unless a file explicitly states otherwise, everything in this repository is licensed under a custom BSD-style
 license detailed in the [LICENSE](LICENSE) file. The purpose of this license is to allow easy integration into
