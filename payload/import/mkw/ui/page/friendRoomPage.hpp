@@ -1,12 +1,12 @@
 #pragma once
 
-#include "import/mkw/net/net.hpp"
-#include "openHostPage.hpp"
-
-namespace mkw::UI
-{
-
 #if RMC
+
+#  include "import/mkw/net/net.hpp"
+#  include "openHostPage.hpp"
+
+namespace wwfc::mkw::UI
+{
 
 class FriendRoomPage : public OpenHostPage
 {
@@ -53,12 +53,6 @@ private:
 
 static_assert(sizeof(FriendRoomPage) == 0xDC4);
 
-#endif
-
-} // namespace mkw::UI
-
-#if RMC
-
 extern "C" {
 static void FriendRoomPage_onActivate(mkw::UI::FriendRoomPage* friendRoomPage)
 {
@@ -74,6 +68,8 @@ static void FriendRoomPage_onRefocus(mkw::UI::FriendRoomPage* friendRoomPage)
 {
     friendRoomPage->FriendRoomPage::onRefocus();
 }
-}
+} // extern "C"
 
-#endif
+} // namespace wwfc::mkw::UI
+
+#endif // RMC

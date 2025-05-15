@@ -1,12 +1,12 @@
 #pragma once
 
-#include "import/mkw/ui/menuInputManager.hpp"
-#include "pageId.hpp"
-
-namespace mkw::UI
-{
-
 #if RMC
+
+#  include "import/mkw/ui/menuInputManager.hpp"
+#  include "pageId.hpp"
+
+namespace wwfc::mkw::UI
+{
 
 // https://github.com/mkw-sp/mkw-sp/blob/main/payload/game/ui/Page.hh
 class Page
@@ -57,6 +57,6 @@ private:
 
 static_assert(sizeof(Page) == 0x44);
 
-#endif
+} // namespace wwfc::mkw::UI
 
-} // namespace mkw::UI
+#endif // RMC

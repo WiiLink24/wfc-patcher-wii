@@ -1,11 +1,11 @@
 #pragma once
 
-#include <wwfcUtil.h>
-
-namespace mkw::Util
-{
-
 #if RMC
+
+#  include <wwfcUtil.h>
+
+namespace wwfc::mkw::Util
+{
 
 class Random
 {
@@ -43,6 +43,6 @@ private:
 
 static_assert(sizeof(Random) == 0x18);
 
-#endif
+} // namespace wwfc::mkw::Util
 
-} // namespace mkw::Util
+#endif // RMC

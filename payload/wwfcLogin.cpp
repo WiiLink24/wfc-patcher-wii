@@ -2,10 +2,10 @@
 #include "import/gamespy.h"
 #include "import/revolution.h"
 #include "wwfcHostPlatform.hpp"
+#include "wwfcLibC.hpp"
 #include "wwfcLog.hpp"
 #include "wwfcPatch.hpp"
 #include "wwfcPayload.hpp"
-#include <cstring>
 
 namespace wwfc::Login
 {
@@ -115,9 +115,7 @@ void SendExtendedLogin(
         }
     }
 
-    GameSpy::gpiAppendStringToBuffer(
-        connection, outputBuffer, "\\wl:ver\\"
-    );
+    GameSpy::gpiAppendStringToBuffer(connection, outputBuffer, "\\wl:ver\\");
     GameSpy::gpiAppendIntToBuffer(
         connection, outputBuffer, Payload::Header.info.version
     );
@@ -152,7 +150,7 @@ void SendExtendedLogin(
                 RVL::IOS_Close(fd);
             }
         } else {
-            LOG_ERROR_FMT("Failed to open ES: %d", fd);
+            WWFC_LOG_ERROR_FMT("Failed to open ES: %d", fd);
         }
 
         if (usingEspHandle) {
@@ -243,14 +241,14 @@ static void SendAuthTokenSignature(
     static constexpr u32 ES_IOCTL_GET_DEVICE_CERT = 0x1E;
     static constexpr u32 ES_IOCTL_SIGN = 0x30;
 
-    IOSCECCCert eccCert alignas(32) = {};
-    RVL::IOVector vec[3 + 1] alignas(32) = {};
+    alignas(32) IOSCECCCert eccCert = {};
+    alignas(32) RVL::IOVector vec[3 + 1] = {};
 
     vec[0].data = &eccCert;
     vec[0].size = sizeof(IOSCECCCert);
     s32 ret = RVL::IOS_Ioctlv(esFd, ES_IOCTL_GET_DEVICE_CERT, 0, 1, vec);
     if (ret != 0) {
-        LOG_ERROR_FMT("Failed to get device certificate: %d", ret);
+        WWFC_LOG_ERROR_FMT("Failed to get device certificate: %d", ret);
         return;
     }
 
@@ -264,7 +262,7 @@ static void SendAuthTokenSignature(
         !IsZeroBlock(eccCert.publicKeyPad, sizeof(eccCert.publicKeyPad)) ||
         std::memcmp(eccCert.name, "NG", 2) ||
         !IsZeroBlock(eccCert.name + 0xA, 0x40 - 0xA)) {
-        LOG_ERROR("Invalid device certificate");
+        WWFC_LOG_ERROR("Invalid device certificate");
         return;
     }
 
@@ -274,7 +272,7 @@ static void SendAuthTokenSignature(
     if (authSig.caId == 0 || authSig.msId == 0 ||
         std::memcmp(eccCert.issuer, "Root-CA", 7) ||
         std::memcmp(eccCert.issuer + 0xF, "-MS", 3)) {
-        LOG_ERROR("Invalid device certificate issuer");
+        WWFC_LOG_ERROR("Invalid device certificate issuer");
         return;
     }
 
@@ -288,8 +286,8 @@ static void SendAuthTokenSignature(
     std::memcpy(appIssuer + 0x1B, eccCert.name, 0xA);
 
     // Now call ES sign
-    u8 eccSignature[0x3C + 0x4] alignas(32) = {};
-    char authTokenAligned[GP_AUTHTOKEN_LEN] alignas(64) = {};
+    alignas(32) u8 eccSignature[0x3C + 0x4] = {};
+    alignas(64) char authTokenAligned[GP_AUTHTOKEN_LEN] = {};
 
     s32 authTokenSize = std::strlen(authToken);
     if (authTokenSize > GP_AUTHTOKEN_LEN) {
@@ -308,7 +306,7 @@ static void SendAuthTokenSignature(
 
     ret = RVL::IOS_Ioctlv(esFd, ES_IOCTL_SIGN, 1, 2, vec);
     if (ret != 0) {
-        LOG_ERROR_FMT("Failed to sign auth token: %d", ret);
+        WWFC_LOG_ERROR_FMT("Failed to sign auth token: %d", ret);
         return;
     }
 
@@ -320,13 +318,13 @@ static void SendAuthTokenSignature(
         !IsZeroBlock(eccCert.publicKeyPad, sizeof(eccCert.publicKeyPad)) ||
         std::memcmp(eccCert.name, "AP", 2) ||
         !IsZeroBlock(eccCert.name + 0x12, 0x40 - 0x12)) {
-        LOG_ERROR("Invalid app certificate");
+        WWFC_LOG_ERROR("Invalid app certificate");
         return;
     }
 
     if (std::memcmp(eccCert.issuer, appIssuer, 0x25) ||
         !IsZeroBlock(eccCert.issuer + 0x25, 0x40 - 0x25)) {
-        LOG_ERROR("Invalid app certificate issuer");
+        WWFC_LOG_ERROR("Invalid app certificate issuer");
         return;
     }
 
@@ -340,8 +338,8 @@ static void SendAuthTokenSignature(
         &authSig, sizeof(authSig), b64AuthSig, sizeof(b64AuthSig)
     );
     if (b64Len == -1 || b64Len == sizeof(b64AuthSig)) {
-        LOG_ERROR("Could not fit the base64-encoded signature into the "
-                  "provided buffer!");
+        WWFC_LOG_ERROR("Could not fit the base64-encoded signature into the "
+                       "provided buffer!");
         return;
     }
 

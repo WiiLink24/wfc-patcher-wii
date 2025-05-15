@@ -1,9 +1,10 @@
 #include "wwfcUtil.h"
 
-#include "wwfcAntiFreeze.cpp"
-#include "wwfcBugFix.cpp"
+#include "mkwAntiFreeze.cpp"
+#include "mkwBugFix.cpp"
+#include "mkwFeature.cpp"
+#include "mkwSecurity.cpp"
 #include "wwfcError.cpp"
-#include "wwfcFeature.cpp"
 #include "wwfcGPReport.cpp"
 #include "wwfcHostPlatform.cpp"
 #include "wwfcLibC.cpp"

@@ -1,11 +1,11 @@
-#include "import/mkw/animation.hpp"
-#include "import/mkw/system/courseMap.hpp"
-#include "wwfcPatch.hpp"
+#if RMC
+
+#  include "import/mkw/animation.hpp"
+#  include "import/mkw/system/courseMap.hpp"
+#  include "wwfcPatch.hpp"
 
 namespace wwfc::AntiFreeze
 {
-
-#if RMC
 
 using namespace mkw::System;
 
@@ -83,6 +83,6 @@ WWFC_DEFINE_PATCH = {
     ),
 };
 
-#endif
-
 } // namespace wwfc::AntiFreeze
+
+#endif // RMC

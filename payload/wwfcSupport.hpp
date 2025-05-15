@@ -5,4 +5,4 @@ namespace wwfc::Support
 
 void ChangeAuthURL();
 
-}
+} // namespace wwfc::Support

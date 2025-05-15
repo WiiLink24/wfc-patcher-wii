@@ -1,12 +1,12 @@
 #pragma once
 
-#include "import/egg/heap.hpp"
-#include "import/egg/sceneManager.hpp"
-
-namespace mkw::System
-{
-
 #if RMC
+
+#  include "import/egg/heap.hpp"
+#  include "import/egg/sceneManager.hpp"
+
+namespace wwfc::mkw::System
+{
 
 class Scene
 {
@@ -54,6 +54,6 @@ private:
 
 static_assert(sizeof(System) == 0x74);
 
-#endif
+} // namespace wwfc::mkw::System
 
-} // namespace mkw::System
+#endif // RMC

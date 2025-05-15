@@ -1,12 +1,12 @@
 #pragma once
 
-#include "import/mkw/util.hpp"
-#include "net.hpp"
-
-namespace mkw::Net
-{
-
 #if RMC
+
+#  include "import/mkw/util.hpp"
+#  include "net.hpp"
+
+namespace wwfc::mkw::Net
+{
 
 // https://github.com/SeekyCt/mkw-structures/blob/master/selecthandler.h
 class SelectHandler
@@ -129,7 +129,7 @@ public:
 
         // Support modifications that allow for clients to be connected to more
         // than 11 peers at once.
-        for (size_t n = 0; n < sizeof(aidsStillLoading) * 8; n++) {
+        for (std::size_t n = 0; n < sizeof(aidsStillLoading) * 8; n++) {
             if (((aidsStillLoading >> n) & 1) == 0) {
                 continue;
             }
@@ -169,6 +169,6 @@ private:
 
 static_assert(sizeof(SelectHandler) == 0x3F8);
 
-#endif
+} // namespace wwfc::mkw::Net
 
-} // namespace mkw::Net
+#endif // RMC

@@ -1,18 +1,18 @@
 #pragma once
 
-#include "import/cxx.hpp"
-#include "import/dwc.h"
-#include "import/mkw/system/system.hpp"
-#include "import/mkw/ui/multiMenuInputManager.hpp"
-#include "import/mkw/ui/section/sectionManager.hpp"
-#include "import/revolution.h"
-#include "messagePopupPage.hpp"
-#include "yesNoPopupPage.hpp"
-
-namespace mkw::UI
-{
-
 #if RMC
+
+#  include "import/dwc.h"
+#  include "import/egg/heap.hpp"
+#  include "import/mkw/system/system.hpp"
+#  include "import/mkw/ui/multiMenuInputManager.hpp"
+#  include "import/mkw/ui/section/sectionManager.hpp"
+#  include "import/revolution.h"
+#  include "messagePopupPage.hpp"
+#  include "yesNoPopupPage.hpp"
+
+namespace wwfc::mkw::UI
+{
 
 class OpenHostPage : public Page
 {
@@ -42,10 +42,10 @@ public:
         multiControlInputManager->setHandler(
             MenuInputManager::InputType::Option, nullptr
         );
-        delete s_onOption;
+        EGG::Heap::Free(s_onOption, nullptr);
         s_onOption = nullptr;
 
-        delete s_onYesOrNo;
+        EGG::Heap::Free(s_onYesOrNo, nullptr);
         s_onYesOrNo = nullptr;
     }
 
@@ -207,9 +207,7 @@ private:
         char openHostValue[2];
         openHostValue[0] = '0' + openHostEnabled;
         openHostValue[1] = '\0';
-        GameSpy::gpiSendLocalInfo(
-            gpConnection, "\\wl:oh\\", openHostValue
-        );
+        GameSpy::gpiSendLocalInfo(gpConnection, "\\wl:oh\\", openHostValue);
 
         s_openHostEnabled = openHostEnabled;
     }
@@ -227,6 +225,6 @@ private:
 
 static_assert(sizeof(OpenHostPage) == sizeof(Page));
 
-#endif
+} // namespace wwfc::mkw::UI
 
-} // namespace mkw::UI
+#endif // RMC

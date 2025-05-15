@@ -2,7 +2,7 @@
 
 #include <wwfcUtil.h>
 
-namespace mkw::System
+namespace wwfc::mkw::System
 {
 
 #if RMC
@@ -86,4 +86,4 @@ static_assert(sizeof(RaceConfig) == 0x73F0);
 
 #endif
 
-} // namespace mkw::System
+} // namespace wwfc::mkw::System

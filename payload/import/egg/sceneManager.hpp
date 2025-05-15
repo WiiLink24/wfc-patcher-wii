@@ -2,7 +2,7 @@
 
 #include <wwfcCommon.h>
 
-namespace EGG
+namespace wwfc::EGG
 {
 
 class SceneManager
@@ -21,4 +21,4 @@ private:
 
 static_assert(sizeof(SceneManager) == 0x30);
 
-} // namespace EGG
+} // namespace wwfc::EGG

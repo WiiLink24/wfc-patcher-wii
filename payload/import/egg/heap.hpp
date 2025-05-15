@@ -1,9 +1,9 @@
 #pragma once
 
-#include <cstddef>
+#include "wwfcLibC.hpp"
 #include <wwfcUtil.h>
 
-namespace EGG
+namespace wwfc::EGG
 {
 
 class Heap
@@ -14,17 +14,17 @@ public:
     virtual void vf_08() = 0;
     virtual void vf_0C() = 0;
     virtual void vf_10() = 0;
-    virtual void* alloc(size_t size, int alignment) = 0;
+    virtual void* alloc(std::size_t size, int alignment) = 0;
     virtual void free(void* block) = 0;
     virtual void vf_1C() = 0;
     virtual void vf_20() = 0;
     virtual void vf_24() = 0;
     virtual void vf_28() = 0;
 
-    static void* Alloc(size_t size, int alignment, Heap* heap)
+    static void* Alloc(std::size_t size, int alignment, Heap* heap)
     {
 #if RMC
-        LONGCALL void* Alloc(size_t size, int alignment, Heap* heap)
+        LONGCALL void* Alloc(std::size_t size, int alignment, Heap* heap)
             AT(RMCXD_PORT(0x80229814, 0x80229490, 0x80229734, 0x80229B88));
 
         return Alloc(size, alignment, heap);
@@ -48,4 +48,10 @@ private:
 
 static_assert(sizeof(Heap) == 0x38);
 
-} // namespace EGG
+} // namespace wwfc::EGG
+
+inline void*
+operator new(wwfc::std::size_t size, wwfc::EGG::Heap* heap, int alignment)
+{
+    return wwfc::EGG::Heap::Alloc(size, alignment, heap);
+}

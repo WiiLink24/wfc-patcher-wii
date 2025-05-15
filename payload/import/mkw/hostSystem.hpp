@@ -1,11 +1,11 @@
 #pragma once
 
-#include <wwfcUtil.h>
-
-namespace mkw::HostSystem
-{
-
 #if RMC
+
+#  include <wwfcUtil.h>
+
+namespace wwfc::mkw::HostSystem
+{
 
 class SystemManager
 {
@@ -41,6 +41,6 @@ private:
 
 static_assert(sizeof(SystemManager) == 0x1100);
 
-#endif
+} // namespace wwfc::mkw::HostSystem
 
-} // namespace mkw::HostSystem
+#endif // RMC

@@ -7,6 +7,7 @@
 namespace wwfc::GPReport
 {
 
+// TODO: Games other than Mario Kart Wii
 #if RMC
 
 void Report(const char* key, const char* string)
@@ -35,25 +36,28 @@ void Report(const char* key, const char* string)
     );
 }
 
-void ReportU32(const char* key, u32 uint)
+void ReportU32(const char* key, u32 value)
 {
     char buffer[sizeof("4294967295")];
 
-    if (snprintf(buffer, sizeof(buffer), "%lu", uint) < 0) {
-        return;
+    buffer[sizeof(buffer) - 1] = '\0';
+    int n;
+    for (n = sizeof(buffer) - 2; n >= 0 && value != 0; n--) {
+        buffer[n] = '0' + (value % 10);
+        value /= 10;
     }
 
-    Report(key, buffer);
+    Report(key, buffer + n + 1);
 }
 
-void ReportB64Encode(const char* key, const void* data, size_t dataSize)
+void ReportB64Encode(const char* key, const void* data, std::size_t dataSize)
 {
     char b64Data[0x400];
 
     s32 b64Size =
         DWC::DWC_Base64Encode(data, dataSize, b64Data, sizeof(b64Data));
     if (b64Size == -1 || b64Size == sizeof(b64Data)) {
-        LOG_ERROR(
+        WWFC_LOG_ERROR(
             "Could not fit the base64-encoded data into the provided buffer!"
         );
         return;

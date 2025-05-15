@@ -1,13 +1,13 @@
 #pragma once
 
-#include "import/mkw/ui/ui.hpp"
-#include "page.hpp"
-#include <wwfcUtil.h>
-
-namespace mkw::UI
-{
-
 #if RMC
+
+#  include "import/mkw/ui/ui.hpp"
+#  include "page.hpp"
+#  include <wwfcUtil.h>
+
+namespace wwfc::mkw::UI
+{
 
 // https://github.com/mkw-sp/mkw-sp/blob/main/payload/game/ui/YesNoPage.hh
 class YesNoPage : public Page
@@ -88,6 +88,6 @@ private:
 
 static_assert(sizeof(YesNoPage) == 0x8B8);
 
-#endif
+} // namespace wwfc::mkw::UI
 
-} // namespace mkw::UI
+#endif // RMC

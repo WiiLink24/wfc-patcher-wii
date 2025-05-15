@@ -1,14 +1,14 @@
-#pragma once
-
-#include "import/dwc.h"
-#include "import/mkw/hostSystem.hpp"
-#include "import/mkw/system/system.hpp"
-#include <wwfcGPReport.hpp>
-
-namespace mkw::Net
-{
-
 #if RMC
+
+#  pragma once
+
+#  include "import/dwc.h"
+#  include "import/mkw/hostSystem.hpp"
+#  include "import/mkw/system/system.hpp"
+#  include <wwfcGPReport.hpp>
+
+namespace wwfc::mkw::Net
+{
 
 struct __attribute__((packed)) RacePacket {
     enum EType {
@@ -140,11 +140,10 @@ public:
 
     bool inVanillaRaceScene() const
     {
-        using namespace mkw::System;
-
         int sceneId =
             System::System::Instance().sceneManager()->getCurrentSceneID();
-        if (static_cast<Scene::SceneID>(sceneId) != Scene::SceneID::Race) {
+        if (static_cast<System::Scene::SceneID>(sceneId) !=
+            System::Scene::SceneID::Race) {
             return false;
         }
 
@@ -222,6 +221,6 @@ private:
 
 static_assert(sizeof(NetController) == 0x29C8);
 
-#endif
+} // namespace wwfc::mkw::Net
 
-} // namespace mkw::Net
+#endif // RMC

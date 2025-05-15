@@ -1,11 +1,11 @@
 #pragma once
 
-#include "openHostPage.hpp"
-
-namespace mkw::UI
-{
-
 #if RMC
+
+#  include "openHostPage.hpp"
+
+namespace wwfc::mkw::UI
+{
 
 class WifiFriendMenuPage : public OpenHostPage
 {
@@ -46,12 +46,6 @@ private:
 
 static_assert(sizeof(WifiFriendMenuPage) == 0xF34);
 
-#endif
-
-} // namespace mkw::UI
-
-#if RMC
-
 extern "C" {
 static void
 WifiFriendMenu_onActivate(mkw::UI::WifiFriendMenuPage* wifiFriendMenuPage)
@@ -72,4 +66,6 @@ WifiFriendMenu_onRefocus(mkw::UI::WifiFriendMenuPage* wifiFriendMenuPage)
 }
 }
 
-#endif
+} // namespace wwfc::mkw::UI
+
+#endif // RMC

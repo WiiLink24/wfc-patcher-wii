@@ -1,5 +1,4 @@
 #include "wwfcPatch.hpp"
-#include <cstring>
 #include <import/revolution.h>
 #include <wwfcCommon.h>
 

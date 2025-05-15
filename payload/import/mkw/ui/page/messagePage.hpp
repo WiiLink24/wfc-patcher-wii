@@ -1,12 +1,12 @@
 #pragma once
 
-#include "import/mkw/ui/ui.hpp"
-#include "page.hpp"
-
-namespace mkw::UI
-{
-
 #if RMC
+
+#  include "import/mkw/ui/ui.hpp"
+#  include "page.hpp"
+
+namespace wwfc::mkw::UI
+{
 
 // https://github.com/mkw-sp/mkw-sp/blob/main/payload/game/ui/MessagePage.hh
 class MessagePage : public Page
@@ -23,6 +23,6 @@ private:
 
 static_assert(sizeof(MessagePage) == 0x1A8);
 
-#endif
+} // namespace wwfc::mkw::UI
 
-} // namespace mkw::UI
+#endif // RMC

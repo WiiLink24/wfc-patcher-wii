@@ -1,11 +1,11 @@
 #pragma once
 
-#include <wwfcCommon.h>
-
-namespace mkw::UI
-{
-
 #if RMC
+
+#  include <wwfcCommon.h>
+
+namespace wwfc::mkw::UI
+{
 
 // https://github.com/mkw-sp/mkw-sp/blob/main/payload/game/ui/MenuInputManager.hh
 class MenuInputManager
@@ -59,6 +59,6 @@ private:
 
 static_assert(sizeof(MenuInputManager) == 0x10);
 
-#endif
+} // namespace wwfc::mkw::UI
 
-} // namespace mkw::UI
+#endif // RMC

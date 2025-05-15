@@ -1,9 +1,9 @@
 #pragma once
 
-namespace mkw::UI
-{
-
 #if RMC
+
+namespace wwfc::mkw::UI
+{
 
 // https://github.com/mkw-sp/mkw-sp/blob/main/payload/game/ui/PageId.hh
 enum class PageId {
@@ -11,6 +11,6 @@ enum class PageId {
     YesNoPopup = 0x4E,
 };
 
-#endif
+} // namespace wwfc::mkw::UI
 
-} // namespace mkw::UI
+#endif // RMC

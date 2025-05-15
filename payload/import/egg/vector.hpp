@@ -2,7 +2,7 @@
 
 #include <wwfcCommon.h>
 
-namespace EGG
+namespace wwfc::EGG
 {
 
 struct Vector3f {
@@ -20,4 +20,4 @@ struct Vector3f {
 
 static_assert(sizeof(Vector3f) == 0x0C);
 
-} // namespace EGG
+} // namespace wwfc::EGG

@@ -1,11 +1,12 @@
-#pragma once
-
-#include "import/mkw/item.hpp"
-
-namespace mkw::Net
-{
-
 #if RMC
+
+#  pragma once
+
+#  include "import/mkw/item.hpp"
+#  include "wwfcUtil.h"
+
+namespace wwfc::mkw::Net
+{
 
 // https://github.com/SeekyCt/mkw-structures/blob/master/itemhandler.h
 class ItemHandler
@@ -122,6 +123,6 @@ private:
 
 static_assert(sizeof(ItemHandler) == 0x184);
 
-#endif
+} // namespace wwfc::mkw::Net
 
-} // namespace mkw::Net
+#endif // RMC

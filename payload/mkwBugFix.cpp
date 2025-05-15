@@ -1,11 +1,11 @@
-#include "import/mkw/net/net.hpp"
-#include "import/mkw/system/raceConfig.hpp"
-#include "wwfcPatch.hpp"
+#if RMC
+
+#  include "import/mkw/net/net.hpp"
+#  include "import/mkw/system/raceConfig.hpp"
+#  include "wwfcPatch.hpp"
 
 namespace wwfc::BugFix
 {
-
-#if RMC
 
 u64 IsUltraShortcutCheckEnabled( //
     u32 r3Discard, u32 r4Save
@@ -81,6 +81,6 @@ u64 IsUltraShortcutCheckEnabled(u32 r3Discard, u32 r4Save)
     return (u64(enabled ? 1 : 0) << 32) | r4Save;
 }
 
-#endif
-
 } // namespace wwfc::BugFix
+
+#endif // RMC

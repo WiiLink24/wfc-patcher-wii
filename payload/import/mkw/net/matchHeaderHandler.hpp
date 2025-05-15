@@ -1,11 +1,11 @@
 #pragma once
 
-#include <wwfcUtil.h>
-
-namespace mkw::Net
-{
-
 #if RMC
+
+#  include <wwfcUtil.h>
+
+namespace wwfc::mkw::Net
+{
 
 class MatchHeaderHandler
 {
@@ -53,6 +53,6 @@ private:
 
 static_assert(sizeof(MatchHeaderHandler) == 0x260);
 
-#endif
+} // namespace wwfc::mkw::Net
 
-} // namespace mkw::Net
+#endif // RMC

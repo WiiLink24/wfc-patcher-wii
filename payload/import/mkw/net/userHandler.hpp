@@ -1,13 +1,13 @@
 #pragma once
 
-#include "import/dwc.h"
-#include <bit>
-#include <wwfcMii.hpp>
-
-namespace mkw::Net
-{
-
 #if RMC
+
+#  include "import/dwc.h"
+#  include "wwfcLibC.hpp"
+#  include <wwfcMii.hpp>
+
+namespace wwfc::mkw::Net
+{
 
 class UserHandler
 {
@@ -120,6 +120,6 @@ private:
 
 static_assert(sizeof(UserHandler) == 0x9F0);
 
-#endif
+} // namespace wwfc::mkw::Net
 
-} // namespace mkw::Net
+#endif // RMC

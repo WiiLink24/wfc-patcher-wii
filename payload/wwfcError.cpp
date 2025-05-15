@@ -1,8 +1,9 @@
 #include "import/dwc.h"
 #include "import/gamespy.h"
 #include "import/mkw/ui/ui.hpp"
+#include "wwfcLibC.hpp"
 #include "wwfcPatch.hpp"
-#include <cstring>
+#include "wwfcUtil.h"
 
 namespace wwfc::Error
 {
@@ -69,7 +70,7 @@ void HandleWWFCErrorMessage(
     }
 
     s32 errorMessageLength = DWC::DWC_Base64Decode(
-        value, strlen(value), reinterpret_cast<char*>(s_wwfcErrorMsg),
+        value, std::strlen(value), reinterpret_cast<char*>(s_wwfcErrorMsg),
         sizeof(s_wwfcErrorMsg)
     );
     if (errorMessageLength == -1 ||

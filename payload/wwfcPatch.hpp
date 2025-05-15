@@ -1,9 +1,6 @@
 #pragma once
 
-#include <array>
-#include <functional>
-#include <string>
-#include <type_traits>
+#include "wwfcLibC.hpp"
 #include <wwfcAsm.h>
 #include <wwfcCommon.h>
 

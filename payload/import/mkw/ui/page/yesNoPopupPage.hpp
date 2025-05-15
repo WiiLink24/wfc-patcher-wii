@@ -1,11 +1,11 @@
 #pragma once
 
-#include "yesNoPage.hpp"
-
-namespace mkw::UI
-{
-
 #if RMC
+
+#  include "yesNoPage.hpp"
+
+namespace wwfc::mkw::UI
+{
 
 // https://github.com/mkw-sp/mkw-sp/blob/main/payload/game/ui/YesNoPage.hh
 class YesNoPopupPage : public YesNoPage
@@ -16,6 +16,6 @@ private:
 
 static_assert(sizeof(YesNoPopupPage) == 0xBA0);
 
-#endif
+} // namespace wwfc::mkw::UI
 
-} // namespace mkw::UI
+#endif // RMC

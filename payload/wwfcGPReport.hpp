@@ -1,6 +1,6 @@
 #pragma once
 
-#include <cstddef>
+#include <wwfcLibC.hpp>
 #include <wwfcCommon.h>
 
 namespace wwfc::GPReport
@@ -10,7 +10,7 @@ namespace wwfc::GPReport
 
 void Report(const char* key, const char* string);
 void ReportU32(const char* key, u32 uint);
-void ReportB64Encode(const char* key, const void* data, size_t dataSize);
+void ReportB64Encode(const char* key, const void* data, std::size_t dataSize);
 
 #endif
 

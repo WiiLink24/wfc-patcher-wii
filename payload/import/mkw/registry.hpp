@@ -1,11 +1,11 @@
 #pragma once
 
-#include <wwfcUtil.h>
-
-namespace mkw::Registry
-{
-
 #if RMC
+
+#  include <wwfcUtil.h>
+
+namespace wwfc::mkw::Registry
+{
 
 enum class Character {
     Mario = 0x00,
@@ -197,6 +197,6 @@ static bool IsBattleCourse(Course course)
     return course >= Course::DelfinoPier && course <= Course::N64Skyscraper;
 }
 
-#endif
+} // namespace wwfc::mkw::Registry
 
-} // namespace mkw::Registry
+#endif // RMC

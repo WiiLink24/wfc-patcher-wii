@@ -1,27 +1,22 @@
-#include "import/mkw/net/selectHandler.hpp"
-#include "import/mkw/net/userHandler.hpp"
-#include "import/mkw/ui/page/friendRoomPage.hpp"
-#include "import/mkw/ui/page/wifiFriendMenuPage.hpp"
-#include "import/mkw/ui/page/wifiMenuPage.hpp"
-#include "wwfcPatch.hpp"
-#include <cstring>
-
-namespace mkw::Net
-{
-
 #if RMC
+
+#  include "import/mkw/net/selectHandler.hpp"
+#  include "import/mkw/net/userHandler.hpp"
+#  include "import/mkw/ui/page/friendRoomPage.hpp"
+#  include "import/mkw/ui/page/wifiFriendMenuPage.hpp"
+#  include "import/mkw/ui/page/wifiMenuPage.hpp"
+#  include "wwfcPatch.hpp"
+
+namespace wwfc::mkw::Net
+{
 
 u32 NetController::s_reportedAids = 0x00000000;
 u32 SelectHandler::s_kickTimerFrames = 0;
 
-#endif
+} // namespace wwfc::mkw::Net
 
-} // namespace mkw::Net
-
-namespace mkw::UI
+namespace wwfc::mkw::UI
 {
-
-#if RMC
 
 OpenHostPage::State OpenHostPage::s_state = OpenHostPage::State::Previous;
 MenuInputManager::Handler<OpenHostPage>* OpenHostPage::s_onOption = nullptr;
@@ -103,23 +98,19 @@ const wchar_t* WifiMenuPage::s_messageOfTheDay =
 wchar_t WifiMenuPage::s_messageOfTheDayBuffer[256] = {};
 bool WifiMenuPage::s_hasSeenMessageOfTheDay = false;
 
-#endif
+} // namespace wwfc::mkw::UI
 
-} // namespace mkw::UI
-
-namespace wwfc::Feature
+namespace wwfc::mkw::Feature
 {
-
-#if RMC
 
 extern "C" {
 __attribute__((__used__)) static GameSpy::GPResult
 GetMessageOfTheDay(GameSpy::GPResult gpResult, const char* message)
 {
-    using namespace mkw::UI;
+    using namespace wwfc::mkw::UI;
 
     const char loginChallenge2Message[] = "\\lc\\2";
-    if (strncmp(
+    if (std::strncmp(
             message, loginChallenge2Message, sizeof(loginChallenge2Message) - 1
         )) {
         return gpResult;
@@ -135,7 +126,8 @@ GetMessageOfTheDay(GameSpy::GPResult gpResult, const char* message)
     s32 messageOfTheDayBufferSize =
         static_cast<s32>(WifiMenuPage::MessageOfTheDayBufferSize());
     s32 messageOfTheDayLength = DWC::DWC_Base64Decode(
-        value, strlen(value), reinterpret_cast<char*>(messageOfTheDayBuffer),
+        value, std::strlen(value),
+        reinterpret_cast<char*>(messageOfTheDayBuffer),
         messageOfTheDayBufferSize
     );
     if (messageOfTheDayLength == -1 ||
@@ -195,13 +187,12 @@ WWFC_DEFINE_PATCH = {
     Patch::CallWithCTR( //
         WWFC_PATCH_LEVEL_FEATURE, //
         RMCXD_PORT(0x8064D358, 0x8061A044, 0x8064C9C4, 0x8063B670), //
-        // clang-format off
-        [](mkw::UI::WifiFriendMenuPage* /* wifiFriendMenuPage */, void* /* pushButton */) -> int {
-            constexpr int friendsAdded = 1;
+        [](mkw::UI::WifiFriendMenuPage* /* wifiFriendMenuPage */,
+           void* /* pushButton */) -> int {
+    constexpr int friendsAdded = 1;
 
-            return friendsAdded;
-        }
-        // clang-format on
+    return friendsAdded;
+}
     ),
 };
 
@@ -210,20 +201,18 @@ WWFC_DEFINE_PATCH = {
     Patch::CallWithCTR( //
         WWFC_PATCH_LEVEL_FEATURE, //
         RMCXD_PORT(0x806579A0, 0x80653518, 0x8065700C, 0x80645CB8), //
-        // clang-format off
         [](mkw::Net::NetController* netController) -> void {
-            using namespace mkw::Net;
+    using namespace mkw::Net;
 
-            netController->sendRacePacket();
+    netController->sendRacePacket();
 
-            UserHandler::Instance()->calc();
+    UserHandler::Instance()->calc();
 
-            SelectHandler* selectHandler = SelectHandler::Instance();
-            if (selectHandler) {
-                selectHandler->processKicks();
-            }
-        }
-        // clang-format on
+    SelectHandler* selectHandler = SelectHandler::Instance();
+    if (selectHandler) {
+        selectHandler->processKicks();
+    }
+}
     ),
 };
 
@@ -259,21 +248,19 @@ WWFC_DEFINE_PATCH = {
     Patch::CallWithCTR( //
         WWFC_PATCH_LEVEL_FEATURE, //
         RMCXD_PORT(0x8065FF34, 0x80657FF8, 0x8065F5A0, 0x8064E24C), //
-        // clang-format off
         [](mkw::Net::SelectHandler* selectHandler,
            mkw::Net::NetController* netController) -> mkw::Net::SelectHandler* {
-            using namespace mkw::Net;
+    using namespace mkw::Net;
 
-            netController->_29B0 = 0;
-            netController->_29B4 = 0;
-            netController->_29B8 = 0;
-            netController->_29BC = 0;
+    netController->_29B0 = 0;
+    netController->_29B4 = 0;
+    netController->_29B8 = 0;
+    netController->_29BC = 0;
 
-            SelectHandler::ResetKickTimer();
+    SelectHandler::ResetKickTimer();
 
-            return selectHandler;
-        }
-        // clang-format on
+    return selectHandler;
+}
     ),
 };
 
@@ -282,25 +269,25 @@ WWFC_DEFINE_PATCH = {
     Patch::CallWithCTR( //
         WWFC_PATCH_LEVEL_FEATURE, //
         RMCXD_PORT(0x8066148C, 0x80659550, 0x80660AF8, 0x8064F7A4), //
-        // clang-format off
         []() -> void {
-            using namespace mkw::Net;
+    using namespace mkw::Net;
 
-            SelectHandler* selectHandler = SelectHandler::Instance();
-            selectHandler->decideCourse();
-            selectHandler->initPlayerIdsToPlayerAids();
+    SelectHandler* selectHandler = SelectHandler::Instance();
+    selectHandler->decideCourse();
+    selectHandler->initPlayerIdsToPlayerAids();
 
-            SelectHandler::Packet::SelectedCourse selectedCourse =
-                selectHandler->sendPacket().selectedCourse;
-            SelectHandler::Packet::EngineClass engineClass =
-                selectHandler->sendPacket().engineClass;
+    SelectHandler::Packet::SelectedCourse selectedCourse =
+        selectHandler->sendPacket().selectedCourse;
+    SelectHandler::Packet::EngineClass engineClass =
+        selectHandler->sendPacket().engineClass;
 
-            wwfc::GPReport::ReportU32(
-                "wl:mkw_select_course", static_cast<u32>(selectedCourse)
-            );
-            wwfc::GPReport::ReportU32("wl:mkw_select_cc", static_cast<u32>(engineClass));
-        }
-        // clang-format on
+    wwfc::GPReport::ReportU32(
+        "wl:mkw_select_course", static_cast<u32>(selectedCourse)
+    );
+    wwfc::GPReport::ReportU32(
+        "wl:mkw_select_cc", static_cast<u32>(engineClass)
+    );
+}
     ),
 };
 
@@ -309,45 +296,45 @@ WWFC_DEFINE_PATCH = {
     Patch::WritePointer(
         WWFC_PATCH_LEVEL_FEATURE,
         RMCXD_PORT(0x808B9008, 0x808BABF8, 0x808B8158, 0x808A7470), //
-        FriendRoomPage_onActivate
+        mkw::UI::FriendRoomPage_onActivate
     ),
 };
 WWFC_DEFINE_PATCH = {
     Patch::WritePointer(
         WWFC_PATCH_LEVEL_FEATURE,
         RMCXD_PORT(0x808B900C, 0x808BABFC, 0x808B815C, 0x808A7474), //
-        FriendRoomPage_onDeactivate
+        mkw::UI::FriendRoomPage_onDeactivate
     ),
 };
 WWFC_DEFINE_PATCH = {
     Patch::WritePointer(
         WWFC_PATCH_LEVEL_FEATURE,
         RMCXD_PORT(0x808B902C, 0x808BAC1C, 0x808B817C, 0x808A7494), //
-        FriendRoomPage_onRefocus
+        mkw::UI::FriendRoomPage_onRefocus
     ),
 };
 WWFC_DEFINE_PATCH = {
     Patch::WritePointer(
         WWFC_PATCH_LEVEL_FEATURE,
         RMCXD_PORT(0x808BFE7C, 0x808B97CC, 0x808BEFCC, 0x808AE2EC), //
-        WifiFriendMenu_onActivate
+        mkw::UI::WifiFriendMenu_onActivate
     ),
 };
 WWFC_DEFINE_PATCH = {
     Patch::WritePointer(
         WWFC_PATCH_LEVEL_FEATURE,
         RMCXD_PORT(0x808BFE80, 0x808B97D0, 0x808BEFD0, 0x808AE2F0), //
-        WifiFriendMenu_onDeactivate
+        mkw::UI::WifiFriendMenu_onDeactivate
     ),
 };
 WWFC_DEFINE_PATCH = {
     Patch::WritePointer(
         WWFC_PATCH_LEVEL_FEATURE,
         RMCXD_PORT(0x808BFEA0, 0x808B97F0, 0x808BEFF0, 0x808AE310), //
-        WifiFriendMenu_onRefocus
+        mkw::UI::WifiFriendMenu_onRefocus
     ),
 };
 
-#endif
+} // namespace wwfc::mkw::Feature
 
-} // namespace wwfc::Feature
+#endif // RMC

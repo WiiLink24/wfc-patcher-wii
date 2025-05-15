@@ -1,12 +1,12 @@
 #pragma once
 
-#include "section.hpp"
-#include <wwfcUtil.h>
-
-namespace mkw::UI
-{
-
 #if RMC
+
+#  include "section.hpp"
+#  include <wwfcUtil.h>
+
+namespace wwfc::mkw::UI
+{
 
 class SectionManager
 {
@@ -31,6 +31,6 @@ private:
 
 static_assert(sizeof(SectionManager) == 0x9C);
 
-#endif
+} // namespace wwfc::mkw::UI
 
-} // namespace mkw::UI
+#endif // RMC

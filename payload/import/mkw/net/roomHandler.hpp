@@ -1,11 +1,11 @@
 #pragma once
 
-#include <wwfcUtil.h>
-
-namespace mkw::Net
-{
-
 #if RMC
+
+#  include <wwfcUtil.h>
+
+namespace wwfc::mkw::Net
+{
 
 // https://github.com/SeekyCt/mkw-structures/blob/master/roomhandler.h
 class RoomHandler
@@ -39,6 +39,6 @@ private:
 
 static_assert(sizeof(RoomHandler) == 0x80);
 
-#endif
+} // namespace wwfc::mkw::Net
 
-} // namespace mkw::Net
+#endif // RMC

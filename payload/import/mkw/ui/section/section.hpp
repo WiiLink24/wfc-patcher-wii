@@ -1,12 +1,12 @@
 #pragma once
 
-#include "import/mkw/ui/page/page.hpp"
-#include <array>
-
-namespace mkw::UI
-{
-
 #if RMC
+
+#  include "import/mkw/ui/page/page.hpp"
+#  include "wwfcLibC.hpp"
+
+namespace wwfc::mkw::UI
+{
 
 // https://github.com/mkw-sp/mkw-sp/blob/main/payload/game/ui/Section.hh
 class Section
@@ -26,6 +26,6 @@ private:
 
 static_assert(sizeof(Section) == 0x408);
 
-#endif
+} // namespace wwfc::mkw::UI
 
-} // namespace mkw::UI
+#endif // RMC

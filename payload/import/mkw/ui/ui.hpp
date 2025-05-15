@@ -1,11 +1,11 @@
 #pragma once
 
-#include <wwfcCommon.h>
-
-namespace mkw::UI
-{
-
 #if RMC
+
+#  include <wwfcCommon.h>
+
+namespace wwfc::mkw::UI
+{
 
 struct FormatParam {
     /* 0x00 */ s32 numbers[9];
@@ -19,6 +19,6 @@ struct FormatParam {
 
 static_assert(sizeof(FormatParam) == 0xC4);
 
-#endif
+} // namespace wwfc::mkw::UI
 
-} // namespace mkw::UI
+#endif // RMC

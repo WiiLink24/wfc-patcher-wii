@@ -1,12 +1,12 @@
 #pragma once
 
-#include <wwfcCommon.h>
+#if RMC
+
+#  include <wwfcCommon.h>
 
 // https://github.com/MelgMKW/Pulsar/blob/main/GameSource/MarioKartWii/3D/Model/AnmHolder.hpp
-namespace mkw::Model
+namespace wwfc::mkw::Model
 {
-
-#if RMC
 
 class Animation
 {
@@ -38,6 +38,6 @@ private:
 
 static_assert(sizeof(AnimationTexturePattern) == 0x20);
 
-#endif
+} // namespace wwfc::mkw::Model
 
-} // namespace mkw::Model
+#endif // RMC

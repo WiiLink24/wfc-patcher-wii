@@ -1,12 +1,12 @@
 #pragma once
 
-#include "menuInputManager.hpp"
-#include <wwfcUtil.h>
-
-namespace mkw::UI
-{
-
 #if RMC
+
+#  include "menuInputManager.hpp"
+#  include <wwfcUtil.h>
+
+namespace wwfc::mkw::UI
+{
 
 // https://github.com/mkw-sp/mkw-sp/blob/main/payload/game/ui/MenuInputManager.hh
 class MultiControlInputManager : public MenuInputManager
@@ -32,6 +32,6 @@ private:
 
 static_assert(sizeof(MultiControlInputManager) == 0x224);
 
-#endif
+} // namespace wwfc::mkw::UI
 
-} // namespace mkw::UI
+#endif // RMC

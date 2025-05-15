@@ -1,11 +1,11 @@
 #pragma once
 
-#include <wwfcCommon.h>
-
-namespace mkw::Item
-{
-
 #if RMC
+
+#  include <wwfcCommon.h>
+
+namespace wwfc::mkw::Item
+{
 
 enum class ItemBox {
     GreenShell = 0x00,
@@ -319,6 +319,6 @@ static ItemBox ItemObjectToItemBox(ItemObject itemObject)
     }
 }
 
-#endif
+} // namespace wwfc::mkw::Item
 
-} // namespace mkw::Item
+#endif // RMC
