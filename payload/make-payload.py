@@ -15,15 +15,15 @@ def build(game):
     flags.append("-D" + game["Title"] + "=1")
 
     title_str = game["Title"]
-    flags.append("-DPAYLOAD_NAME=\"" + title_str + "\"")
-    flags.append("-DGAME_ID=0x" + title_str[:4].encode("ascii").hex() + "")
+    flags.append("-DWWFC_PAYLOAD_NAME=\"" + title_str + "\"")
+    flags.append("-DWWFC_GAME_ID=0x" + title_str[:4].encode("ascii").hex() + "")
 
     if title_str[4] == 'D':
-        flags.append("-DTITLE_TYPE=TITLE_TYPE_DISC")
+        flags.append("-DWWFC_TITLE_TYPE=TITLE_TYPE_DISC")
     else:
-        flags.append("-DTITLE_TYPE=TITLE_TYPE_NAND")
+        flags.append("-DWWFC_TITLE_TYPE=TITLE_TYPE_NAND")
 
-    flags.append("-DTITLE_VERSION=0x" + title_str[5:])
+    flags.append("-DWWFC_TITLE_VERSION=0x" + title_str[5:])
 
     for key, value in game.items():
         if key != "Title":

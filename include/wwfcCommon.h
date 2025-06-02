@@ -38,37 +38,44 @@ typedef double f64;
 
 #endif
 
-typedef struct {
-    char magic[0xC]; // Always "WWFC/Payload"
-    u32 total_size;
-    u8 signature[0x100]; // RSA-2048 signature
-} __attribute__((packed)) wwfc_payload_header;
+typedef s32 (*wwfc_payload_entry_t)(struct wwfc_payload*);
 
-typedef struct {
+typedef struct wwfc_payload_header {
+    char magic[0xC]; // Always "WWFC/Payload"
+
+    union {
+        u32 total_size;
+        void* end;
+    };
+
+    u8 signature[0x100]; // RSA-2048 signature
+} __attribute__((packed)) wwfc_payload_header_t;
+
+typedef struct wwfc_payload_info {
     u32 format_version; // Payload format version
     u32 format_version_compat; // Minimum payload format version that this
                                // payload is compatible with
     char name[0xC]; // Payload name (e.g. "RMCPD00")
     u32 version; // Payload version
-    u32 got_start;
-    u32 got_end;
-    u32 fixup_start;
-    u32 fixup_end;
-    u32 patch_list_offset;
-    u32 patch_list_end;
-    u32 entry_point;
-    u32 entry_point_no_got;
+    u32* got_start;
+    u32* got_end;
+    u32* fixup_start;
+    u32* fixup_end;
+    struct wwfc_patch* patch_list_offset;
+    struct wwfc_patch* patch_list_end;
+    wwfc_payload_entry_t entry_point;
+    wwfc_payload_entry_t entry_point_no_got;
     u32 reserved[0x18 / 4];
     char build_timestamp[0x20];
-} __attribute__((packed)) wwfc_payload_info;
+} __attribute__((packed)) wwfc_payload_info_t;
 
-typedef struct {
-    wwfc_payload_header header;
+typedef struct wwfc_payload {
+    wwfc_payload_header_t header;
     u8 salt[SHA256_DIGEST_SIZE];
-    wwfc_payload_info info;
-} __attribute__((packed)) wwfc_payload;
+    wwfc_payload_info_t info;
+} __attribute__((packed)) wwfc_payload_t;
 
-typedef enum {
+typedef enum wwfc_patch_type {
     /**
      * Copy bytes specified in `args` to the destination `address`.
      * @param arg0 Pointer to the data to copy from.
@@ -128,12 +135,12 @@ typedef enum {
      * @param arg1 Not used.
      */
     WWFC_PATCH_TYPE_WRITE_POINTER = 6,
-} wwfc_patch_type;
+} wwfc_patch_type_t;
 
 /**
  * Flags for different patch levels.
  */
-typedef enum {
+typedef enum wwfc_patch_level {
     /**
      * Critical, used for security patches and other things required to connect
      * to the server. This has no value and is always automatically applied.
@@ -165,9 +172,9 @@ typedef enum {
      * Flag used to disable the patch if it has been already applied.
      */
     WWFC_PATCH_LEVEL_DISABLED = 1 << 4, // 0x10
-} wwfc_patch_level;
+} wwfc_patch_level_t;
 
-typedef struct {
+typedef struct wwfc_patch {
     u8 level; // wwfc_patch_level
     u8 type; // wwfc_patch_type
     u8 reserved[2];
@@ -180,7 +187,10 @@ typedef struct {
     };
 
     u32 arg1;
-} __attribute__((packed)) wwfc_patch;
+} __attribute__((packed)) wwfc_patch_t;
+
+#define WWFC_ADJUST_OFFSET(_TYPE, _PAYLOAD, _OFFSET)                           \
+    ((_TYPE) ((u8*) (_PAYLOAD) + (u32) (_OFFSET)))
 
 #ifdef __cplusplus
 }

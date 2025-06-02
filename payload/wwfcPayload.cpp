@@ -2,6 +2,7 @@
 #include "wwfcPatch.hpp"
 #include "wwfcSupport.hpp"
 #include "wwfcUtil.h"
+#include "wwfcVersion.h"
 #include <wwfcError.h>
 
 namespace wwfc::Payload
@@ -33,12 +34,12 @@ extern u32 CTORSEnd asm("__CTORS_END__");
 extern u8 PayloadEnd asm("_G_End");
 
 SECTION("wwfc_header")
-const wwfc_payload Header = {
+constinit const wwfc_payload Header = {
     .header =
         {
             .magic =
                 {'W', 'W', 'F', 'C', '/', 'P', 'a', 'y', 'l', 'o', 'a', 'd'},
-            .total_size = u32(&PayloadEnd),
+            .end = &PayloadEnd,
             .signature = {},
         },
     .salt = {},
@@ -46,16 +47,17 @@ const wwfc_payload Header = {
         {
             .format_version = 1,
             .format_version_compat = 1,
-            .name = PAYLOAD_NAME,
-            .version = 5,
-            .got_start = u32(&GOTStart),
-            .got_end = u32(&GOTEnd),
-            .fixup_start = u32(&FixupStart),
-            .fixup_end = u32(&FixupEnd),
-            .patch_list_offset = u32(&PatchStart),
-            .patch_list_end = u32(&PatchEnd),
-            .entry_point = u32(&Entry),
-            .entry_point_no_got = u32(&EntryAfterGOT),
+            .name = WWFC_PAYLOAD_NAME,
+            .version = (WWFC_PAYLOAD_MAJOR << 24) | (WWFC_PAYLOAD_MINOR << 12) |
+                       WWFC_PAYLOAD_BETA,
+            .got_start = &GOTStart,
+            .got_end = &GOTEnd,
+            .fixup_start = &FixupStart,
+            .fixup_end = &FixupEnd,
+            .patch_list_offset = &PatchStart,
+            .patch_list_end = &PatchEnd,
+            .entry_point = &Entry,
+            .entry_point_no_got = &EntryAfterGOT,
             .reserved = {},
             .build_timestamp = __TIMESTAMP__,
         },
@@ -128,7 +130,7 @@ s32 EntryAfterGOT(wwfc_payload* payload)
 {
 #if TITLE_TYPE == TITLE_TYPE_DISC
     // Verify that the current game is the one this payload is built for
-    if (g_LoMem.discId != GAME_ID) {
+    if (g_LoMem.discId != WWFC_GAME_ID) {
         return WL_ERROR_PAYLOAD_GAME_MISMATCH;
     }
 
@@ -136,7 +138,7 @@ s32 EntryAfterGOT(wwfc_payload* payload)
     // Don't check for Brawl US or JP because they are identical except for one
     // byte
 #  if !RSBED01 && !RSBED02 && !RSBJD00 && !RSBJD01
-    if (g_LoMem.discVersion != TITLE_VERSION) {
+    if (g_LoMem.discVersion != WWFC_TITLE_VERSION) {
         return WL_ERROR_PAYLOAD_GAME_MISMATCH;
     }
 #  endif

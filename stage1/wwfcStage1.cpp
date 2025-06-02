@@ -61,7 +61,7 @@ namespace wwfc
 class Stage1
 {
 public:
-    consteval Stage1(){};
+    consteval Stage1() {};
 
     struct MEMAllocator;
 
@@ -638,8 +638,8 @@ public:
             return WL_ERROR_PAYLOAD_STAGE1_SIGNATURE_INVALID;
         }
 
-        auto entryFunction = reinterpret_cast<s32 (*)(wwfc_payload*)>(
-            reinterpret_cast<u8*>(payload) + payload->info.entry_point
+        auto entryFunction = WWFC_ADJUST_OFFSET(
+            wwfc_payload_entry_t, payload, payload->info.entry_point
         );
 
         // Flush data cache and invalidate instruction cache
@@ -651,6 +651,8 @@ public:
                          :
                          : "r"(i), "r"(payload));
         }
+        // Sync (Address Broadcast)
+        asm volatile("sc\n");
 
         return entryFunction(payload);
     }

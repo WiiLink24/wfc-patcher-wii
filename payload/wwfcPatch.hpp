@@ -81,7 +81,8 @@ CallWithCTR(u8 level, u32 address, auto function, u32 tempReg = r12)
 }
 
 #define _WWFC_DEFINE_PATCH2(NUM)                                               \
-    __attribute__((__section__(".wwfc_patch"))) wwfc_patch __wwfc_patch_##NUM[]
+    __attribute__((__section__(".wwfc_patch"))                                 \
+    ) constinit wwfc_patch __wwfc_patch_##NUM[]
 
 #define _WWFC_DEFINE_PATCH1(NUM) _WWFC_DEFINE_PATCH2(NUM)
 #define WWFC_DEFINE_PATCH _WWFC_DEFINE_PATCH1(__COUNTER__)
@@ -90,7 +91,7 @@ CallWithCTR(u8 level, u32 address, auto function, u32 tempReg = r12)
 #define _WWFC_DEFINE_CTR_STUB2(_ADDRESS, _PROTOTYPE, _COUNTER, ...)            \
     extern int _CTR_STUB_DEST_##_COUNTER AT(_ADDRESS);                         \
     extern "C" {                                                               \
-    int* _CTR_STUB_##_COUNTER = &_CTR_STUB_DEST_##_COUNTER;                    \
+    constinit int* _CTR_STUB_##_COUNTER = &_CTR_STUB_DEST_##_COUNTER;          \
     }                                                                          \
                                                                                \
     __attribute__((__weak__)) _PROTOTYPE                                       \
