@@ -34,6 +34,8 @@ void Report(const char* key, const char* string)
     GameSpy::gpiAppendStringToBuffer(
         connection, &iconnection->outputBuffer, "\\final\\"
     );
+
+    WWFC_LOG_INFO_FMT("REPORT '%s': %s", key, string);
 }
 
 void ReportU32(const char* key, u32 value)

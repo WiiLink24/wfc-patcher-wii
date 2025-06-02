@@ -134,6 +134,7 @@ WWFC_DEFINE_PATCH = {Patch::BranchWithCTR( //
         );
 
         netController->reportAndKick("wl:bad_packet", playerAid);
+        GPReport::ReportB64Encode("wl:bad_packet_data", racePacket, packetSize);
 
         return;
     }
@@ -161,6 +162,7 @@ WWFC_DEFINE_PATCH = {Patch::BranchWithCTR( //
         );
 
         netController->reportAndKick("wl:bad_packet", playerAid);
+        GPReport::ReportB64Encode("wl:bad_packet_data", racePacket, packetSize);
 
         return;
     }

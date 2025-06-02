@@ -10,6 +10,7 @@
 #  include "import/mkw/system/raceConfig.hpp"
 #  include "import/mkw/system/system.hpp"
 #  include "wwfcLibC.hpp"
+#  include "wwfcLog.hpp"
 
 namespace wwfc::mkw::Security
 {
@@ -442,6 +443,9 @@ bool IsRacePacketValid(
         u8 packetSize = racePacket->sizes[n];
 
         if (!IsPacketSizeValid(packetType, packetSize)) {
+            WWFC_LOG_WARN_FMT(
+                "Invalid packet size (type %d size 0x%X)", n, packetSize
+            );
             return false;
         }
 
@@ -449,6 +453,10 @@ bool IsRacePacketValid(
     }
 
     if (racePacketSize < expectedPacketSize) {
+        WWFC_LOG_WARN_FMT(
+            "Invalid packet size (expected 0x%X got 0x%X)", expectedPacketSize,
+            racePacketSize
+        );
         return false;
     }
 
@@ -461,6 +469,7 @@ bool IsRacePacketValid(
 
         if (packetSize != 0 &&
             !isPacketDataValid(packet, packetSize, playerAid)) {
+            WWFC_LOG_WARN_FMT("Invalid packet data (type %d)", n);
             return false;
         }
 
