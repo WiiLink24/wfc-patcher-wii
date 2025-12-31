@@ -10,10 +10,10 @@
 #  include "import/mkw/registry.hpp"
 #  include "import/mkw/system/raceConfig.hpp"
 #  include "import/mkw/system/system.hpp"
-#  include "wwfcTypes.h"
 #  include "wwfcLibC.hpp"
 #  include "wwfcLog.hpp"
 #  include "wwfcPayload.hpp"
+#  include "wwfcTypes.h"
 
 namespace wwfc::mkw::Security
 {
@@ -77,6 +77,11 @@ static bool IsPacketSizeValid(RacePacket::EType packetType, u8 packetSize)
         return true;
     }
     case RacePacket::RoomSelect: {
+        // 'Room' packet
+        if (packetSize < sizeof(SelectHandler::Packet)) {
+            return packetSize >= sizeof(RoomHandler::Packet);
+        }
+
         // 'Select' packet
         if (packetSize > packetBufferSizesPointer[RacePacket::RoomSelect]) {
             return false;
