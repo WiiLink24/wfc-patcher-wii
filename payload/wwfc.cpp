@@ -4,6 +4,7 @@
 #include "mkwBugFix.cpp"
 #include "mkwFeature.cpp"
 #include "mkwSecurity.cpp"
+#include "mkwTime.cpp"
 #include "wwfcError.cpp"
 #include "wwfcGPReport.cpp"
 #include "wwfcHostPlatform.cpp"
