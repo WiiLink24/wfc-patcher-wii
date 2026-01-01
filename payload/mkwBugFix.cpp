@@ -5,15 +5,23 @@
 #  include "wwfcPatch.hpp"
 #  include "wwfcPayload.hpp"
 
-namespace wwfc::BugFix
+namespace wwfc::mkw::BugFix
 {
 
-u64 IsUltraShortcutCheckEnabled( //
-    u32 r3Discard, u32 r4Save
+// Prevent forced disconnection from circumstances such as a player using "No
+// Countdown 4.1" or loading a save state mid-race.
+WWFC_DEFINE_PATCH = Patch::WriteASM(
+    WWFC_PATCH_LEVEL_BUGFIX,
+    RMCXD_PORT(0x80655578, 0x806510F0, 0x80654BE4, 0x80643890, DEMOTODO), //
+    1, ASM_LAMBDA((), nop)
 );
 
 // Patch the Mario Kart Wii Ultra Shortcut bug
 // Credit: MrBean35000vr, Chadderz
+
+static u64 IsUltraShortcutCheckEnabled( //
+    u32 r3Discard, u32 r4Save
+);
 
 // Patch in RaceManagerPlayer::updateCheckpoint.
 // This patch is implemented weirdly to be compatible with the existing
@@ -24,9 +32,10 @@ WWFC_DEFINE_PATCH = Patch::CallWithCTR(
     ASM_LAMBDA(
         ( : ASM_IMPORT(i, IsUltraShortcutCheckEnabled)),
         // clang-format off
-        beq     L%=Equal;
 
         mflr    r28;
+        beq     L%=Equal;
+
         bl      %[IsUltraShortcutCheckEnabled];
         mtlr    r28;
         // Restore potentially clobbered registers
@@ -57,15 +66,14 @@ WWFC_DEFINE_PATCH = Patch::CallWithCTR(
 
         li      r0, 1;
         // Jump to 0x8053513C
-        mflr    r12;
-        addi    r12, r12, 0xC;
+        addi    r12, r28, 0xC;
         mtlr    r12;
         blr;
         // clang-format on
     )
 );
 
-u64 IsUltraShortcutCheckEnabled(u32 r3Discard, u32 r4Save)
+static u64 IsUltraShortcutCheckEnabled(u32 r3Discard, u32 r4Save)
 {
     bool enabled = false;
 
@@ -86,6 +94,6 @@ u64 IsUltraShortcutCheckEnabled(u32 r3Discard, u32 r4Save)
     return (u64(enabled ? 1 : 0) << 32) | r4Save;
 }
 
-} // namespace wwfc::BugFix
+} // namespace wwfc::mkw::BugFix
 
 #endif // RMC
