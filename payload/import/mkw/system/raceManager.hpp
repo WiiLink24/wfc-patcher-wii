@@ -13,7 +13,9 @@ public:
     class Player
     {
     public:
-        FILL(0x00, 0x40);
+        FILL(0x00, 0x08);
+        /* 0x08 */ u8 m_id;
+        FILL(0x09, 0x40);
         /* 0x40 */ Timer::Time* m_raceFinishTime;
     };
 };

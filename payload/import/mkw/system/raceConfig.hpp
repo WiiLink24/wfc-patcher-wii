@@ -20,6 +20,24 @@ public:
         CoinRunners = 1,
     };
 
+    class Player
+    {
+    public:
+   enum PlayerType {
+        Master = 0, // a.k.a RealLocal
+        CPU = 1,
+        Unknown = 2,
+        Ghost = 3,
+        Remote = 4,
+        None = 5,
+    };
+
+        FILL(0x00, 0x05);
+        /* 0x05 */ u8 m_localPlayerId;
+        FILL(0x06, 0x10);
+        /* 0x10 */ PlayerType m_playerType;
+    };
+
     class Scenario
     {
     public:
@@ -43,6 +61,15 @@ public:
         bool isCoinRunners() const
         {
             return m_battleType == BattleType::CoinRunners;
+        }
+
+        Player* getPlayer(int index)
+        {
+            [[gnu::longcall]] Player* getPlayer(Scenario * scenario, int index)
+                AT(RMCXD_PORT(
+                    0x8052E434, 0x805298EC, 0x8052DDB4, 0x8051C48C, DEMOTODO
+                ));
+            return getPlayer(this, index);
         }
 
     private:
