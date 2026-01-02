@@ -65,9 +65,9 @@ bool GetElapsedMsec(u32& ms)
     }
 }
 
-static void FixRaceFinishTime(mkw::System::RaceManager::Player& player)
+static void FixRaceFinishTime(System::RaceManager::Player& player)
 {
-    if (auto& scenario = mkw::System::RaceConfig::Instance()->raceScenario();
+    if (auto& scenario = System::RaceConfig::Instance()->raceScenario();
         !scenario.isOnlineVersusRace() ||
         scenario.getPlayer(player.m_id)->m_type !=
             System::RaceConfig::Player::Type::Master) {
@@ -80,7 +80,7 @@ static void FixRaceFinishTime(mkw::System::RaceManager::Player& player)
     }
     ms = MsecRoundFrames(ms);
 
-    mkw::System::Timer::Time& time = *player.m_raceFinishTime;
+    System::Time& time = System::RaceManager::Instance()->m_timer->m_time[0];
 
     u32 ingameMs =
         time.m_milliseconds + time.m_seconds * 1000 + time.m_minutes * 60000;
@@ -89,18 +89,19 @@ static void FixRaceFinishTime(mkw::System::RaceManager::Player& player)
     WWFC_LOG_INFO_FMT("Time (ms) difference: %d", s_timeDifference);
 
     if (s32(s_timeDifference) > 83) {
-        if (ms >= 63 * 60000) {
-            // Cap to 62:59.999
-            ms = 63 * 60000 - 1;
-        }
+        // If more than 5 frames difference, add the difference to the finish
+        // time
+        System::Time& finishTime = *player.m_raceFinishTime;
+        u32 finishTimeMs = finishTime.m_milliseconds +
+                           finishTime.m_seconds * 1000 +
+                           finishTime.m_minutes * 60000;
 
-        // If more than 5 frames difference, set the finish time to the real
-        // world time.
-        time.m_minutes = ms / 60000;
-        ms -= time.m_minutes * 60000;
-        time.m_seconds = ms / 1000;
-        ms -= time.m_seconds * 1000;
-        time.m_milliseconds = ms;
+        ms = finishTimeMs + s_timeDifference;
+        finishTime.m_minutes = ms / 60000;
+        ms -= finishTime.m_minutes * 60000;
+        finishTime.m_seconds = ms / 1000;
+        ms -= finishTime.m_seconds * 1000;
+        finishTime.m_milliseconds = ms;
     }
 }
 
