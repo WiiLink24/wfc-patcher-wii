@@ -52,7 +52,7 @@ static const char* FixHostname(const char* name, char* out)
             return out;
         }
 
-        // WWFC patch over an already Wiimmfi patched game
+        // WiiLink WFC patch over an already Wiimmfi patched game
         if (replaceDomain(
                 "wiimmfi.de", sizeof("wiimmfi.de") - 1, WWFC_DOMAIN,
                 sizeof(WWFC_DOMAIN) - 1

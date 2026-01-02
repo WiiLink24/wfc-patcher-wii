@@ -27,7 +27,7 @@ public:
         /* 0x40 */ Time* m_raceFinishTime;
     };
 
-    FILL(0x00, 0x18);
+    FILL(0x00, 0x14);
 
     Timer* m_timer;
 };

@@ -68,16 +68,13 @@ WWFC_DEFINE_PATCH = Patch::BranchWithCTR(
 WWFC_DEFINE_PATCH = Patch::CallWithCTR(
     WWFC_PATCH_LEVEL_BUGFIX,
     RMCXD_PORT(0x80760A88, 0x80753B3C, 0x807600F4, 0x8074EE48, 0), //
-    // clang-format off
-        [](mkw::Model::AnimationTexturePattern* animationTexturePattern
-        ) -> float {
-            if (!animationTexturePattern) {
-                return 0.0f;
-            }
+    [](mkw::Model::AnimationTexturePattern* animationTexturePattern) -> float {
+    if (!animationTexturePattern) {
+        return 0.0f;
+    }
 
-            return animationTexturePattern->GetFrameCount();
-        }
-    // clang-format on
+    return animationTexturePattern->GetFrameCount();
+}
 );
 
 } // namespace wwfc::AntiFreeze

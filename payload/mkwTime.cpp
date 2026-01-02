@@ -1,10 +1,11 @@
+
 #if RMC
 
 #  include "import/mkw/system/raceConfig.hpp"
 #  include "import/mkw/system/raceManager.hpp"
 #  include "import/revolution.h"
+#  include "wwfcGPReport.hpp"
 #  include "wwfcHostPlatform.hpp"
-#  include "wwfcLog.hpp"
 #  include "wwfcPatch.hpp"
 #  include "wwfcTypes.h"
 
@@ -12,7 +13,12 @@ namespace wwfc::mkw::Time
 {
 
 static constinit u32 s_raceStartMs = 0;
-static constinit u32 s_timeDifference = 0;
+
+struct FinishTimeReport {
+    u32 inGameTime;
+    volatile u32 finishTime;
+    u32 difference;
+} static constinit s_finishTimeReport = {};
 
 constexpr u32 MsecToFrames(u32 ms)
 {
@@ -39,8 +45,6 @@ constexpr u32 CompareTimeBaseMs(u64 tb, u32 ms)
 
     return (tb - u64(ms) * msToTb) / msToTb;
 }
-
-static_assert(MsecRoundFrames(34) == 33);
 
 bool GetElapsedMsec(u32& ms)
 {
@@ -81,28 +85,27 @@ static void FixRaceFinishTime(System::RaceManager::Player& player)
     ms = MsecRoundFrames(ms);
 
     System::Time& time = System::RaceManager::Instance()->m_timer->m_time[0];
-
-    u32 ingameMs =
+    u32 inGameMs =
         time.m_milliseconds + time.m_seconds * 1000 + time.m_minutes * 60000;
-    s_timeDifference = ms - ingameMs;
+    System::Time& finishTime = *player.m_raceFinishTime;
+    u32 finishTimeMs = finishTime.m_milliseconds + finishTime.m_seconds * 1000 +
+                       finishTime.m_minutes * 60000;
+    u32 difference = ms - inGameMs;
 
-    WWFC_LOG_INFO_FMT("Time (ms) difference: %d", s_timeDifference);
-
-    if (s32(s_timeDifference) > 83) {
+    if (s32(difference) > 83) {
         // If more than 5 frames difference, add the difference to the finish
         // time
-        System::Time& finishTime = *player.m_raceFinishTime;
-        u32 finishTimeMs = finishTime.m_milliseconds +
-                           finishTime.m_seconds * 1000 +
-                           finishTime.m_minutes * 60000;
-
-        ms = finishTimeMs + s_timeDifference;
+        ms = finishTimeMs + difference;
         finishTime.m_minutes = ms / 60000;
         ms -= finishTime.m_minutes * 60000;
         finishTime.m_seconds = ms / 1000;
         ms -= finishTime.m_seconds * 1000;
         finishTime.m_milliseconds = ms;
     }
+
+    s_finishTimeReport.inGameTime = inGameMs;
+    s_finishTimeReport.difference = difference;
+    s_finishTimeReport.finishTime = finishTimeMs;
 }
 
 WWFC_DEFINE_CTR_STUB( //
@@ -147,6 +150,17 @@ WWFC_DEFINE_PATCH = Patch::CallWithCTR(
         // clang-format on
     )
 );
+
+void Tick()
+{
+    if (s_finishTimeReport.finishTime == 0) {
+        return;
+    }
+    FinishTimeReport report = s_finishTimeReport;
+    s_finishTimeReport.finishTime = 0;
+
+    GPReport::ReportB64Encode("wl:mkw_finish_time", &report, sizeof(report));
+}
 
 } // namespace wwfc::mkw::Time
 

@@ -181,7 +181,8 @@ enum wwfc_patch_level {
     WWFC_PATCH_LEVEL_BUGFIX = 1 << 0, // 0x01
 
     /**
-     * Patches required for parity with clients using a regular WWFC patcher.
+     * Patches required for parity with clients using a regular WiiLink WFC
+     * patcher.
      */
     WWFC_PATCH_LEVEL_PARITY = 1 << 1, // 0x02
 
@@ -191,8 +192,9 @@ enum wwfc_patch_level {
     WWFC_PATCH_LEVEL_FEATURE = 1 << 2, // 0x04
 
     /**
-     * General support patches that may be redundant depending on the patcher.
-     * Used in cases like URL patches.
+     * General support in patching the game to connect to custom servers, that
+     * may be redundant depending on the patcher. Used in cases like URL
+     * patches.
      */
     WWFC_PATCH_LEVEL_SUPPORT = 1 << 3, // 0x08
 
