@@ -10,6 +10,7 @@ namespace wwfc::mkw::BugFix
 
 // Prevent forced disconnection from circumstances such as a player using "No
 // Countdown 4.1" or loading a save state mid-race.
+// Credit: acaruso
 WWFC_DEFINE_PATCH = Patch::WriteASM(
     WWFC_PATCH_LEVEL_BUGFIX,
     RMCXD_PORT(0x80655578, 0x806510F0, 0x80654BE4, 0x80643890, DEMOTODO), //
