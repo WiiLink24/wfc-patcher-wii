@@ -20,7 +20,7 @@ try:
 except:
     pass
 
-ccflags = "-g -Os -std=c++20 -fno-rtti -ffreestanding -nodefaultlibs -nostdlib -fno-unwind-tables -fno-exceptions -fmerge-all-constants -ffunction-sections -fdata-sections -fshort-enums -nodefaultlibs -nostdlib -lgcc -Wl,--gc-sections -n "
+ccflags = "-g -Oz -std=c++20 -fsection-anchors -fsplit-paths -fno-rtti -ffreestanding -nodefaultlibs -nostdlib -fno-unwind-tables -fno-exceptions -fmerge-all-constants -ffunction-sections -fdata-sections -fshort-enums -fwhole-program -nodefaultlibs -nostdlib -Wl,--gc-sections -n "
 ccflags += "-I" + os.path.join("..", "include")
 
 subprocess.run([path_cc, "wwfcStage1.cpp"] + ccflags.split(" ") + ["-S", "-o" + os.path.join(path_build, "stage1.s")] + extra_build_flags).check_returncode()
