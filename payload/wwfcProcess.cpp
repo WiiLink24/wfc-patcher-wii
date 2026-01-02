@@ -18,7 +18,7 @@ void Tick()
 // Call the tick function every frame
 WWFC_DEFINE_PATCH = Patch::BranchWithCTR(
     WWFC_PATCH_LEVEL_BUGFIX | WWFC_PATCH_LEVEL_PARITY,
-    RMCXD_PORT(0x800D13E8, , , , DEMOTODO), //
+    RMCXD_PORT(0x800D13E8, 0x800D1348, 0x800D1308, 0x800D1448, DEMOTODO), //
     ASM_LAMBDA(
         ( : ASM_IMPORT(i, Tick)),
         // clang-format off
