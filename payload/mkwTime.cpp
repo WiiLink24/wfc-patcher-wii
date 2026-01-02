@@ -11,7 +11,8 @@
 namespace wwfc::mkw::Time
 {
 
-static constinit s32 s_raceStartMs = 0;
+static constinit u32 s_raceStartMs = 0;
+static constinit u32 s_timeDifference = 0;
 
 constexpr u32 MsecToFrames(u32 ms)
 {
@@ -27,15 +28,12 @@ constexpr u32 FramesToMsec(u32 frames)
     return (u32((u64(frames) * framesToMs) >> 32));
 }
 
-constexpr s32 MsecRoundFrames(s32 ms)
+constexpr u32 MsecRoundFrames(u32 ms)
 {
-    if (ms < 0) {
-        return -MsecRoundFrames(-ms);
-    }
     return FramesToMsec(MsecToFrames(ms));
 }
 
-constexpr s32 CompareTimeBaseMs(u64 tb, u32 ms)
+constexpr u32 CompareTimeBaseMs(u64 tb, u32 ms)
 {
     constexpr u64 msToTb = 4000ull;
 
@@ -44,7 +42,7 @@ constexpr s32 CompareTimeBaseMs(u64 tb, u32 ms)
 
 static_assert(MsecRoundFrames(34) == 33);
 
-bool GetElapsedMsec(s32& ms)
+bool GetElapsedMsec(u32& ms)
 {
     if (HostPlatform::g_dolphinFd < 0) {
         u32 hi, lo, hi2;
@@ -69,13 +67,14 @@ bool GetElapsedMsec(s32& ms)
 
 static void FixRaceFinishTime(mkw::System::RaceManager::Player& player)
 {
-    if (!mkw::System::RaceConfig::Instance()
-             ->raceScenario()
-             .isOnlineVersusRace()) {
+    if (auto& scenario = mkw::System::RaceConfig::Instance()->raceScenario();
+        !scenario.isOnlineVersusRace() ||
+        scenario.getPlayer(player.m_id)->m_type !=
+            System::RaceConfig::Player::Type::Master) {
         return;
     }
 
-    s32 ms = s_raceStartMs;
+    u32 ms = s_raceStartMs;
     if (!GetElapsedMsec(ms)) {
         return;
     }
@@ -85,10 +84,16 @@ static void FixRaceFinishTime(mkw::System::RaceManager::Player& player)
 
     u32 ingameMs =
         time.m_milliseconds + time.m_seconds * 1000 + time.m_minutes * 60000;
+    s_timeDifference = ms - ingameMs;
 
-    WWFC_LOG_INFO_FMT("Time (ms) difference: %d", ms - ingameMs);
+    WWFC_LOG_INFO_FMT("Time (ms) difference: %d", s_timeDifference);
 
-    if (ms - ingameMs > 83 || ms - ingameMs < -83) {
+    if (s32(s_timeDifference) > 83) {
+        if (ms >= 63 * 60000) {
+            // Cap to 62:59.999
+            ms = 63 * 60000 - 1;
+        }
+
         // If more than 5 frames difference, set the finish time to the real
         // world time.
         time.m_minutes = ms / 60000;
@@ -115,8 +120,8 @@ WWFC_DEFINE_PATCH = Patch::BranchWithCTR(
     WWFC_PATCH_LEVEL_PARITY | WWFC_PATCH_LEVEL_BUGFIX, //
     RMCXD_PORT(0x80531F80, 0x8052D438, 0x80531900, 0x8051FFD8, DEMOTODO), //
     [](mkw::System::RaceConfig* raceConfig) -> void {
+    s_raceStartMs = 0;
     if (raceConfig->raceScenario().isOnlineVersusRace()) {
-        s_raceStartMs = 0;
         GetElapsedMsec(s_raceStartMs);
     }
     RaceConfig_loadNextCourse(raceConfig);
