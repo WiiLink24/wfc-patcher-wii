@@ -9,19 +9,7 @@
 extern "C" {
 #endif
 
-#define WWFC_SHA256_DIGEST_SIZE 32
-
-#define WWFC_TITLE_TYPE_DISC 0
-#define WWFC_TITLE_TYPE_NAND 1
-
-#ifndef WWFC_DOMAIN
-#  ifdef PROD
-#    define WWFC_DOMAIN "wiilink24.com"
-#  else
-#    define WWFC_DOMAIN "nwfc.wiinoma.com" // Points to localhost
-#  endif
-#endif
-
+#include "wwfcConstants.h"
 #include "wwfcInteger.h"
 
 typedef struct wwfc_payload_header wwfc_payload_header_t;
