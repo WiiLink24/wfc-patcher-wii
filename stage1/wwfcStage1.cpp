@@ -215,9 +215,24 @@ struct Stage1 {
             s32 errorClass, s32 errorCode
         ) asm("DWCi_SetError");
 
+        static s32 IOS_Open( //
+            const char* path, u32 flags
+        ) asm("IOS_Open");
+
+        static s32 IOS_Close( //
+            s32 fd
+        ) asm("IOS_Close");
+
+        static s32 IOS_Ioctlv( //
+            s32 fd, u32 cmd, u32 in_count, u32 out_count, IOVector* vec
+        ) asm("IOS_Ioctlv");
+
+        static s32 ESP_FD asm("ESP_FD");
+        static inline s32* espFd = &ESP_FD;
+
         static MEMAllocator* const allocator AT(ADDRESS_HBM_ALLOCATOR);
 
-        static constexpr char title[10] = PAYLOAD;
+        static constexpr char urlParam[sizeof(PAYLOAD) + 2] = "g=" PAYLOAD;
 #endif
     };
 
