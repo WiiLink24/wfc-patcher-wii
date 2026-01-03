@@ -54,6 +54,23 @@ struct SHA256Context {
     u8 buf[SHA256_DIGEST_SIZE]; /* Used to store the final digest. */
 };
 
+struct IOVector {
+    void* data;
+    u32 size;
+};
+
+struct MEMAllocator;
+
+struct MEMAllocatorFunc {
+    void* (*alloc)(MEMAllocator* allocator, u32 size);
+    void* (*free)(MEMAllocator* allocator, void* block);
+};
+
+struct MEMAllocator {
+    const MEMAllocatorFunc* func;
+    u8 _4[0x10 - 0x4];
+};
+
 register u32 g_r13 asm("r13");
 register void* __restrict g_context asm("r14");
 
@@ -111,18 +128,6 @@ namespace wwfc
 struct Stage1 {
     consteval Stage1() {};
 
-    struct MEMAllocator;
-
-    struct MEMAllocatorFunc {
-        void* (*alloc)(MEMAllocator* allocator, u32 size);
-        void* (*free)(MEMAllocator* allocator, void* block);
-    };
-
-    struct MEMAllocator {
-        const MEMAllocatorFunc* func;
-        u8 _4[0x10 - 0x4];
-    };
-
     struct Stage1Param {
 #if !STAGE1_SBCM
         void* block;
@@ -131,13 +136,53 @@ struct Stage1 {
             const char* url, int param_2, void* buffer, u32 length,
             void* callback, void* userdata
         );
-        s32 (*const NHTTPSendRequestAsync)(void* request);
-        s32 (*const NHTTPDestroyResponse)(void* response);
 
-        MEMAllocator* const* allocator;
+        const u16 offsetToNHTTPSendRequestAsync;
+        const u16 offsetToNHTTPDestroyResponse;
+
+        MEMAllocator* const* const allocator;
         s32* const dwcError;
 
-        const char title[9];
+        const char* const urlParam;
+
+        s32 (*const IOS_Open)(const char* path, u32 flags);
+        const u16 offsetToIOS_Close;
+        const u16 offsetToIOS_Ioctlv;
+        s32* const espFd;
+
+        inline s32 NHTTPSendRequestAsync(void* request) const
+        {
+            return reinterpret_cast<s32 (*)(
+                void* request
+            )>(reinterpret_cast<u8*>(NHTTPCreateRequest) +
+               offsetToNHTTPSendRequestAsync)(request);
+        }
+
+        inline s32 NHTTPDestroyResponse(void* response) const
+        {
+            return reinterpret_cast<s32 (*)(
+                void* response
+            )>(reinterpret_cast<u8*>(NHTTPCreateRequest) +
+               offsetToNHTTPDestroyResponse)(response);
+        }
+
+        inline s32 IOS_Close(s32 fd) const
+        {
+            return reinterpret_cast<s32 (*)(
+                s32 fd
+            )>(reinterpret_cast<u8*>(IOS_Open) + offsetToIOS_Close)(fd);
+        }
+
+        inline s32 IOS_Ioctlv(
+            s32 fd, u32 cmd, u32 in_count, u32 out_count, IOVector* vec
+        ) const
+        {
+            return reinterpret_cast<s32 (*)(
+                s32 fd, u32 cmd, u32 in_count, u32 out_count, IOVector* vec
+            )>(reinterpret_cast<u8*>(IOS_Open) +
+               offsetToIOS_Ioctlv)(fd, cmd, in_count, out_count, vec);
+        }
+
 #else
         static void OSYieldThread( //
             void
@@ -174,15 +219,19 @@ struct Stage1 {
 #endif
     };
 
-#define BASE_URL_PART1 "http://naswii." WWFC_DOMAIN
-#define BASE_URL_PART2 "/payload?g="
+#define BASE_URL_PART1 "http://nas." WWFC_DOMAIN
+#define BASE_URL_PART2 "/payload"
 #define BASE_URL (BASE_URL_PART1 BASE_URL_PART2)
+
     const char m_hexToStr[16] = {'0', '1', '2', '3', '4', '5', '6', '7',
                                  '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
 
     // Reuse this memory area
     union {
-        const char m_baseUrl[0x2A] = BASE_URL;
+        struct {
+            const char m_baseUrl[sizeof(BASE_URL)] = BASE_URL;
+            const char m_esPath[sizeof("/dev/es")] = "/dev/es";
+        };
 
         struct {
             u8 m_saltHash[SHA256_DIGEST_SIZE];
@@ -738,6 +787,18 @@ s32 HTTPCallback(s32 result, void* response, void* userData)
 }
 #endif
 
+void AddHexParam(u16 key, char* dest, const u8* src, u32 len)
+{
+    *reinterpret_cast<u16*>(dest) = key;
+    dest += 2;
+    *dest++ = '=';
+
+    for (u32 i = 0; i < len; i++) {
+        *dest++ = self->m_hexToStr[src[i] >> 4];
+        *dest++ = self->m_hexToStr[src[i] & 0xF];
+    }
+}
+
 inline s32 Download(
 #if !STAGE1_SBCM
     Stage1::Stage1Param* param, s32* authRequest,
@@ -752,9 +813,6 @@ inline s32 Download(
         return WL_ERROR_PAYLOAD_STAGE1_MAKE_REQUEST;
     }
 #endif
-
-    char url[128];
-    memcpy(url, self->m_baseUrl, sizeof(self->m_baseUrl));
 
 #if !STAGE1_SBCM
     void* block = param->block;
@@ -797,52 +855,69 @@ inline s32 Download(
     self->m_block = block;
 #endif
 
+    // Create random salt and get device ID using ES
+    s32 fd = param->IOS_Open(self->m_esPath, 0);
+    if (fd == -1016 && param->espFd != nullptr) {
+        // Steal the handle from the ESP library (and set the handle to -1
+        // so it can't close it while we're using it)
+        fd = *param->espFd;
+        *param->espFd = -1;
+    }
+
+    if (fd < 0) {
+        return WL_ERROR_PAYLOAD_STAGE1_ES_FAILURE;
+    }
+
+    alignas(0x40) u8 dummy[0x20];
+    dummy[0] = 0x8A;
+    alignas(0x40) u8 eccCert[0x180];
+    alignas(0x40) u8 eccSignature[0x3C];
+
+    alignas(0x20) IOVector vec[3];
+    vec[0].data = &dummy;
+    vec[0].size = sizeof(dummy);
+    vec[1].data = eccSignature;
+    vec[1].size = 0x3C;
+    vec[2].data = eccCert;
+    vec[2].size = 0x180;
+
+    // ES_Sign
+    s32 ret = param->IOS_Ioctlv(fd, 0x30, 1, 2, vec);
+
+    vec[0].size = 4;
+    // ES_GetDeviceId
+    ret |= param->IOS_Ioctlv(fd, 0x07, 0, 1, vec);
+
+    param->IOS_Close(fd);
+
+    if (ret != 0) {
+        return WL_ERROR_PAYLOAD_STAGE1_ES_FAILURE;
+    }
+
+    // Setup URL
+    char url[256];
+    memcpy(url, self->m_baseUrl, sizeof(self->m_baseUrl));
     int cur = sizeof(BASE_URL) - 1;
 
-    memcpy(url + cur, param->title, 9);
-    cur += param->title[4] == 'D' ? 7 : 9;
+    // Append device ID
+    AddHexParam(u16('?') << 8 | 'd', url + cur, dummy, 4);
+    cur += 3 + 8;
 
-    // Create random salt, relies on undefined behavior
-    u8 salt[SHA256_DIGEST_SIZE];
+    // Append user param (including game ID)
+    url[cur++] = '&';
+    const char* urlparam = param->urlParam;
+    do {
+        url[cur++] = *urlparam++;
+    } while (*urlparam != '\0');
+
+    // Append salt from signature
+    AddHexParam(
+        u16('&') << 8 | 's', url + cur, eccSignature + 4, SHA256_DIGEST_SIZE
+    );
+    cur += 3 + SHA256_DIGEST_SIZE * 2;
+
     SHA256Context ctx;
     g_context = &ctx;
-    {
-        SHA256Init();
-        void* r13;
-        SHA256Update(reinterpret_cast<void*>(g_r13 - 0x8000), 0x10000);
-        u32 seedData[16];
-        u32 tbl, tbu, dec;
-        asm volatile("mftbl %0; mftbu %1; mfdec %2\n"
-                     : "=r"(tbl), "=r"(tbu), "=r"(dec));
-        seedData[0] = tbl;
-        seedData[1] = tbu;
-        seedData[2] = dec;
-        ASM_LOAD_HI(u16* __restrict, MEM_REG_BASE, 0xCC00);
-        seedData[3] = MEM_REG_BASE[0x4034 / 2]; // MEM_CP_REQCOUNTL
-        seedData[4] = MEM_REG_BASE[0x4038 / 2]; // MEM_TC_REQCOUNTL
-        seedData[5] = MEM_REG_BASE[0x403C / 2]; // MEM_CPUR_REQCOUNTL
-        seedData[6] = MEM_REG_BASE[0x4040 / 2]; // MEM_CPUW_REQCOUNTL
-        seedData[7] = MEM_REG_BASE[0x4048 / 2]; // MEM_IO_REQCOUNTL
-        seedData[8] = MEM_REG_BASE[0x404C / 2]; // MEM_VI_REQCOUNTL
-        seedData[9] = u32(self);
-        seedData[10] = u32();
-        SHA256Update(((u8*) seedData) - 0x400, 0x2000);
-        SHA256Update((void*) 0x80000000, 0x4000);
-        SHA256Update((void*) 0x90000000, 0x1000);
-        ASM_LOAD_HI(u32* __restrict, MEM1_BASE, 0x8000);
-        SHA256Update(&MEM1_BASE[0x3130 / 4], 0x30000);
-        memcpy(salt, SHA256Final(), SHA256_DIGEST_SIZE);
-    }
-
-    // Add the salt
-    url[cur++] = '&';
-    url[cur++] = 's';
-    url[cur++] = '=';
-
-    for (u32 i = 0; i < SHA256_DIGEST_SIZE; i++, cur += 2) {
-        url[cur + 0] = self->m_hexToStr[salt[i] >> 4];
-        url[cur + 1] = self->m_hexToStr[salt[i] & 0xF];
-    }
 
     // Hash "payload?g=RMCPD00&s=7d8a..."
     SHA256Init();
@@ -850,15 +925,9 @@ inline s32 Download(
     memcpy(self->m_saltHash, SHA256Final(), SHA256_DIGEST_SIZE);
     // Add first 4 bytes of salt hash as a kind of "proof" to the server the
     // request is valid
-    url[cur++] = '&';
-    url[cur++] = 'h';
-    url[cur++] = '=';
+    AddHexParam(u16('&') << 8 | 'h', url + cur, self->m_saltHash, 4);
 
-    for (u32 i = 0; i < 4; i++, cur += 2) {
-        url[cur + 0] = self->m_hexToStr[self->m_saltHash[i] >> 4];
-        url[cur + 1] = self->m_hexToStr[self->m_saltHash[i] & 0xF];
-    }
-
+    cur += 3 + 8;
     url[cur] = '\0';
 
 #if !STAGE1_SBCM
