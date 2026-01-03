@@ -150,6 +150,8 @@ struct Stage1 {
         const u16 offsetToIOS_Ioctlv;
         s32* const espFd;
 
+        wwfc_payload_entry_t payloadEntryCallback;
+
         inline s32 NHTTPSendRequestAsync(void* request) const
         {
             return reinterpret_cast<s32 (*)(
@@ -681,7 +683,8 @@ bool RSAVerify(const RSAPublicKey* key, u8* signature, const u8* sha)
 
 static constexpr u32 PAYLOAD_BLOCK_SIZE = 0x20000;
 
-s32 HandleResponse(void* block)
+[[gnu::always_inline]]
+inline s32 HandleResponse(void* block, wwfc_payload_entry_t entryOverride)
 {
     wwfc_payload* __restrict payload = reinterpret_cast<wwfc_payload*>(block);
 
@@ -727,6 +730,9 @@ s32 HandleResponse(void* block)
     // Sync (Address Broadcast)
     asm volatile("sc\n" : : : "r9", "r10");
 
+    if (entryOverride) {
+        return entryOverride(payload);
+    }
     return entryFunction(payload);
 }
 
@@ -754,7 +760,7 @@ s32 HTTPCallback(s32 result, void* response, void* userData)
     if (result != 0) {
         result = WL_ERROR_PAYLOAD_STAGE1_RESPONSE;
     } else {
-        result = HandleResponse(self->m_block);
+        result = HandleResponse(self->m_block, nullptr);
     }
     self->m_error = result;
     RESTORE_REG(self);
@@ -775,7 +781,8 @@ s32 HTTPCallback(s32 result, void* response, void* userData)
     }
 
     if (result != 0 ||
-        (result = HandleResponse(param->block)) != WL_ERROR_PAYLOAD_OK) {
+        (result = HandleResponse(param->block, param->payloadEntryCallback)) !=
+            WL_ERROR_PAYLOAD_OK) {
         *param->dwcError = result;
     } else {
         // Success! This error code will retry auth.
@@ -799,6 +806,7 @@ void AddHexParam(u16 key, char* dest, const u8* src, u32 len)
     }
 }
 
+[[gnu::always_inline]]
 inline s32 Download(
 #if !STAGE1_SBCM
     Stage1::Stage1Param* param, s32* authRequest,

@@ -250,16 +250,17 @@ LD_Stage1ParamAllocator:
     /* 0x46 */ .short  ADDRESS_IOS_Ioctlv - ADDRESS_IOS_Open
     /* 0x48 */ .long   ADDRESS_ESP_FD
 
+    /* 0x4C */ .long   0x00000000 // payload entry callback
+
 #if NEEDS_IBAT_CONFIG
 L_ConfigMEM2IBAT:
-    /* 0x4C */ lis     r5, 0x1000
-    /* 0x50 */ ori     r5, r5, 0x0002
-    /* 0x54 */ lis     r4, 0x9000
-    /* 0x58 */ ori     r4, r4, 0x1FFF
+    /* 0x50 */ lis     r5, 0x1000
+    /* 0x54 */ ori     r5, r5, 0x0002
+    /* 0x58 */ lis     r4, 0x9000
+    /* 0x5C */ ori     r4, r4, 0x1FFF
 
-    /* 0x5C */ mtspr   IBAT4L, r5
-    /* 0x60 */ mtspr   IBAT4U, r4
-    /* 0x64 */ isync
+    /* 0x60 */ mtspr   IBAT4L, r5
+    /* 0x64 */ mtspr   IBAT4U, r4
 
     /* 0x68 */ ori     r3, r3, 0x30
     /* 0x6C */ mtspr   SRR1, r3
