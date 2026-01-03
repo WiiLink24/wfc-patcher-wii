@@ -264,9 +264,6 @@ enum wwfc_boolean {
     WWFC_BOOLEAN_RESET = 2,
 };
 
-#define WWFC_ADJUST_OFFSET(_TYPE, _PAYLOAD, _OFFSET)                           \
-    ((_TYPE) ((wwfc_uint8_t*) (_PAYLOAD) + (wwfc_uint32_t) (_OFFSET)))
-
 #ifdef __cplusplus
 }
 #endif
