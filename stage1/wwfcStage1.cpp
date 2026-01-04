@@ -228,7 +228,7 @@ struct Stage1 {
         ) asm("IOS_Ioctlv");
 
         static s32 ESP_FD asm("ESP_FD");
-        static inline s32* espFd = &ESP_FD;
+        static constexpr s32* const espFd = &ESP_FD;
 
         static MEMAllocator* const allocator AT(ADDRESS_HBM_ALLOCATOR);
 
