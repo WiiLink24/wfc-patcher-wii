@@ -122,19 +122,21 @@ WWFC_DEFINE_CTR_STUB( //
 
 WWFC_DEFINE_PATCH = Patch::BranchWithCTR(
     WWFC_PATCH_LEVEL_PARITY | WWFC_PATCH_LEVEL_BUGFIX, //
-    RMCXD_PORT(0x80531F80, 0x8052D438, 0x80531900, 0x8051FFD8, DEMOTODO), //
+    RMCXD_PORT(0x80531F80, 0x8052D438, 0x80531900, 0x8051FFD8, DEMOTODO),
+
     [](mkw::System::RaceConfig* raceConfig) -> void {
-    s_raceStartMs = 0;
-    if (raceConfig->raceScenario().isOnlineVersusRace()) {
-        GetElapsedMsec(s_raceStartMs);
+        s_raceStartMs = 0;
+        if (raceConfig->raceScenario().isOnlineVersusRace()) {
+            GetElapsedMsec(s_raceStartMs);
+        }
+        RaceConfig_loadNextCourse(raceConfig);
     }
-    RaceConfig_loadNextCourse(raceConfig);
-}
 );
 
 WWFC_DEFINE_PATCH = Patch::CallWithCTR(
     WWFC_PATCH_LEVEL_PARITY | WWFC_PATCH_LEVEL_BUGFIX, //
-    RMCXD_PORT(0x80534920, 0x8052FDD8, 0x805342A0, 0x80522978, DEMOTODO), //
+    RMCXD_PORT(0x80534920, 0x8052FDD8, 0x805342A0, 0x80522978, DEMOTODO),
+
     ASM_LAMBDA(
         ( : ASM_IMPORT(i, FixRaceFinishTime)),
         // clang-format off

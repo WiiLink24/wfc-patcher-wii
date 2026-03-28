@@ -4,7 +4,6 @@
 #include "wwfcLibC.hpp"
 #include "wwfcPatch.hpp"
 
-
 namespace wwfc::Error
 {
 
@@ -47,7 +46,7 @@ void HandleWWFCErrorMessage(
     int error = 0;
     if (GameSpy::gpiValueForKey(
             command, "\\wl:err\\", value, sizeof(value) - 1
-        ) != GameSpy::GPIFalse) {
+        )) {
         error = atoi(value);
         if (error != 0) {
             s_wwfcErrorCode = error;
@@ -64,9 +63,9 @@ void HandleWWFCErrorMessage(
         return;
     }
 
-    if (GameSpy::gpiValueForKey(
+    if (!GameSpy::gpiValueForKey(
             command, "\\wl:errmsg\\", value, sizeof(value)
-        ) == GameSpy::GPIFalse) {
+        )) {
         return;
     }
 

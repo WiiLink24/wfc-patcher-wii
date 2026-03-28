@@ -4,7 +4,8 @@ namespace wwfc::std
 {
 extern "C" {
 
-[[__gnu__::__optimize__("-fno-tree-loop-distribute-patterns"
+[[__gnu__::__optimize__(
+    "-fno-tree-loop-distribute-patterns"
 )]] [[__gnu__::__weak__]]
 void* memcpy(void* __restrict dest, const void* __restrict src, size_t n)
 {
@@ -18,7 +19,8 @@ void* memcpy(void* __restrict dest, const void* __restrict src, size_t n)
     return dest;
 }
 
-[[__gnu__::__optimize__("-fno-tree-loop-distribute-patterns"
+[[__gnu__::__optimize__(
+    "-fno-tree-loop-distribute-patterns"
 )]] [[__gnu__::__weak__]]
 void* memset(void* s, int c, size_t n)
 {

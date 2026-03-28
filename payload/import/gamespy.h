@@ -44,19 +44,14 @@ typedef enum {
 #define GP_PARTNERCHALLENGE_LEN 256
 #define GP_CDKEY_LEN 65
 
-typedef enum {
-    GPIFalse,
-    GPITrue,
-} GPIBool;
+// Use as bool
+typedef int GPIBool;
+typedef int gsi_bool;
 
-typedef enum GPEnum {
+enum GPEnum {
     GP_FATAL = 1,
     GP_NON_FATAL = 0,
-} GPEnum;
-
-#ifdef __cplusplus
-static_assert(sizeof(GPIBool) == 0x4);
-#endif
+};
 
 typedef struct {
     char* buffer;
@@ -89,6 +84,8 @@ typedef struct {
     FILL(0x220, 0x5E0);
     GPIBuffer updateproBuffer;
 } GPIConnection;
+
+typedef void* GSXmlStreamWriter;
 
 [[gnu::longcall]] GPResult gpiAppendStringToBuffer( //
     GPConnection* connection, GPIBuffer* outputBuffer, const char* buffer
@@ -138,6 +135,21 @@ gpiSendLocalInfo(GPConnection* gpConnection, const char* key, const char* value)
 [[gnu::longcall]] const char* gt2AddressToString( //
     u32 ip, u16 port, char string[22]
 ) AT(ADDRESS_gt2AddressToString);
+
+#if RMC || RMCN
+
+[[gnu::longcall]] GameSpy::gsi_bool gsXmlWriteBase64BinaryElement( //
+    GameSpy::GSXmlStreamWriter stream, const char* namespaceName,
+    const char* tag, const void* data, int len
+) AT(RMCXD_PORT(0x800F98A0, 0x800F9800, 0x800F97C0, 0x800F9918, DEMOTODO)
+     RMCXN_PORT(0x800E1358, 0x800E12C8, 0x800E12A8, 0x800E13E0));
+
+[[gnu::longcall]] void B64Encode( //
+    const char* input, char* output, int inlen, int encodingType
+) AT(RMCXD_PORT(0x800F3278, 0x800F31D8, 0x800F3198, 0x800F32F0, DEMOTODO)
+     RMCXN_PORT(0x800DAD30, 0x800DACA0, 0x800DAC80, 0x800DADB8));
+
+#endif
 
 #ifdef __cplusplus
 }

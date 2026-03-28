@@ -2,7 +2,6 @@
 #include "import/revolution.h"
 #include "wwfcPatch.hpp"
 
-
 namespace wwfc::Natneg
 {
 

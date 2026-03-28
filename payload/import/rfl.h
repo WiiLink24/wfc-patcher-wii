@@ -1,7 +1,11 @@
 #pragma once
 
-namespace wwfc::Mii
+#ifdef __cplusplus
+extern "C" {
+
+namespace wwfc::RFL
 {
+#endif
 
 struct RFLCreateID {
     u32 miiID;
@@ -107,4 +111,26 @@ struct RFLiStoreData {
 
 static_assert(sizeof(RFLiStoreData) == 0x4C);
 
-} // namespace wwfc::Mii
+#if RMC || RMCN
+
+[[gnu::longcall]] int RFLGetStoreData( //
+    RFLiStoreData* data, int source, u16 index
+) AT(RMCXD_PORT(0x800C7DF0, 0x800C7D50, 0x800C7D10, 0x800C7E50, DEMOTODO)
+     RMCXN_PORT(0x800B03B0, 0x800B0320, 0x800B0300, 0x800B0420));
+
+[[gnu::longcall]] bool RFLSearchOfficialData( //
+    const RFL::RFLCreateID* id, u16* index
+) AT(RMCXD_PORT(0x800CA820, 0x800CA780, 0x800CA740, 0x800CA880, DEMOTODO)
+     RMCXN_PORT(0x800B2710, 0x800B2680, 0x800B2660, 0x800B2780));
+
+[[gnu::longcall]] u16 RFLiCalculateCRC(//
+    const void* data, u32 size
+) AT(RMCXD_PORT(0x800C78D0, 0x800C7830, 0x800C77F0, 0x800C7930, DEMOTODO)
+     RMCXN_PORT(0x800AFE90, 0x800AFE00, 0x800AFDE0, 0x800AFF00));
+
+#endif
+
+#ifdef __cplusplus
+} // namespace wwfc::RFL
+} // extern "C"
+#endif

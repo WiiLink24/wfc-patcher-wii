@@ -81,9 +81,9 @@ WWFC_DEFINE_PATCH = Patch::BranchWithCTR(
     WWFC_PATCH_LEVEL_SUPPORT, //
     ADDRESS_gethostbyname, //
     [](char* name) -> void* {
-    char fixedName[256];
-    return gethostbyname(FixHostname(name, fixedName));
-}
+        char fixedName[256];
+        return gethostbyname(FixHostname(name, fixedName));
+    }
 );
 
 WWFC_DEFINE_CTR_STUB( //
@@ -102,9 +102,9 @@ WWFC_DEFINE_PATCH = Patch::BranchWithCTR(
     WWFC_PATCH_LEVEL_SUPPORT, //
     ADDRESS_SOInetAtoN, //
     [](const char* name, u8* param_2) -> u32 {
-    char fixedName[256];
-    return SOInetAtoN(FixHostname(name, fixedName), param_2);
-}
+        char fixedName[256];
+        return SOInetAtoN(FixHostname(name, fixedName), param_2);
+    }
 );
 
 WWFC_DEFINE_CTR_STUB( //
@@ -123,11 +123,11 @@ WWFC_DEFINE_PATCH = Patch::BranchWithCTR(
     WWFC_PATCH_LEVEL_SUPPORT, //
     ADDRESS_SOGetAddrInfo, //
     [](const char* name, u32 param_2, u32 param_3, u32 param_4) -> u32 {
-    char fixedName[256];
-    return SOGetAddrInfo(
-        FixHostname(name, fixedName), param_2, param_3, param_4
-    );
-}
+        char fixedName[256];
+        return SOGetAddrInfo(
+            FixHostname(name, fixedName), param_2, param_3, param_4
+        );
+    }
 );
 
 // Disable SSL in NHTTP

@@ -82,12 +82,17 @@
 #define _ASM_CONSTRAINTS(...) __VA_ARGS__
 #define _ASM_BODY1(_CONSTRAINTS, ...)                                          \
     {                                                                          \
-        asm(#__VA_ARGS__ : _ASM_CONSTRAINTS(_ASM_CONSTRAINTS _CONSTRAINTS));   \
+        __asm__ __volatile__(                                                  \
+            #__VA_ARGS__                                                       \
+            : _ASM_CONSTRAINTS(_ASM_CONSTRAINTS _CONSTRAINTS)                  \
+        );                                                                     \
         __builtin_unreachable();                                               \
     }
 
 #define ASM_FUNCTION(_PROTOTYPE, _CONSTRAINTS, ...)                            \
-    __attribute__((__weak__)) _PROTOTYPE _ASM_BODY1(_CONSTRAINTS, __VA_ARGS__)
+    __attribute__((__noipa__, __optimize__("Os"))) _PROTOTYPE _ASM_BODY1(      \
+        _CONSTRAINTS, __VA_ARGS__                                              \
+    )
 
 #define ASM_LAMBDA(_CONSTRAINTS, ...) []() _ASM_BODY1(_CONSTRAINTS, __VA_ARGS__)
 

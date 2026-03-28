@@ -3,8 +3,8 @@
 #if RMC
 
 #  include "import/dwc.h"
+#  include "import/rfl.h"
 #  include "wwfcLibC.hpp"
-#  include <wwfcMii.hpp>
 
 namespace wwfc::mkw::Net
 {
@@ -76,7 +76,7 @@ public:
         /* 0x00 */ u32 miiGroupBitFlags;
         /* 0x04 */ u16 miiGroupCount;
         /* 0x06 */ u16 _0x06;
-        /* 0x08 */ wwfc::Mii::RFLiStoreData miiData[2];
+        /* 0x08 */ RFL::RFLiStoreData miiData[2];
         /* 0xA0 */ u64 wiiFriendCode;
         /* 0xA8 */ u64 friendCode;
         /* 0xB0 */ u8 country;
