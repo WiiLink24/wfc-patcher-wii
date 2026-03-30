@@ -119,9 +119,36 @@ CallWithCTR(u8 level, u32 address, auto function, u32 tempReg = 12)
         __builtin_unreachable();                                               \
     }
 
+#define _WWFC_DEFINE_CTR_STUB_SAVE_LR2(_ADDRESS, _PROTOTYPE, _COUNTER, ...)    \
+    extern int _CTR_STUB_DEST_##_COUNTER AT(_ADDRESS);                         \
+    extern "C" {                                                               \
+    constinit int* _CTR_STUB_##_COUNTER = &_CTR_STUB_DEST_##_COUNTER;          \
+    }                                                                          \
+                                                                               \
+    __attribute__((__weak__)) _PROTOTYPE                                       \
+    {                                                                          \
+        asm volatile("" #__VA_ARGS__ "\n"                                      \
+                     "mflr 11\n"                                               \
+                     "bl 4\n"                                                  \
+                     "mflr 12\n"                                               \
+                     "mtlr 11\n"                                               \
+                     "lwz 12, _CTR_STUB_" #_COUNTER " - (. - 8)(12)\n"         \
+                     "mtctr 12\n"                                              \
+                     "bctr\n"                                                  \
+                     :);                                                       \
+        __builtin_unreachable();                                               \
+    }
+
 #define _WWFC_DEFINE_CTR_STUB1(_ADDRESS, _PROTOTYPE, NUM, ...)                 \
     _WWFC_DEFINE_CTR_STUB2(_ADDRESS, _PROTOTYPE, NUM, __VA_ARGS__)
 #define WWFC_DEFINE_CTR_STUB(_ADDRESS, _PROTOTYPE, ...)                        \
     _WWFC_DEFINE_CTR_STUB1(_ADDRESS, _PROTOTYPE, __COUNTER__, __VA_ARGS__)
+
+#define _WWFC_DEFINE_CTR_STUB_SAVE_LR1(_ADDRESS, _PROTOTYPE, NUM, ...)         \
+    _WWFC_DEFINE_CTR_STUB_SAVE_LR2(_ADDRESS, _PROTOTYPE, NUM, __VA_ARGS__)
+#define WWFC_DEFINE_CTR_STUB_SAVE_LR(_ADDRESS, _PROTOTYPE, ...)                \
+    _WWFC_DEFINE_CTR_STUB_SAVE_LR1(                                            \
+        _ADDRESS, _PROTOTYPE, __COUNTER__, __VA_ARGS__                         \
+    )
 
 } // namespace wwfc::Patch

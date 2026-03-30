@@ -108,8 +108,9 @@ static void FixRaceFinishTime(System::RaceManager::Player& player)
     s_finishTimeReport.finishTime = finishTimeMs;
 }
 
-WWFC_DEFINE_CTR_STUB( //
-    RMCXD_PORT(0x80531F80, 0x8052D438, 0x80531900, 0x8051FFD8, DEMOTODO), //
+WWFC_DEFINE_CTR_STUB_SAVE_LR( //
+    RMCXD_PORT(0x80531F80, 0x8052D438, 0x80531900, 0x8051FFD8, DEMOTODO) +
+        0x10, //
     u32 RaceConfig_loadNextCourse(mkw::System::RaceConfig* raceConfig),
 
     // clang-format off
