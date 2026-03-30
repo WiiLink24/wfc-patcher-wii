@@ -20,6 +20,7 @@
 
 // Actually just blacklist known working games
 #if RMCED00 | RMCJD00 | RMCKD00 | RMCPD00 | DABJD00 | \
+    RMCEN0001 | RMCJN0001 | RMCKN0001 | RMCPN0001 | \
     RSBED01 | RSBED02 | RSBJD00 | RSBJD01 | RSBPD00 | RSBPD01 | \
     RTYPD00 | R4QED01 | R4QJD00 | R4QPD01 | R4QPD02 | WASJN0001 | \
     RWEED00 | RWEPD00
@@ -213,8 +214,15 @@ L_CustomAllocator:
 #endif
 
 LD_PayloadName:;
-            // .string "g=RMCPD00"
-    /* 0x58 */ .ascii  "g=", PAYLOAD, "\0"
+#ifdef CHAN
+#define STRINGIFY(X) #X
+#define CHANNEL_STRING_CREATE(X) "c=" STRINGIFY(X) "&"
+#define CHANNEL_STRING CHANNEL_STRING_CREATE(CHAN)
+#else
+#define CHANNEL_STRING ""
+#endif
+            // .string "c=1&g=RMCPD00"
+    /* 0x58 */ .ascii  CHANNEL_STRING, "g=", PAYLOAD, "\0"
     /* 0x64 */
 GCT_STRING_END(AuthStage0Code)
 
