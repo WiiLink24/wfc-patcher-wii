@@ -12,7 +12,12 @@
 namespace wwfc::mkw::Time
 {
 
-static constinit u32 s_raceStartMs = 0;
+namespace
+{
+
+constexpr u64 MS_TO_TB = 4000ull;
+
+constinit u64 s_raceStartMs = 0;
 
 struct FinishTimeReport {
     u32 inGameTime;
@@ -20,18 +25,28 @@ struct FinishTimeReport {
     u32 difference;
 } static constinit s_finishTimeReport = {};
 
+u64 GetTimebase()
+{
+    u32 hi, lo, hi2;
+    do {
+        asm volatile("mftbu %0; mftbl %1; mftbu %2"
+                     : "=r"(hi), "=r"(lo), "=r"(hi2));
+    } while (hi != hi2);
+    return (static_cast<u64>(hi) << 32) | lo;
+}
+
 constexpr u32 MsecToFrames(u32 ms)
 {
     constexpr u64 msToFrames = (60ull << 32) / 1000;
 
-    return (u32((u64(ms) * msToFrames) >> 32));
+    return static_cast<u32>((static_cast<u64>(ms) * msToFrames) >> 32);
 }
 
 constexpr u32 FramesToMsec(u32 frames)
 {
     constexpr u64 framesToMs = (1000ull << 32) / 60;
 
-    return (u32((u64(frames) * framesToMs) >> 32));
+    return static_cast<u32>((static_cast<u64>(frames) * framesToMs) >> 32);
 }
 
 constexpr u32 MsecRoundFrames(u32 ms)
@@ -39,37 +54,28 @@ constexpr u32 MsecRoundFrames(u32 ms)
     return FramesToMsec(MsecToFrames(ms));
 }
 
-constexpr u32 CompareTimeBaseMs(u64 tb, u32 ms)
+constexpr u64 CompareTimeBaseMs(u64 tb, u64 ms)
 {
-    constexpr u64 msToTb = 4000ull;
-
-    return (tb - u64(ms) * msToTb) / msToTb;
+    return (tb - static_cast<u64>(ms) * MS_TO_TB) / MS_TO_TB;
 }
 
-bool GetElapsedMsec(u32& ms)
+std::optional<u64> GetElapsedMsec(u64 ms)
 {
     if (HostPlatform::g_dolphinFd < 0) {
-        u32 hi, lo, hi2;
-        do {
-            asm volatile("mftbu %0; mftbl %1; mftbu %2"
-                         : "=r"(hi), "=r"(lo), "=r"(hi2));
-        } while (hi != hi2);
-        ms = CompareTimeBaseMs((u64(hi) << 32) | lo, ms);
-        return true;
-    } else {
-        alignas(32) RVL::IOVector vectors[1];
-        alignas(32) u32 ms2 = 0;
-        vectors[0].data = &ms2;
-        vectors[0].size = sizeof(ms2);
-        if (RVL::IOS_Ioctlv(HostPlatform::g_dolphinFd, 0x01, 0, 1, vectors)) {
-            return false;
-        }
-        ms = ms2 - ms;
-        return true;
+        return CompareTimeBaseMs(GetTimebase(), ms);
     }
+
+    alignas(32) RVL::IOVector vectors[1];
+    alignas(32) u32 ms2 = 0;
+    vectors[0].data = &ms2;
+    vectors[0].size = sizeof(ms2);
+    if (RVL::IOS_Ioctlv(HostPlatform::g_dolphinFd, 0x01, 0, 1, vectors)) {
+        return std::nullopt;
+    }
+    return ms2 - static_cast<u32>(ms);
 }
 
-static void FixRaceFinishTime(System::RaceManager::Player& player)
+void FixRaceFinishTime(System::RaceManager::Player& player)
 {
     if (auto& scenario = System::RaceConfig::Instance()->raceScenario();
         !scenario.isOnlineVersusRace() ||
@@ -78,11 +84,11 @@ static void FixRaceFinishTime(System::RaceManager::Player& player)
         return;
     }
 
-    u32 ms = s_raceStartMs;
-    if (!GetElapsedMsec(ms)) {
+    auto result = GetElapsedMsec(s_raceStartMs);
+    if (!result.has_value()) {
         return;
     }
-    ms = MsecRoundFrames(ms);
+    u64 ms = MsecRoundFrames(static_cast<u32>(*result));
 
     System::Time& time = System::RaceManager::Instance()->m_timer->m_time[0];
     u32 inGameMs =
@@ -107,6 +113,8 @@ static void FixRaceFinishTime(System::RaceManager::Player& player)
     s_finishTimeReport.difference = difference;
     s_finishTimeReport.finishTime = finishTimeMs;
 }
+
+} // namespace
 
 WWFC_DEFINE_CTR_STUB_SAVE_LR( //
     RMCXD_PORT(0x80531F80, 0x8052D438, 0x80531900, 0x8051FFD8, DEMOTODO) +

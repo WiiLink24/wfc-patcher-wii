@@ -1,6 +1,5 @@
 #pragma once
 
-
 #ifdef WWFC_HAVE_LIBC
 #  include <stddef.h>
 #  include <string.h>
@@ -27,11 +26,7 @@ using ::strncpy;
 namespace wwfc::std
 {
 
-#  if defined(__GNUC__) && !defined(__clang__)
-using size_t = unsigned int;
-#  else
-using size_t = unsigned long;
-#  endif
+using size_t = decltype(sizeof(0));
 
 extern "C" {
 void* memcpy(void* __restrict dest, const void* __restrict src, size_t n);
@@ -58,6 +53,7 @@ char* strncpy(char* __restrict dst, const char* __restrict src, size_t n);
 #  include <array>
 #  include <bit>
 #  include <iterator>
+#  include <optional>
 #  include <type_traits>
 
 namespace wwfc::std
@@ -70,12 +66,25 @@ using ::std::is_enum_v;
 using ::std::is_same_v;
 using ::std::max;
 using ::std::min;
+using ::std::optional;
 using ::std::remove_cvref_t;
 using ::std::size;
 
 } // namespace wwfc::std
 
 #else // !WWFC_HAVE_LIBCPP
+namespace wwfc
+{
+struct placement_new {
+    void* ptr;
+};
+} // namespace wwfc
+
+constexpr void* operator new(wwfc::std::size_t size, wwfc::placement_new pn)
+{
+    return pn.ptr;
+}
+
 namespace wwfc::std
 {
 
@@ -289,6 +298,97 @@ struct remove_volatile<volatile T> : identity<T> {
 template <class T>
 using remove_cvref_t = typename remove_const<
     typename remove_volatile<typename remove_reference<T>::type>::type>::type;
+
+template <class T>
+constexpr remove_reference<T>::type&& move(T&& t) noexcept
+{
+    return static_cast<remove_reference<T>::type&&>(t);
+}
+
+class nullopt_t
+{
+public:
+    explicit constexpr nullopt_t(int) noexcept
+    {
+    }
+};
+
+constexpr nullopt_t nullopt{0};
+
+template <class T>
+class optional
+{
+public:
+    using value_type = T;
+
+    constexpr optional() noexcept
+      : m_pointer(nullptr)
+    {
+    }
+
+    constexpr optional(nullopt_t) noexcept
+      : m_pointer(nullptr)
+    {
+    }
+
+    constexpr optional(const value_type& value) noexcept
+      : m_pointer(new (placement_new{m_storage}) value_type(value))
+    {
+    }
+
+    constexpr optional(const optional& other) noexcept
+    {
+        if (other.has_value()) {
+            m_pointer = new (placement_new{m_storage}) value_type(*other);
+        }
+    }
+
+    constexpr ~optional() noexcept
+    {
+        if (m_pointer) {
+            m_pointer->~value_type();
+        }
+    }
+
+    constexpr bool has_value() const noexcept
+    {
+        return m_pointer != nullptr;
+    }
+
+    constexpr value_type& value() &
+    {
+        return *m_pointer;
+    }
+
+    constexpr const value_type& value() const&
+    {
+        return *m_pointer;
+    }
+
+    constexpr value_type&& value() &&
+    {
+        return move(*m_pointer);
+    }
+
+    constexpr const value_type&& value() const&&
+    {
+        return move(*m_pointer);
+    }
+
+    constexpr const value_type& operator*() const noexcept
+    {
+        return *m_pointer;
+    }
+
+    constexpr value_type& operator*() noexcept
+    {
+        return *m_pointer;
+    }
+
+private:
+    alignas(value_type) unsigned char m_storage[sizeof(value_type)];
+    value_type* m_pointer = nullptr;
+};
 
 } // namespace wwfc::std
 #endif // !WWFC_HAVE_LIBCPP
