@@ -159,6 +159,36 @@ L_ClearBuffer:
     mtctr   r12
     bctrl
 
+    // Map MEM2 as executable
+    bl      L_AfterMem2Map
+
+L_ConfigMEM2IBAT:
+#define IBAT4U 560
+#define IBAT4L 561
+#define SRR0 26
+#define SRR1 27
+    /* 0x4C */ lis     r5, 0x1000
+    /* 0x50 */ ori     r5, r5, 0x0002
+    /* 0x54 */ lis     r4, 0x9000
+    /* 0x58 */ ori     r4, r4, 0x1FFF
+
+    /* 0x5C */ mtspr   IBAT4L, r5
+    /* 0x60 */ mtspr   IBAT4U, r4
+    /* 0x64 */ isync
+
+    /* 0x68 */ ori     r3, r3, 0x30
+    /* 0x6C */ mtspr   SRR1, r3
+    /* 0x70 */ mflr    r3
+    /* 0x74 */ mtspr   SRR0, r3
+    /* 0x78 */ rfi
+
+L_AfterMem2Map:
+    mflr    r3
+    lis     r12, ADDRESS_RealMode@h
+    ori     r12, r12, ADDRESS_RealMode@l
+    mtctr   r12
+    bctrl
+
     lwz     r3, L_BlockAddr - L_BLTrick(r31)
     lwz     r4, 0x0(r3)
     xoris   r4, r4, 0x5757 // 'WW'
