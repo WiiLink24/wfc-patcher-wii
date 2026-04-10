@@ -211,7 +211,7 @@ static void PatchAndLaunchDol(
     // Patch available domain
     std::strcpy(
         reinterpret_cast<char*>(dol->GetDolMem(game->addrAvailableDomain)),
-        "%s.av.gs.wiilink24.com"
+        "%s.av.gs.wiilink.ca"
     );
 
     // New MEM1 arena high, excluding BI2

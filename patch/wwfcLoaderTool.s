@@ -247,5 +247,5 @@ GCT_WRITE_BRANCH(ADDRESS_SKIP_DNS_CACHE, ADDRESS_SKIP_DNS_CACHE_CONTINUE) // 0x8
 
 
 GCT_STRING(ADDRESS_AVAILABLE_URL + 0xD, AvailableURLOverride)
-    .ascii  "gs.wiilink24.com\0"
+    .ascii  "gs.", WWFC_DOMAIN, "\0"
 GCT_STRING_END(AvailableURLOverride)
