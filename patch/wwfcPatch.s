@@ -20,6 +20,7 @@
 
 // Actually just blacklist known working games
 #if RMCED00 | RMCJD00 | RMCKD00 | RMCPD00 | DABJD00 | \
+    RMCEN0001 | RMCJN0001 | RMCKN0001 | RMCPN0001 | \
     RSBED01 | RSBED02 | RSBJD00 | RSBJD01 | RSBPD00 | RSBPD01 | \
     RTYPD00 | R4QED01 | R4QJD00 | R4QPD01 | R4QPD02 | WASJN0001 | \
     RWEED00 | RWEPD00
@@ -211,6 +212,18 @@ L_CustomAllocator:
 #elif WUNPN0002
     /* 0x58 */ .long   0x804FD224
 #endif
+
+LD_PayloadName:;
+#ifdef CHAN
+#define STRINGIFY(X) #X
+#define CHANNEL_STRING_CREATE(X) "c=" STRINGIFY(X) "&"
+#define CHANNEL_STRING CHANNEL_STRING_CREATE(CHAN)
+#else
+#define CHANNEL_STRING ""
+#endif
+            // .string "c=1&g=RMCPD00"
+    /* 0x58 */ .ascii  CHANNEL_STRING, "g=", PAYLOAD, "\0"
+    /* 0x64 */
 GCT_STRING_END(AuthStage0Code)
 
 
@@ -228,37 +241,40 @@ LD_Stage1Param:
 LD_Stage1ParamBlock:
     /* 0x28 */ .long   0x00000000 // block
     /* 0x2C */ .long   ADDRESS_NHTTPCreateRequest // NHTTPCreateRequest (0x801D8FF8)
-    /* 0x30 */ .long   ADDRESS_NHTTPSendRequestAsync // NHTTPSendRequestAsync (0x801D925C)
-    /* 0x34 */ .long   ADDRESS_NHTTPDestroyResponse // NHTTPDestroyResponse (0x801D92F8)
+    /* 0x30 */ .short  ADDRESS_NHTTPSendRequestAsync - ADDRESS_NHTTPCreateRequest // offset to NHTTPSendRequestAsync (0x801D925C)
+    /* 0x32 */ .short  ADDRESS_NHTTPDestroyResponse - ADDRESS_NHTTPCreateRequest // offset to NHTTPDestroyResponse (0x801D92F8)
 LD_Stage1ParamAllocator:
 #if WUNEN0005 || WUNJN0002 || WUNPN0002
-    /* 0x38 */ .long   ADDRESS_DWC_AUTH_ADD_CSNUM + (L_CustomAllocator - AuthStage0Code) // allocator (custom)
+    /* 0x34 */ .long   ADDRESS_DWC_AUTH_ADD_CSNUM + (L_CustomAllocator - AuthStage0Code) // allocator (custom)
 #else
-    /* 0x38 */ .long   ADDRESS_HBM_ALLOCATOR // allocator (0x8028ADE4)
+    /* 0x34 */ .long   ADDRESS_HBM_ALLOCATOR // allocator (0x8028ADE4)
 #endif
-    /* 0x3C */ .long   ADDRESS_DWC_ERROR // dwc_error (0x802F1CB8)
-            // .ascii  "RMCPD00\0\0"
-    /* 0x40 */ .ascii  PAYLOAD
-// LD_Stage1Param end
-    /* 0x4C */ .balign 4
+    /* 0x38 */ .long   ADDRESS_DWC_ERROR // dwc_error (0x802F1CB8)
+            
+    /* 0x3C */ .long   ADDRESS_DWC_AUTH_ADD_CSNUM + (LD_PayloadName - AuthStage0Code) // payload_name ("g=XXXXYZZZZ")
+   
+    /* 0x40 */ .long   ADDRESS_IOS_Open
+    /* 0x44 */ .short  ADDRESS_IOS_Close - ADDRESS_IOS_Open
+    /* 0x46 */ .short  ADDRESS_IOS_Ioctlv - ADDRESS_IOS_Open
+    /* 0x48 */ .long   ADDRESS_ESP_FD
+
+    /* 0x4C */ .long   0x00000000 // payload entry callback
 
 #if NEEDS_IBAT_CONFIG
 L_ConfigMEM2IBAT:
-    /* 0x4C */ lis     r5, 0x1000
-    /* 0x50 */ ori     r5, r5, 0x0002
-    /* 0x54 */ lis     r4, 0x9000
-    /* 0x58 */ ori     r4, r4, 0x1FFF
+    /* 0x50 */ lis     r5, 0x1000
+    /* 0x54 */ ori     r5, r5, 0x0002
+    /* 0x58 */ lis     r4, 0x9000
+    /* 0x5C */ ori     r4, r4, 0x1FFF
 
-    /* 0x5C */ mtspr   IBAT4L, r5
-    /* 0x60 */ mtspr   IBAT4U, r4
-    /* 0x64 */ isync
+    /* 0x60 */ mtspr   IBAT4L, r5
+    /* 0x64 */ mtspr   IBAT4U, r4
 
     /* 0x68 */ ori     r3, r3, 0x30
     /* 0x6C */ mtspr   SRR1, r3
     /* 0x70 */ mflr    r3
     /* 0x74 */ mtspr   SRR0, r3
     /* 0x78 */ rfi
-    // This is cutting it close, we can't add a single more instruction
 #endif
 GCT_STRING_END(AuthStage0Data)
 

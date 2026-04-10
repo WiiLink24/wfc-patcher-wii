@@ -17,9 +17,6 @@ def build(game):
     flags.append("-D" + game["Title"] + "=1")
 
     title_str = game["Title"]
-    # pad to 9 bytes
-    if len(title_str) == 7:
-        title_str += "\\0\\0"
 
     flags.append("-DPAYLOAD=\"" + title_str + "\"")
 

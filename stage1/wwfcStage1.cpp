@@ -9,15 +9,6 @@
 
 #define SHA256_DIGEST_SIZE 32
 
-using s8 = wwfc_int8_t;
-using s16 = wwfc_int16_t;
-using s32 = wwfc_int32_t;
-using s64 = wwfc_int64_t;
-using u8 = wwfc_uint8_t;
-using u16 = wwfc_uint16_t;
-using u32 = wwfc_uint32_t;
-using u64 = wwfc_uint64_t;
-
 #define CONFIG_RSA_KEY_SIZE 2048
 #define RSANUMBYTES ((CONFIG_RSA_KEY_SIZE) / 8)
 #define RSANUMWORDS (RSANUMBYTES / sizeof(u32))
@@ -27,12 +18,38 @@ using u64 = wwfc_uint64_t;
 
 #define CONCAT(a, b) a##b
 
-#define BACKUP_REG(_reg)                                                       \
+#define BACKUP_GPR(_reg)                                                       \
     u32 CONCAT(v, _reg);                                                       \
     asm volatile("stw%U0 %1, %0" : "=m"(CONCAT(v, _reg)) : "r"(_reg))
 
-#define RESTORE_REG(_reg)                                                      \
+#define RESTORE_GPR(_reg)                                                      \
     asm volatile("lwz%U0 %0, %1" : "=r"(_reg) : "m"(CONCAT(v, _reg)))
+
+// Used occasionally to make significantly smaller code (for some reason)
+#define ASM_LOAD_HI(_TYPE, _NAME, _ADDR)                                       \
+    _TYPE _NAME;                                                               \
+    asm volatile("lis %0, " #_ADDR "\n" : "=r"(_NAME))
+
+#ifdef STAGE1_SBCM
+#  define SBCM_ONLY(...) __VA_ARGS__
+#  define NON_SBCM_ONLY(...)
+#else
+#  define SBCM_ONLY(...)
+#  define NON_SBCM_ONLY(...) __VA_ARGS__
+#endif
+
+namespace
+{
+
+using s8 = wwfc_int8_t;
+using s16 = wwfc_int16_t;
+using s32 = wwfc_int32_t;
+using s64 = wwfc_int64_t;
+using u8 = wwfc_uint8_t;
+using u16 = wwfc_uint16_t;
+using u32 = wwfc_uint32_t;
+using u64 = wwfc_uint64_t;
+using size_t = decltype(sizeof(0));
 
 /**
  * RSA public key definition
@@ -54,18 +71,31 @@ struct SHA256Context {
     u8 buf[SHA256_DIGEST_SIZE]; /* Used to store the final digest. */
 };
 
+struct IOVector {
+    void* data;
+    u32 size;
+};
+
+struct MEMAllocator;
+
+struct MEMAllocatorFunc {
+    void* (*alloc)(MEMAllocator* allocator, u32 size);
+    void* (*free)(MEMAllocator* allocator, void* block);
+};
+
+struct MEMAllocator {
+    const MEMAllocatorFunc* func;
+    u8 _4[0x10 - 0x4];
+};
+
 register u32 g_r13 asm("r13");
 register void* __restrict g_context asm("r14");
 
-namespace wwfc
-{
-class Stage1;
-}
-
-register wwfc::Stage1* __restrict self asm("r15");
+struct Stage1;
+register Stage1* __restrict self asm("r15");
 
 #define g_key reinterpret_cast<const RSAPublicKey* __restrict>(g_context)
-#define g_sha256Context reinterpret_cast<SHA256Context* __restrict>(g_context)
+#define g_sha256_context reinterpret_cast<SHA256Context* __restrict>(g_context)
 
 extern "C" {
 
@@ -103,25 +133,11 @@ void memcpy(void* __restrict dst, const void* __restrict src, u32 n)
         dstu[i] = srcu[i];
     }
 }
-}
 
-namespace wwfc
-{
+} // extern "C"
 
 struct Stage1 {
     consteval Stage1() {};
-
-    struct MEMAllocator;
-
-    struct MEMAllocatorFunc {
-        void* (*alloc)(MEMAllocator* allocator, u32 size);
-        void* (*free)(MEMAllocator* allocator, void* block);
-    };
-
-    struct MEMAllocator {
-        const MEMAllocatorFunc* func;
-        u8 _4[0x10 - 0x4];
-    };
 
     struct Stage1Param {
 #if !STAGE1_SBCM
@@ -131,13 +147,55 @@ struct Stage1 {
             const char* url, int param_2, void* buffer, u32 length,
             void* callback, void* userdata
         );
-        s32 (*const NHTTPSendRequestAsync)(void* request);
-        s32 (*const NHTTPDestroyResponse)(void* response);
 
-        MEMAllocator* const* allocator;
-        s32* const dwcError;
+        const u16 offset_to_NHTTPSendRequestAsync;
+        const u16 offset_to_NHTTPDestroyResponse;
 
-        const char title[9];
+        MEMAllocator* const* const allocator;
+        s32* const dwc_error;
+
+        const char* const url_param;
+
+        s32 (*const IOS_Open)(const char* path, u32 flags);
+        const u16 offset_to_IOS_Close;
+        const u16 offset_to_IOS_Ioctlv;
+        s32* const esp_fd;
+
+        wwfc_payload_entry_t payload_entry_callback;
+
+        inline s32 NHTTPSendRequestAsync(void* request) const
+        {
+            return reinterpret_cast<s32 (*)(
+                void* request
+            )>(reinterpret_cast<u8*>(NHTTPCreateRequest) +
+               offset_to_NHTTPSendRequestAsync)(request);
+        }
+
+        inline s32 NHTTPDestroyResponse(void* response) const
+        {
+            return reinterpret_cast<s32 (*)(
+                void* response
+            )>(reinterpret_cast<u8*>(NHTTPCreateRequest) +
+               offset_to_NHTTPDestroyResponse)(response);
+        }
+
+        inline s32 IOS_Close(s32 fd) const
+        {
+            return reinterpret_cast<s32 (*)(
+                s32 fd
+            )>(reinterpret_cast<u8*>(IOS_Open) + offset_to_IOS_Close)(fd);
+        }
+
+        inline s32 IOS_Ioctlv(
+            s32 fd, u32 cmd, u32 in_count, u32 out_count, IOVector* vec
+        ) const
+        {
+            return reinterpret_cast<s32 (*)(
+                s32 fd, u32 cmd, u32 in_count, u32 out_count, IOVector* vec
+            )>(reinterpret_cast<u8*>(IOS_Open) +
+               offset_to_IOS_Ioctlv)(fd, cmd, in_count, out_count, vec);
+        }
+
 #else
         static void OSYieldThread( //
             void
@@ -165,27 +223,46 @@ struct Stage1 {
         ) asm("DWCi_HandleGPError");
 
         static s32 DWCi_SetError( //
-            s32 errorClass, s32 errorCode
+            s32 error_class, s32 error_code
         ) asm("DWCi_SetError");
+
+        static s32 IOS_Open( //
+            const char* path, u32 flags
+        ) asm("IOS_Open");
+
+        static s32 IOS_Close( //
+            s32 fd
+        ) asm("IOS_Close");
+
+        static s32 IOS_Ioctlv( //
+            s32 fd, u32 cmd, u32 in_count, u32 out_count, IOVector* vec
+        ) asm("IOS_Ioctlv");
+
+        static s32 ESP_FD asm("ESP_FD");
+        static constexpr s32* const esp_fd = &ESP_FD;
 
         static MEMAllocator* const allocator AT(ADDRESS_HBM_ALLOCATOR);
 
-        static constexpr char title[10] = PAYLOAD;
+        static constexpr char url_param[sizeof(PAYLOAD) + 2] = "g=" PAYLOAD;
 #endif
     };
 
-#define BASE_URL_PART1 "http://naswii." WWFC_DOMAIN
-#define BASE_URL_PART2 "/payload?g="
+#define BASE_URL_PART1 "http://nas." WWFC_DOMAIN
+#define BASE_URL_PART2 "/payload"
 #define BASE_URL (BASE_URL_PART1 BASE_URL_PART2)
-    const char m_hexToStr[16] = {'0', '1', '2', '3', '4', '5', '6', '7',
-                                 '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
+
+    const char m_hex_to_str[16] = {'0', '1', '2', '3', '4', '5', '6', '7',
+                                   '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
 
     // Reuse this memory area
     union {
-        const char m_baseUrl[0x2A] = BASE_URL;
+        struct {
+            const char m_base_url[sizeof(BASE_URL)] = BASE_URL;
+            const char m_es_path[sizeof("/dev/es")] = "/dev/es";
+        };
 
         struct {
-            u8 m_saltHash[SHA256_DIGEST_SIZE];
+            u8 m_salt_hash[SHA256_DIGEST_SIZE];
             Stage1Param* m_param;
         };
     };
@@ -213,9 +290,9 @@ struct Stage1 {
      *
      * PS: octet string consisting of {Length(RSA Key) - Length(T) - 3} 0xFF
      */
-    const u8 m_sha256Tail[20] = {0x00, 0x30, 0x31, 0x30, 0x0D, 0x06, 0x09,
-                                 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04,
-                                 0x02, 0x01, 0x05, 0x00, 0x04, 0x20};
+    const u8 m_sha256_tail[20] = {0x00, 0x30, 0x31, 0x30, 0x0D, 0x06, 0x09,
+                                  0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04,
+                                  0x02, 0x01, 0x05, 0x00, 0x04, 0x20};
 
     u32 m_sha256_k[64] = {
         0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1,
@@ -231,7 +308,7 @@ struct Stage1 {
         0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
     };
 
-    const RSAPublicKey m_publicKey =
+    const RSAPublicKey m_public_key =
         __builtin_bit_cast(RSAPublicKey, wwfc::PayloadPublicKey);
 };
 
@@ -329,11 +406,12 @@ void SHA256Init()
 {
     int i;
 
-    for (i = 0; i < 8; i++)
-        g_sha256Context->h[i] = self->m_sha256_h0[i];
+    for (i = 0; i < 8; i++) {
+        g_sha256_context->h[i] = self->m_sha256_h0[i];
+    }
 
-    g_sha256Context->len = 0;
-    g_sha256Context->tot_len = 0;
+    g_sha256_context->len = 0;
+    g_sha256_context->tot_len = 0;
 }
 
 void SHA256Transform(const u8* message, u32 block_nb)
@@ -348,14 +426,17 @@ void SHA256Transform(const u8* message, u32 block_nb)
     for (i = 0; i < (int) block_nb; i++) {
         sub_block = message + (i << 6);
 
-        for (j = 0; j < 16; j++)
+        for (j = 0; j < 16; j++) {
             PACK32(&sub_block[j << 2], &w[j]);
+        }
 
-        for (j = 16; j < 64; j++)
+        for (j = 16; j < 64; j++) {
             SHA256_SCR(j);
+        }
 
-        for (j = 0; j < 8; j++)
-            wv[j] = g_sha256Context->h[j];
+        for (j = 0; j < 8; j++) {
+            wv[j] = g_sha256_context->h[j];
+        }
 
         for (j = 0; j < 64; j++) {
             t1 = wv[7] + SHA256_F2(wv[4]) + CH(wv[4], wv[5], wv[6]) +
@@ -371,8 +452,9 @@ void SHA256Transform(const u8* message, u32 block_nb)
             wv[0] = t1 + t2;
         }
 
-        for (j = 0; j < 8; j++)
-            g_sha256Context->h[j] += wv[j];
+        for (j = 0; j < 8; j++) {
+            g_sha256_context->h[j] += wv[j];
+        }
     }
 }
 
@@ -382,13 +464,13 @@ void SHA256Update(const void* data, u32 len)
     u32 new_len, rem_len, tmp_len;
     const u8* shifted_data;
 
-    tmp_len = SHA256_BLOCK_SIZE - g_sha256Context->len;
+    tmp_len = SHA256_BLOCK_SIZE - g_sha256_context->len;
     rem_len = len < tmp_len ? len : tmp_len;
 
-    memcpy(&g_sha256Context->block[g_sha256Context->len], data, rem_len);
+    memcpy(&g_sha256_context->block[g_sha256_context->len], data, rem_len);
 
-    if (g_sha256Context->len + len < SHA256_BLOCK_SIZE) {
-        g_sha256Context->len += len;
+    if (g_sha256_context->len + len < SHA256_BLOCK_SIZE) {
+        g_sha256_context->len += len;
         return;
     }
 
@@ -397,14 +479,14 @@ void SHA256Update(const void* data, u32 len)
 
     shifted_data = (u8*) data + rem_len;
 
-    SHA256Transform(g_sha256Context->block, 1);
+    SHA256Transform(g_sha256_context->block, 1);
     SHA256Transform(shifted_data, block_nb);
 
     rem_len = new_len % SHA256_BLOCK_SIZE;
 
-    memcpy(g_sha256Context->block, &shifted_data[block_nb << 6], rem_len);
-    g_sha256Context->len = rem_len;
-    g_sha256Context->tot_len += (block_nb + 1) << 6;
+    memcpy(g_sha256_context->block, &shifted_data[block_nb << 6], rem_len);
+    g_sha256_context->len = rem_len;
+    g_sha256_context->tot_len += (block_nb + 1) << 6;
 }
 
 void SHA256Final2()
@@ -416,31 +498,26 @@ void SHA256Final2()
 
     block_nb =
         (1 + ((SHA256_BLOCK_SIZE - 9) <
-              (g_sha256Context->len % SHA256_BLOCK_SIZE)));
+              (g_sha256_context->len % SHA256_BLOCK_SIZE)));
 
-    len_b = (g_sha256Context->tot_len + g_sha256Context->len) << 3;
+    len_b = (g_sha256_context->tot_len + g_sha256_context->len) << 3;
     pm_len = block_nb << 6;
 
     memset(
-        g_sha256Context->block + g_sha256Context->len, 0,
-        pm_len - g_sha256Context->len
+        g_sha256_context->block + g_sha256_context->len, 0,
+        pm_len - g_sha256_context->len
     );
-    g_sha256Context->block[g_sha256Context->len] = 0x80;
-    UNPACK32(len_b, g_sha256Context->block + pm_len - 4);
+    g_sha256_context->block[g_sha256_context->len] = 0x80;
+    UNPACK32(len_b, g_sha256_context->block + pm_len - 4);
 
-    SHA256Transform(g_sha256Context->block, block_nb);
-
-    // for (i = 0; i < 8; i++)
-    //     UNPACK32(g_sha256Context->h[i], &g_sha256Context->buf[i << 2]);
-
-    // return g_sha256Context->buf;
+    SHA256Transform(g_sha256_context->block, block_nb);
 }
 
 [[gnu::always_inline]]
 inline u8* SHA256Final()
 {
     SHA256Final2();
-    return (u8*) g_sha256Context->h;
+    return (u8*) g_sha256_context->h;
 }
 
 // Copyright (C) 2010 The Chromium OS Authors. All rights reserved.
@@ -474,13 +551,12 @@ inline u8* SHA256Final()
 /**
  * a[] -= mod
  */
-static void SubMod(u32* a)
+void SubMod(u32* a)
 {
     s64 A = 0;
-    u32 i;
-    for (i = 0; i < RSANUMWORDS; ++i) {
-        A += (u64) a[i] - g_key->n[i];
-        a[i] = (u32) A;
+    for (u32 i = 0; i < RSANUMWORDS; i++) {
+        A += static_cast<u64>(a[i]) - g_key->n[i];
+        a[i] = static_cast<u32>(A);
         A >>= 32;
     }
 }
@@ -488,15 +564,16 @@ static void SubMod(u32* a)
 /**
  * Return a[] >= mod
  */
-static int GeMod(const u32* a)
+int GeMod(const u32* a)
 {
-    u32 i;
-    for (i = RSANUMWORDS; i;) {
-        --i;
-        if (a[i] < g_key->n[i])
+    u32 i = RSANUMWORDS;
+    while (i-- != 0) {
+        if (a[i] < g_key->n[i]) {
             return 0;
-        if (a[i] > g_key->n[i])
+        }
+        if (a[i] > g_key->n[i]) {
             return 1;
+        }
     }
     return 1; // equal
 }
@@ -504,23 +581,23 @@ static int GeMod(const u32* a)
 /**
  * Montgomery c[] += a * b[] / R % mod
  */
-static void MontMulAdd(u32* c, const u32 a, const u32* b)
+void MontMulAdd(u32* c, const u32 a, const u32* b)
 {
+    u64 A = static_cast<u64>(a) * b[0] + c[0];
+    u32 d0 = static_cast<u32>(A) * g_key->n0inv;
+    u64 B = static_cast<u64>(d0) * g_key->n[0] + static_cast<u32>(A);
 
-    u64 A = (u64) a * b[0] + c[0];
-    u32 d0 = (u32) A * g_key->n0inv;
-    u64 B = (u64) d0 * g_key->n[0] + (u32) A;
     u32 i;
-
-    for (i = 1; i < RSANUMWORDS; ++i) {
-        A = (A >> 32) + (u64) a * b[i] + c[i];
-        B = (B >> 32) + (u64) d0 * g_key->n[i] + (u32) A;
-        c[i - 1] = (u32) B;
+    for (i = 1; i < RSANUMWORDS; i++) {
+        A = (A >> 32) + static_cast<u64>(a) * b[i] + c[i];
+        B = (B >> 32) + static_cast<u64>(d0) * g_key->n[i] +
+            static_cast<u32>(A);
+        c[i - 1] = static_cast<u32>(B);
     }
 
     A = (A >> 32) + (B >> 32);
 
-    c[i - 1] = (u32) A;
+    c[i - 1] = static_cast<u32>(A);
 
     if (A >> 32) {
         SubMod(c);
@@ -530,13 +607,13 @@ static void MontMulAdd(u32* c, const u32 a, const u32* b)
 /**
  * Montgomery c[] = a[] * b[] / R % mod
  */
-static void MontMul(u32* c, const u32* a, const u32* b)
+void MontMul(u32* c, const u32* a, const u32* b)
 {
-    for (u32 i = 0; i < RSANUMWORDS; ++i) {
+    for (u32 i = 0; i < RSANUMWORDS; i++) {
         c[i] = 0;
     }
 
-    for (u32 i = 0; i < RSANUMWORDS; ++i) {
+    for (u32 i = 0; i < RSANUMWORDS; i++) {
         MontMulAdd(c, a[i], b);
     }
 }
@@ -546,7 +623,7 @@ static void MontMul(u32* c, const u32* a, const u32* b)
  *
  * @param inout		Input and output big-endian byte array
  */
-static void ModPow(u32* inout)
+void ModPow(u32* inout)
 {
     u32 a[RSANUMWORDS];
     u32 aaR[RSANUMWORDS];
@@ -554,13 +631,8 @@ static void ModPow(u32* inout)
     u32* aaa = aaaR; // Reuse location
 
     // Convert from big endian byte array to little endian word array
-    for (u32 i = 0; i < RSANUMWORDS; ++i) {
-        u32 v = inout[RSANUMWORDS - 1 - i];
-#ifdef LITTLE_ENDIAN
-        // TODO: Check this, I'm really tired so it might be wrong
-        v = (v >> 24) | ((v >> 8) & 0xFF00) | ((v << 8) & 0xFF0000) | (v << 24);
-#endif
-        a[i] = v;
+    for (u32 i = 0; i < RSANUMWORDS; i++) {
+        a[i] = inout[RSANUMWORDS - 1 - i];
     }
 
     MontMul(aaR, a, g_key->rr); // aaR = a * RR / R mod M
@@ -577,17 +649,12 @@ static void ModPow(u32* inout)
     }
 
     // Convert to big endian byte array
-    for (u32 i = 0; i < RSANUMWORDS; ++i) {
-        u32 v = aaa[RSANUMWORDS - 1 - i];
-#ifdef LITTLE_ENDIAN
-        // TODO: Check this, I'm really tired so it might be wrong
-        v = (v >> 24) | ((v >> 8) & 0xFF00) | ((v << 8) & 0xFF0000) | (v << 24);
-#endif
-        inout[i] = v;
+    for (u32 i = 0; i < RSANUMWORDS; i++) {
+        inout[i] = aaa[RSANUMWORDS - 1 - i];
     }
 }
 
-#define PKCS_PAD_SIZE (RSANUMBYTES - SHA256_DIGEST_SIZE)
+constexpr u32 PKCS_PAD_SIZE = (RSANUMBYTES - SHA256_DIGEST_SIZE);
 
 /**
  * Verify a SHA256WithRSA PKCS#1 v1.5 signature against an expected SHA-256
@@ -602,37 +669,33 @@ bool RSAVerify(const RSAPublicKey* key, u8* signature, const u8* sha)
 {
     g_context = const_cast<RSAPublicKey*>(key);
 
-    ModPow((u32*) signature); // In-place exponentiation
+    ModPow(reinterpret_cast<u32*>(signature)); // In-place exponentiation
 
     u32 result = 0;
-    int i = 0;
 
     // Check PKCS#1 padding bytes
     // First 2 bytes are always 0x00 0x01
     result |= *reinterpret_cast<u16*>(signature) ^ 0x0001;
-    i += 2;
 
     // Then 0xFF bytes until the tail
-    for (u32 j = 0; j < PKCS_PAD_SIZE - sizeof(self->m_sha256Tail) - 2; j++) {
-        result |= u32(signature[i++]) - 0xFF;
+    u32 i = 2;
+    for (u32 j = 0; j < PKCS_PAD_SIZE - sizeof(self->m_sha256_tail) - 2; j++) {
+        result |= +signature[i++] - 0xFF;
     }
 
     // Check the tail
     result |=
-        memcmp(signature + i, self->m_sha256Tail, sizeof(self->m_sha256Tail));
+        memcmp(signature + i, self->m_sha256_tail, sizeof(self->m_sha256_tail));
     result |= memcmp(signature + PKCS_PAD_SIZE, sha, SHA256_DIGEST_SIZE);
 
     return result == 0;
 }
 
-// Used occasionally to make significantly smaller code (for some reason)
-#define ASM_LOAD_HI(_TYPE, _NAME, _ADDR)                                       \
-    _TYPE _NAME;                                                               \
-    asm volatile("lis %0, " #_ADDR "\n" : "=r"(_NAME))
+constexpr u32 PAYLOAD_BLOCK_SIZE = 0x20000;
 
-static constexpr u32 PAYLOAD_BLOCK_SIZE = 0x20000;
-
-s32 HandleResponse(void* block)
+[[gnu::always_inline]]
+inline s32
+HandleResponse(void* block, wwfc_payload_entry_t entry_override = nullptr)
 {
     wwfc_payload* __restrict payload = reinterpret_cast<wwfc_payload*>(block);
 
@@ -645,11 +708,11 @@ s32 HandleResponse(void* block)
         return WL_ERROR_PAYLOAD_STAGE1_LENGTH_ERROR;
     }
 
-    memcpy(payload->salt, self->m_saltHash, SHA256_DIGEST_SIZE);
+    memcpy(payload->salt, self->m_salt_hash, SHA256_DIGEST_SIZE);
 
     SHA256Context ctx;
 
-    BACKUP_REG(g_context);
+    BACKUP_GPR(g_context);
     g_context = &ctx;
     SHA256Init();
     SHA256Update(
@@ -658,13 +721,13 @@ s32 HandleResponse(void* block)
     );
     u8* hash = SHA256Final();
 
-    if (!RSAVerify(&self->m_publicKey, payload->header.signature, hash)) {
+    if (!RSAVerify(&self->m_public_key, payload->header.signature, hash)) {
         return WL_ERROR_PAYLOAD_STAGE1_SIGNATURE_INVALID;
     }
 
-    RESTORE_REG(g_context);
+    RESTORE_GPR(g_context);
 
-    auto entryFunction = WWFC_ADJUST_OFFSET(
+    auto entry_function = WWFC_ADJUST_OFFSET(
         wwfc_payload_entry_t, payload, payload->info.entry_point
     );
 
@@ -678,7 +741,10 @@ s32 HandleResponse(void* block)
     // Sync (Address Broadcast)
     asm volatile("sc\n" : : : "r9", "r10");
 
-    return entryFunction(payload);
+    if (entry_override) {
+        return entry_override(payload);
+    }
+    return entry_function(payload);
 }
 
 #if STAGE1_SBCM
@@ -693,68 +759,63 @@ static void Free(void* block)
 {
     param->allocator->func->free(param->allocator, block);
 }
+#endif
 
-// HTTPCallback for SBCM
-s32 HTTPCallback(s32 result, void* response, void* userData)
+/**
+ * Callback from the payload download HTTP request
+ */
+s32 HTTPCallback(s32 result, void* response, void* user_data)
 {
-    BACKUP_REG(self);
-    self = reinterpret_cast<Stage1*>(userData);
+    BACKUP_GPR(self);
+    self = static_cast<Stage1*>(user_data);
 
+    NON_SBCM_ONLY(const Stage1::Stage1Param* __restrict param = self->m_param;)
     param->NHTTPDestroyResponse(response);
 
     if (result != 0) {
         result = WL_ERROR_PAYLOAD_STAGE1_RESPONSE;
     } else {
-        result = HandleResponse(self->m_block);
+        result = HandleResponse(
+            param->block NON_SBCM_ONLY(, param->payload_entry_callback)
+        );
     }
-    self->m_error = result;
-    RESTORE_REG(self);
+
+    // If success, return -1 to DWC to redo auth
+    NON_SBCM_ONLY(*param->dwc_error = result == WL_ERROR_PAYLOAD_OK ? -1 : result;)
+    SBCM_ONLY(self->m_error = result;)
+
+    RESTORE_GPR(self);
     return 0;
 }
-#else
-// HTTPCallback for regular request
-s32 HTTPCallback(s32 result, void* response, void* userData)
+
+void AddHexParam(u16 key, char* dest, const u8* src, u32 len)
 {
-    BACKUP_REG(self);
-    self = reinterpret_cast<Stage1*>(userData);
+    *reinterpret_cast<u16*>(dest) = key;
+    dest += 2;
+    *dest++ = '=';
 
-    const Stage1::Stage1Param* __restrict param = self->m_param;
-    param->NHTTPDestroyResponse(response);
-
-    if (result != 0) {
-        result = WL_ERROR_PAYLOAD_STAGE1_RESPONSE;
+    for (u32 i = 0; i < len; i++) {
+        *dest++ = self->m_hex_to_str[src[i] >> 4];
+        *dest++ = self->m_hex_to_str[src[i] & 0xF];
     }
-
-    if (result != 0 ||
-        (result = HandleResponse(param->block)) != WL_ERROR_PAYLOAD_OK) {
-        *param->dwcError = result;
-    } else {
-        // Success! This error code will retry auth.
-        *param->dwcError = -1;
-    }
-
-    RESTORE_REG(self);
-    return 0;
 }
-#endif
 
-inline s32 Download(
-#if !STAGE1_SBCM
-    Stage1::Stage1Param* param, s32* authRequest,
-#endif
-    void* httpCallback
-)
+/**
+ * Download the WiiLink payload using NHTTP
+ */
+[[gnu::always_inline]]
+inline s32 Download(NON_SBCM_ONLY(
+    Stage1::Stage1Param* param, s32* auth_request,
+) void* http_callback)
 {
-#if STAGE1_SBCM
-    if (param->NHTTPStartup(
-            reinterpret_cast<void*>(Alloc), reinterpret_cast<void*>(Free), 0x11
-        ) != 0) {
-        return WL_ERROR_PAYLOAD_STAGE1_MAKE_REQUEST;
-    }
-#endif
-
-    char url[128];
-    memcpy(url, self->m_baseUrl, sizeof(self->m_baseUrl));
+    SBCM_ONLY({
+        if (param->NHTTPStartup(
+                reinterpret_cast<void*>(Alloc), reinterpret_cast<void*>(Free),
+                0x11
+            ) != 0) {
+            return WL_ERROR_PAYLOAD_STAGE1_MAKE_REQUEST;
+        }
+    });
 
 #if !STAGE1_SBCM
     void* block = param->block;
@@ -768,17 +829,17 @@ inline s32 Download(
             return WL_ERROR_PAYLOAD_STAGE1_ALLOC;
         }
 
-        auto func = allocator->func;
-        if (func == nullptr) {
+        auto function = allocator->func;
+        if (function == nullptr) {
             return WL_ERROR_PAYLOAD_STAGE1_ALLOC;
         }
 
-        auto allocFunc = func->alloc;
-        if (allocFunc == nullptr) {
+        auto alloc_function = function->alloc;
+        if (alloc_function == nullptr) {
             return WL_ERROR_PAYLOAD_STAGE1_ALLOC;
         }
 
-        block = allocFunc(allocator, PAYLOAD_BLOCK_SIZE + 32);
+        block = alloc_function(allocator, PAYLOAD_BLOCK_SIZE + 32);
     }
 #else
     void* block = Alloc(PAYLOAD_BLOCK_SIZE + 32);
@@ -789,144 +850,156 @@ inline s32 Download(
     }
 
     // Align up block
-    block = (void*) ((u32(block) + 31) & ~31);
+    block =
+        reinterpret_cast<void*>((reinterpret_cast<size_t>(block) + 31) & ~31);
     memset(block, 0, PAYLOAD_BLOCK_SIZE);
-#if !STAGE1_SBCM
-    param->block = block;
-#else
-    self->m_block = block;
-#endif
+    NON_SBCM_ONLY(param->block = block;)
+    SBCM_ONLY(self->m_block = block;)
 
+    // Create random salt and get device ID using ES
+    s32 fd = param->IOS_Open(self->m_es_path, 0);
+    if (fd == -1016 && param->esp_fd != nullptr) {
+        // Steal the handle from the ESP library (and set the handle to -1
+        // so it can't close it while we're using it)
+        fd = *param->esp_fd;
+        *param->esp_fd = -1;
+    }
+
+    if (fd < 0) {
+        return WL_ERROR_PAYLOAD_STAGE1_ES_FAILURE;
+    }
+
+    alignas(0x40) u8 dummy[0x20];
+    dummy[0] = 0x8A;
+    alignas(0x40) u8 ecc_cert[0x180];
+    alignas(0x40) u8 ecc_signature[0x3C];
+
+    alignas(0x20) IOVector vec[3];
+    vec[0].data = &dummy;
+    vec[0].size = sizeof(dummy);
+    vec[1].data = ecc_signature;
+    vec[1].size = 0x3C;
+    vec[2].data = ecc_cert;
+    vec[2].size = 0x180;
+
+    // ES_Sign
+    s32 ret = param->IOS_Ioctlv(fd, 0x30, 1, 2, vec);
+
+    vec[0].size = 4;
+    // ES_GetDeviceId
+    ret |= param->IOS_Ioctlv(fd, 0x07, 0, 1, vec);
+
+    param->IOS_Close(fd);
+
+    if (ret != 0) {
+        return WL_ERROR_PAYLOAD_STAGE1_ES_FAILURE;
+    }
+
+    // Setup URL
+    char url[256];
+    memcpy(url, self->m_base_url, sizeof(self->m_base_url));
     int cur = sizeof(BASE_URL) - 1;
 
-    memcpy(url + cur, param->title, 9);
-    cur += param->title[4] == 'D' ? 7 : 9;
+    // Append device ID
+    AddHexParam('?' << 8 | 'd', url + cur, dummy, 4);
+    cur += 3 + 8;
 
-    // Create random salt, relies on undefined behavior
-    u8 salt[SHA256_DIGEST_SIZE];
+    // Append user param (including game ID)
+    url[cur++] = '&';
+    const char* urlparam = param->url_param;
+    do {
+        url[cur++] = *urlparam++;
+    } while (*urlparam != '\0');
+
+    // Append salt from signature
+    AddHexParam(
+        '&' << 8 | 's', url + cur, ecc_signature + 4, SHA256_DIGEST_SIZE
+    );
+    cur += 3 + SHA256_DIGEST_SIZE * 2;
+
     SHA256Context ctx;
     g_context = &ctx;
-    {
-        SHA256Init();
-        void* r13;
-        SHA256Update(reinterpret_cast<void*>(g_r13 - 0x8000), 0x10000);
-        u32 seedData[16];
-        u32 tbl, tbu, dec;
-        asm volatile("mftbl %0; mftbu %1; mfdec %2\n"
-                     : "=r"(tbl), "=r"(tbu), "=r"(dec));
-        seedData[0] = tbl;
-        seedData[1] = tbu;
-        seedData[2] = dec;
-        ASM_LOAD_HI(u16* __restrict, MEM_REG_BASE, 0xCC00);
-        seedData[3] = MEM_REG_BASE[0x4034 / 2]; // MEM_CP_REQCOUNTL
-        seedData[4] = MEM_REG_BASE[0x4038 / 2]; // MEM_TC_REQCOUNTL
-        seedData[5] = MEM_REG_BASE[0x403C / 2]; // MEM_CPUR_REQCOUNTL
-        seedData[6] = MEM_REG_BASE[0x4040 / 2]; // MEM_CPUW_REQCOUNTL
-        seedData[7] = MEM_REG_BASE[0x4048 / 2]; // MEM_IO_REQCOUNTL
-        seedData[8] = MEM_REG_BASE[0x404C / 2]; // MEM_VI_REQCOUNTL
-        seedData[9] = u32(self);
-        seedData[10] = u32();
-        SHA256Update(((u8*) seedData) - 0x400, 0x2000);
-        SHA256Update((void*) 0x80000000, 0x4000);
-        SHA256Update((void*) 0x90000000, 0x1000);
-        ASM_LOAD_HI(u32* __restrict, MEM1_BASE, 0x8000);
-        SHA256Update(&MEM1_BASE[0x3130 / 4], 0x30000);
-        memcpy(salt, SHA256Final(), SHA256_DIGEST_SIZE);
-    }
-
-    // Add the salt
-    url[cur++] = '&';
-    url[cur++] = 's';
-    url[cur++] = '=';
-
-    for (u32 i = 0; i < SHA256_DIGEST_SIZE; i++, cur += 2) {
-        url[cur + 0] = self->m_hexToStr[salt[i] >> 4];
-        url[cur + 1] = self->m_hexToStr[salt[i] & 0xF];
-    }
 
     // Hash "payload?g=RMCPD00&s=7d8a..."
     SHA256Init();
     SHA256Update(&url[sizeof(BASE_URL_PART1)], cur - sizeof(BASE_URL_PART1));
-    memcpy(self->m_saltHash, SHA256Final(), SHA256_DIGEST_SIZE);
+    memcpy(self->m_salt_hash, SHA256Final(), SHA256_DIGEST_SIZE);
     // Add first 4 bytes of salt hash as a kind of "proof" to the server the
     // request is valid
-    url[cur++] = '&';
-    url[cur++] = 'h';
-    url[cur++] = '=';
+    AddHexParam('&' << 8 | 'h', url + cur, self->m_salt_hash, 4);
 
-    for (u32 i = 0; i < 4; i++, cur += 2) {
-        url[cur + 0] = self->m_hexToStr[self->m_saltHash[i] >> 4];
-        url[cur + 1] = self->m_hexToStr[self->m_saltHash[i] & 0xF];
-    }
-
+    cur += 3 + 8;
     url[cur] = '\0';
 
-#if !STAGE1_SBCM
-    self->m_param = param;
+    NON_SBCM_ONLY(self->m_param = param;)
 
     void* request = param->NHTTPCreateRequest(
-        url, 0, block, PAYLOAD_BLOCK_SIZE - 32, httpCallback, self
+        url, 0, block, PAYLOAD_BLOCK_SIZE - 32, http_callback, self
     );
     if (request == nullptr) {
         return WL_ERROR_PAYLOAD_STAGE1_MAKE_REQUEST;
     }
 
-    *authRequest = param->NHTTPSendRequestAsync(request);
+    NON_SBCM_ONLY({
+        *auth_request = param->NHTTPSendRequestAsync(request);
+        return WL_ERROR_PAYLOAD_OK;
+    })
+    SBCM_ONLY({
+        param->NHTTPSendRequestAsync(request);
 
-    return WL_ERROR_PAYLOAD_OK;
-#else
-    void* request = param->NHTTPCreateRequest(
-        url, 0, block, PAYLOAD_BLOCK_SIZE - 32, httpCallback, self
-    );
-    if (request == nullptr) {
-        return WL_ERROR_PAYLOAD_STAGE1_MAKE_REQUEST;
-    }
-
-    param->NHTTPSendRequestAsync(request);
-
-    while (self->m_error == WL_ERROR_PAYLOAD_STAGE1_WAITING) {
-        // TODO: Add request timeout
-#  if ADDRESS_OSYieldThread
-        param->OSYieldThread();
-#  endif
-    }
-
-    return self->m_error;
+        while (self->m_error == WL_ERROR_PAYLOAD_STAGE1_WAITING) {
+            // TODO: Add request timeout
+#if ADDRESS_OSYieldThread
+            param->OSYieldThread();
 #endif
+        }
+
+        return self->m_error;
+    })
 }
 
-static Stage1 s_stage1;
+Stage1 s_stage1;
 
 #if !STAGE1_SBCM
-extern "C" [[gnu::section(".start")]] [[gnu::used]] void
-wwfcStage1Entry(u8* stage1CodePtr, Stage1::Stage1Param* param, s32* authRequest)
-{
-    BACKUP_REG(g_context);
-    BACKUP_REG(self);
 
-    void* httpCallback;
+/**
+ * Entrypoint for standard Stage1
+ */
+extern "C" [[gnu::section(".start")]] [[gnu::used]] void wwfcStage1Entry(
+    u8* p_stage1_code, Stage1::Stage1Param* param, s32* auth_request
+)
+{
+    BACKUP_GPR(g_context);
+    BACKUP_GPR(self);
+
+    void* http_callback;
     asm("addi %0, %1, %2"
-        : "=r"(httpCallback)
-        : "r"(stage1CodePtr), "i"(HTTPCallback));
+        : "=r"(http_callback)
+        : "r"(p_stage1_code), "i"(HTTPCallback));
 
     asm("addi %0, %1, %2"
         : "=r"(self)
-        : "r"(stage1CodePtr), "i"(u32(&s_stage1)));
+        : "r"(p_stage1_code), "i"(u32(&s_stage1)));
 
-    s32 ret = Download(param, authRequest, httpCallback);
+    s32 ret = Download(param, auth_request, http_callback);
     if (ret != 0) {
-        *param->dwcError = ret;
+        *param->dwc_error = ret;
     }
     // Else don't do anything
 
-    RESTORE_REG(g_context);
-    RESTORE_REG(self);
+    RESTORE_GPR(g_context);
+    RESTORE_GPR(self);
 }
+
 #else
+
+/**
+ * Entrypoint for ServerBrowser Client Message (SBCM) exploit
+ */
 extern "C" [[gnu::used]] void wwfcStage1Entry()
 {
-    auto regBackup = g_context;
-    auto selfBackup = self;
+    BACKUP_GPR(g_context);
+    BACKUP_GPR(self);
 
     self = &s_stage1;
 
@@ -937,9 +1010,10 @@ extern "C" [[gnu::used]] void wwfcStage1Entry()
     }
     // Else don't do anything
 
-    g_context = regBackup;
-    self = selfBackup;
+    RESTORE_GPR(g_context);
+    RESTORE_GPR(self);
 }
+
 #endif
 
 // Create restgpr labels
@@ -1005,4 +1079,4 @@ asm(
     "blr"
 );
 
-} // namespace wwfc
+} // namespace
