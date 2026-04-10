@@ -34,7 +34,7 @@ private:
     /* 0x0088 */ u8 _0088[0x1100 - 0x0088];
 
     static SystemManager* s_instance AT(
-        RMCXD_PORT(0x80386000, 0x80381C80, 0x80385980, 0x80374020, DEMOTODO)
+        RMCXD_PORT(0x80386000, 0x80381C80, 0x80385980, 0x80374020, 0x80385680)
     );
 };
 

@@ -104,7 +104,7 @@ WWFC_DEFINE_PATCH = Patch::CallWithCTR(
 // expecting.
 WWFC_DEFINE_PATCH = Patch::WriteASM(
     WWFC_PATCH_LEVEL_CRITICAL, //
-    RMCXD_PORT(0x800CE220, 0x800CE180, 0x800CE140, 0x800CE280, DEMOTODO) // Disc
+    RMCXD_PORT(0x800CE220, 0x800CE180, 0x800CE140, 0x800CE280, 0x800CDFF0) // Disc
     RMCXN_PORT(0x800B5D98, 0x800B5D08, 0x800B5CE8, 0x800B5E08), // Channel
     1, ASM_LAMBDA((), li r6, 0x10)
 );
@@ -121,7 +121,7 @@ WWFC_DEFINE_PATCH = Patch::WriteASM(
 // https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2023-35856
 WWFC_DEFINE_PATCH = Patch::BranchWithCTR( //
     WWFC_PATCH_LEVEL_CRITICAL, //
-    RMCXD_PORT(0x80658604, 0x8065417C, 0x80657C70, 0x8064691C, DEMOTODO), //
+    RMCXD_PORT(0x80658604, 0x8065417C, 0x80657C70, 0x8064691C, 0x80658B48), //
     [](mkw::Net::NetController* netController, mkw::Net::RacePacket* racePacket,
        u32 packetSize, u32 _, u8 playerAid) -> void {
     if (packetSize < sizeof(mkw::Net::RacePacket)) {
@@ -137,7 +137,7 @@ WWFC_DEFINE_PATCH = Patch::BranchWithCTR( //
 
     [[gnu::longcall]] u32 NETCalcCRC32( //
         const void* data, u32 size
-    ) AT(RMCXD_PORT(0x801D1CA0, 0x801D1C00, 0x801D1BC0, 0x801D1FFC, DEMOTODO));
+    ) AT(RMCXD_PORT(0x801D1CA0, 0x801D1C00, 0x801D1BC0, 0x801D1FFC, 0x801D15D4));
 
     u32 savedChecksum = racePacket->checksum;
     racePacket->checksum = 0;

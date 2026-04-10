@@ -67,7 +67,7 @@ public:
         {
             [[gnu::longcall]] Player* getPlayer(Scenario * scenario, int index)
                 AT(RMCXD_PORT(
-                    0x8052E434, 0x805298EC, 0x8052DDB4, 0x8051C48C, DEMOTODO
+                    0x8052E434, 0x805298EC, 0x8052DDB4, 0x8051C48C, 0x8052DC50
                 ));
             return getPlayer(this, index);
         }
@@ -104,7 +104,7 @@ private:
     /* 0x1800 */ u8 _1800[0x73F0 - 0x1800];
 
     static RaceConfig* s_instance AT(
-        RMCXD_PORT(0x809BD728, 0x809B8F68, 0x809BC788, 0x809ABD68, DEMOTODO)
+        RMCXD_PORT(0x809BD728, 0x809B8F68, 0x809BC788, 0x809ABD68, 0x809BDFA8) //Please Check The Demo Port
     );
 };
 

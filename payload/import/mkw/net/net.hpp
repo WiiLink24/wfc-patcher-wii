@@ -51,7 +51,7 @@ public:
     void sendRacePacket()
     {
         [[gnu::longcall]] void sendRacePacket(NetController * netController) AT(
-            RMCXD_PORT(0x80657E30, 0x806539A8, 0x8065749C, 0x80646148, DEMOTODO)
+            RMCXD_PORT(0x80657E30, 0x806539A8, 0x8065749C, 0x80646148, 0x80658374)
         );
 
         sendRacePacket(this);
@@ -65,7 +65,7 @@ public:
             RacePacket * racePacket, u32 packetSize
         )
             AT(RMCXD_PORT(
-                0x80659A84, 0x806555FC, 0x806590F0, 0x80647D9C, DEMOTODO
+                0x80659A84, 0x806555FC, 0x806590F0, 0x80647D9C, 0x80659FC8
             ));
 
         processRacePacket(this, playerAid, racePacket, packetSize);
@@ -232,7 +232,7 @@ private:
     static u32 s_reportedAids;
 
     static NetController* s_instance AT(
-        RMCXD_PORT(0x809C20D8, 0x809BD918, 0x809C1138, 0x809B0718, DEMOTODO)
+        RMCXD_PORT(0x809C20D8, 0x809BD918, 0x809C1138, 0x809B0718, 0x809C2970)
     );
 };
 

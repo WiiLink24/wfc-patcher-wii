@@ -13,7 +13,7 @@ public:
     {
         [[gnu::longcall]] Random* dt( //
             Random * random, s32 type
-        ) AT(RMCXD_PORT(0x80555538, 0x8054F518, 0x80554EB8, 0x80543590, DEMOTODO));
+        ) AT(RMCXD_PORT(0x80555538, 0x8054F518, 0x80554EB8, 0x80543590, 0x80554B60));
 
         return dt(this, type);
     }
@@ -22,7 +22,7 @@ public:
     {
         [[gnu::longcall]] u32 nextInt( //
             Random * random
-        ) AT(RMCXD_PORT(0x80555578, 0x8054F558, 0x80554EF8, 0x805435D0, DEMOTODO));
+        ) AT(RMCXD_PORT(0x80555578, 0x8054F558, 0x80554EF8, 0x805435D0, 0x80554BA0));
 
         return nextInt(this);
     }
@@ -31,7 +31,7 @@ public:
     {
         [[gnu::longcall]] u32 nextInt( //
             Random * random, u32 limit
-        ) AT(RMCXD_PORT(0x805555CC, 0x8054F5AC, 0x80554F4C, 0x80543624, DEMOTODO));
+        ) AT(RMCXD_PORT(0x805555CC, 0x8054F5AC, 0x80554F4C, 0x80543624, 0x80554BF4));
 
         return nextInt(this, limit);
     }

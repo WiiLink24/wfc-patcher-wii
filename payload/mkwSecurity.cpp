@@ -43,7 +43,7 @@ static bool IsPacketSizeValid(RacePacket::EType packetType, u8 packetSize)
     std::size_t* packetBufferSizesPointer;
     if (!NetController::Instance()->isEnableAggressivePacketChecks()) {
         extern std::size_t packetBufferSizes[sizeof(RacePacket::sizes)] AT(
-            RMCXD_PORT(0x8089A194, 0x80895AC4, 0x808992F4, 0x808885CC, DEMOTODO)
+            RMCXD_PORT(0x8089A194, 0x80895AC4, 0x808992F4, 0x808885CC, 0x8089A864)
         );
 
         packetBufferSizesPointer = packetBufferSizes;

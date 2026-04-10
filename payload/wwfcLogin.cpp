@@ -358,7 +358,7 @@ static void SendAuthTokenSignature(
 // outdated when switching between servers (such as Wiimmfi)
 WWFC_DEFINE_PATCH = Patch::WriteASM(
     WWFC_PATCH_LEVEL_SUPPORT | WWFC_PATCH_LEVEL_BUGFIX, //
-    RMCXD_PORT(0x80672FCC, 0x8066B868, 0x80672638, 0x80661324, DEMOTODO), //
+    RMCXD_PORT(0x80672FCC, 0x8066B868, 0x80672638, 0x80661324, 0x80673510), //
     1, ASM_LAMBDA((), b 0x70)
 );
 
@@ -382,7 +382,7 @@ WWFC_DEFINE_PATCH = Patch::WriteASM(
 // TODO: This could apply to other games as well
 WWFC_DEFINE_PATCH = Patch::WriteASM(
     WWFC_PATCH_LEVEL_SUPPORT, //
-    RMCXD_PORT(0x800CE710, 0x800CE670, 0x800CE630, 0x800CE770, DEMOTODO), //
+    RMCXD_PORT(0x800CE710, 0x800CE670, 0x800CE630, 0x800CE770, 0x800CE4E0), //
     1, ASM_LAMBDA((), nop)
 );
 

@@ -24,7 +24,7 @@ public:
     {
 #if RMC
         [[gnu::longcall]] void* Alloc(std::size_t size, int alignment, Heap* heap) AT(
-            RMCXD_PORT(0x80229814, 0x80229490, 0x80229734, 0x80229B88, DEMOTODO)
+            RMCXD_PORT(0x80229814, 0x80229490, 0x80229734, 0x80229B88, 0x80229398)
         );
 
         return Alloc(size, alignment, heap);
@@ -36,7 +36,7 @@ public:
     {
 #if RMC
         [[gnu::longcall]] void Free(void* block, Heap* heap) AT(
-            RMCXD_PORT(0x80229B84, 0x80229800, 0x80229AA4, 0x80229EF8, DEMOTODO)
+            RMCXD_PORT(0x80229B84, 0x80229800, 0x80229AA4, 0x80229EF8, 0x80229708)
         );
 
         Free(block, heap);

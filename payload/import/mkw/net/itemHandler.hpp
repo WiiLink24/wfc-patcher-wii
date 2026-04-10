@@ -117,7 +117,7 @@ private:
     /* 0x000 */ u8 _000[0x184 - 0x000];
 
     static ItemHandler* s_instance AT(
-        RMCXD_PORT(0x809C20F8, 0x809BD950, 0x809C1158, 0x809B0738, DEMOTODO)
+        RMCXD_PORT(0x809C20F8, 0x809BD950, 0x809C1158, 0x809B0738, 0x809C2990) //Please Check The Demo Port
     );
 };
 

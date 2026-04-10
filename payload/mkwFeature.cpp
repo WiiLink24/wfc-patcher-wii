@@ -143,7 +143,7 @@ GetMessageOfTheDay(GameSpy::GPResult gpResult, const char* message)
 // Get the Message Of The Day from the "Login Challenge 2" message
 WWFC_DEFINE_PATCH = Patch::BranchWithCTR(
     WWFC_PATCH_LEVEL_FEATURE,
-    RMCXD_PORT(0x80101074, 0x80100FD4, 0x80100F94, 0x801010EC, DEMOTODO), //
+    RMCXD_PORT(0x80101074, 0x80100FD4, 0x80100F94, 0x801010EC, 0x80100E44), //
     ASM_LAMBDA(
         ( : ASM_IMPORT(i, GetMessageOfTheDay)),
         // clang-format off
@@ -162,7 +162,7 @@ WWFC_DEFINE_PATCH = Patch::BranchWithCTR(
 // Display the Message Of The Day when a client connects to the server
 WWFC_DEFINE_PATCH = Patch::BranchWithCTR(
     WWFC_PATCH_LEVEL_FEATURE,
-    RMCXD_PORT(0x8064BCD4, 0x806189C0, 0x8064B340, 0x80639FEC, DEMOTODO), //
+    RMCXD_PORT(0x8064BCD4, 0x806189C0, 0x8064B340, 0x80639FEC, 0x8064C208), //
     ASM_LAMBDA(
         ( : ASM_IMPORT_AS(
             i, UI::WifiMenuPage_showMessageOfTheDay, ShowMessageOfTheDay
@@ -184,7 +184,7 @@ WWFC_DEFINE_PATCH = Patch::BranchWithCTR(
 WWFC_DEFINE_PATCH = 
     Patch::CallWithCTR( //
         WWFC_PATCH_LEVEL_FEATURE, //
-        RMCXD_PORT(0x8064D358, 0x8061A044, 0x8064C9C4, 0x8063B670, DEMOTODO), //
+        RMCXD_PORT(0x8064D358, 0x8061A044, 0x8064C9C4, 0x8063B670, 0x8064D88C), //
         [](mkw::UI::WifiFriendMenuPage* /* wifiFriendMenuPage */,
            void* /* pushButton */) -> int {
     constexpr int friendsAdded = 1;
@@ -197,7 +197,7 @@ WWFC_DEFINE_PATCH =
 WWFC_DEFINE_PATCH = 
     Patch::CallWithCTR( //
         WWFC_PATCH_LEVEL_FEATURE, //
-        RMCXD_PORT(0x806579A0, 0x80653518, 0x8065700C, 0x80645CB8, DEMOTODO), //
+        RMCXD_PORT(0x806579A0, 0x80653518, 0x8065700C, 0x80645CB8, 0x80657EE4), //
         [](mkw::Net::NetController* netController) -> void {
     using namespace mkw::Net;
 
@@ -217,7 +217,7 @@ WWFC_DEFINE_PATCH =
 WWFC_DEFINE_PATCH = 
     Patch::BranchWithCTR( //
         WWFC_PATCH_LEVEL_FEATURE, //
-        RMCXD_PORT(0x806588C8, 0x80654440, 0x80657F34, 0x80646BE0, DEMOTODO), //
+        RMCXD_PORT(0x806588C8, 0x80654440, 0x80657F34, 0x80646BE0, 0x80658E0C), //
         ASM_LAMBDA((:ASM_IMPORT_AS(i, mkw::Net::NetController::ClearReportedAid, ClearReportedAid)),
             // clang-format off
             mr        r3, r28;
@@ -235,7 +235,7 @@ WWFC_DEFINE_PATCH =
 WWFC_DEFINE_PATCH = 
     Patch::CallWithCTR( //
         WWFC_PATCH_LEVEL_FEATURE, //
-        RMCXD_PORT(0x8065FF34, 0x80657FF8, 0x8065F5A0, 0x8064E24C, DEMOTODO), //
+        RMCXD_PORT(0x8065FF34, 0x80657FF8, 0x8065F5A0, 0x8064E24C, 0x80660478), //
         [](mkw::Net::SelectHandler* selectHandler,
            mkw::Net::NetController* netController) -> mkw::Net::SelectHandler* {
     using namespace mkw::Net;
@@ -255,7 +255,7 @@ WWFC_DEFINE_PATCH =
 WWFC_DEFINE_PATCH = 
     Patch::CallWithCTR( //
         WWFC_PATCH_LEVEL_FEATURE, //
-        RMCXD_PORT(0x8066148C, 0x80659550, 0x80660AF8, 0x8064F7A4, DEMOTODO), //
+        RMCXD_PORT(0x8066148C, 0x80659550, 0x80660AF8, 0x8064F7A4, 0x806619D0), //DEMO MAY BE WRONG
         []() -> void {
     using namespace mkw::Net;
 
@@ -280,32 +280,32 @@ WWFC_DEFINE_PATCH =
 // Allow the "Open Host" feature to be enabled via the press of a button
 WWFC_DEFINE_PATCH = Patch::WritePointer(
     WWFC_PATCH_LEVEL_FEATURE,
-    RMCXD_PORT(0x808B9008, 0x808BABF8, 0x808B8158, 0x808A7470, DEMOTODO), //
+    RMCXD_PORT(0x808B9008, 0x808BABF8, 0x808B8158, 0x808A7470, 0x808B9760), //
     mkw::UI::FriendRoomPage_onActivate
 );
 WWFC_DEFINE_PATCH = Patch::WritePointer(
     WWFC_PATCH_LEVEL_FEATURE,
-    RMCXD_PORT(0x808B900C, 0x808BABFC, 0x808B815C, 0x808A7474, DEMOTODO), //
+    RMCXD_PORT(0x808B900C, 0x808BABFC, 0x808B815C, 0x808A7474, 0x808B9764), //
     mkw::UI::FriendRoomPage_onDeactivate
 );
 WWFC_DEFINE_PATCH = Patch::WritePointer(
     WWFC_PATCH_LEVEL_FEATURE,
-    RMCXD_PORT(0x808B902C, 0x808BAC1C, 0x808B817C, 0x808A7494, DEMOTODO), //
+    RMCXD_PORT(0x808B902C, 0x808BAC1C, 0x808B817C, 0x808A7494, 0x808B9784), //
     mkw::UI::FriendRoomPage_onRefocus
 );
 WWFC_DEFINE_PATCH = Patch::WritePointer(
     WWFC_PATCH_LEVEL_FEATURE,
-    RMCXD_PORT(0x808BFE7C, 0x808B97CC, 0x808BEFCC, 0x808AE2EC, DEMOTODO), //
+    RMCXD_PORT(0x808BFE7C, 0x808B97CC, 0x808BEFCC, 0x808AE2EC, 0x808C08BC), //
     mkw::UI::WifiFriendMenu_onActivate
 );
 WWFC_DEFINE_PATCH = Patch::WritePointer(
     WWFC_PATCH_LEVEL_FEATURE,
-    RMCXD_PORT(0x808BFE80, 0x808B97D0, 0x808BEFD0, 0x808AE2F0, DEMOTODO), //
+    RMCXD_PORT(0x808BFE80, 0x808B97D0, 0x808BEFD0, 0x808AE2F0, 0x808C08C0), //
     mkw::UI::WifiFriendMenu_onDeactivate
 );
 WWFC_DEFINE_PATCH = Patch::WritePointer(
     WWFC_PATCH_LEVEL_FEATURE,
-    RMCXD_PORT(0x808BFEA0, 0x808B97F0, 0x808BEFF0, 0x808AE310, DEMOTODO), //
+    RMCXD_PORT(0x808BFEA0, 0x808B97F0, 0x808BEFF0, 0x808AE310, 0x808C08E0), //
     mkw::UI::WifiFriendMenu_onRefocus
 );
 

@@ -13,7 +13,7 @@ namespace wwfc::mkw::BugFix
 // Credit: acaruso
 WWFC_DEFINE_PATCH = Patch::WriteASM(
     WWFC_PATCH_LEVEL_BUGFIX,
-    RMCXD_PORT(0x80655578, 0x806510F0, 0x80654BE4, 0x80643890, DEMOTODO), //
+    RMCXD_PORT(0x80655578, 0x806510F0, 0x80654BE4, 0x80643890, 0x80655ABC), //
     1, ASM_LAMBDA((), nop)
 );
 
@@ -29,7 +29,7 @@ static u64 IsUltraShortcutCheckEnabled( //
 // Ultra UnCut code.
 WWFC_DEFINE_PATCH = Patch::CallWithCTR(
     WWFC_PATCH_LEVEL_BUGFIX | WWFC_PATCH_LEVEL_PARITY, //
-    RMCXD_PORT(0x80535120, 0x805305D8, 0x80534AA0, 0x80523178, DEMOTODO), //
+    RMCXD_PORT(0x80535120, 0x805305D8, 0x80534AA0, 0x80523178, 0x8053493C), //
     ASM_LAMBDA(
         ( : ASM_IMPORT(i, IsUltraShortcutCheckEnabled)),
         // clang-format off

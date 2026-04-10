@@ -88,7 +88,7 @@ s32 ExplainWWFCError( //
 
 WWFC_DEFINE_PATCH = Patch::CallWithCTR(
     WWFC_PATCH_LEVEL_SUPPORT | WWFC_PATCH_LEVEL_FEATURE, //
-    RMCXD_PORT(0x80649C68, 0x80617458, 0x806492D4, 0x80637F80, DEMOTODO), //
+    RMCXD_PORT(0x80649C68, 0x80617458, 0x806492D4, 0x80637F80, 0x8064A19C), //
     ASM_LAMBDA(
         ( : ASM_IMPORT(i, ExplainWWFCError)),
         // clang-format off
@@ -111,7 +111,7 @@ s32 ExplainWWFCError(s32 error, mkw::UI::FormatParam* formatParam)
 {
     [[gnu::longcall]] s32 ExplainDWCError( //
         s32 errorCode
-    ) AT(RMCXD_PORT(0x80649DA4, 0x80617594, 0x80649410, 0x806380BC, DEMOTODO));
+    ) AT(RMCXD_PORT(0x80649DA4, 0x80617594, 0x80649410, 0x806380BC, 0x8064A2D8));
 
     if (s_wwfcErrorCode != 0) {
         error = s_wwfcErrorCode;

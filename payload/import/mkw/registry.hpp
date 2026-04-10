@@ -129,10 +129,10 @@ enum class Course {
 };
 
 [[gnu::longcall]] int GetVehicleWeightClass(Vehicle vehicle) AT(
-    RMCXD_PORT(0x8081CB70, 0x80809DC4, 0x8081C1DC, 0x8080AF30, DEMOTODO)
+    RMCXD_PORT(0x8081CB70, 0x80809DC4, 0x8081C1DC, 0x8080AF30, 0x8081D11C)
 );
 [[gnu::longcall]] int GetCharacterWeightClass(Character character) AT(
-    RMCXD_PORT(0x8081CD3C, 0x80809F90, 0x8081C3A8, 0x8080B0FC, DEMOTODO)
+    RMCXD_PORT(0x8081CD3C, 0x80809F90, 0x8081C3A8, 0x8080B0FC, 0x8081D2E8)
 );
 
 static bool IsCharacterValid(Character character)
