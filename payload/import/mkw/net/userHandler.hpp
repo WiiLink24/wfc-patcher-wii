@@ -100,9 +100,9 @@ public:
 
     void calc()
     {
-        [[gnu::longcall]] void calc(UserHandler * userHandler) AT(
-            RMCXD_PORT(0x806629C0, 0x806608DC, 0x8066202C, 0x80650CD8, DEMOTODO)
-        );
+        [[gnu::longcall]] void calc(UserHandler * userHandler) AT(RMCXD_PORT(
+            0x806629C0, 0x806608DC, 0x8066202C, 0x80650CD8, 0x80662F04
+        ));
 
         calc(this);
     }
@@ -116,7 +116,7 @@ private:
     /* 0x000 */ u8 _000[0x9F0 - 0x000];
 
     static UserHandler* s_instance AT(
-        RMCXD_PORT(0x809C2108, 0x809BD958, 0x809C1168, 0x809B0748, DEMOTODO)
+        RMCXD_PORT(0x809C2108, 0x809BD958, 0x809C1168, 0x809B0748, 0x809C29A0)
     );
 };
 

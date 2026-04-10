@@ -97,7 +97,6 @@ using u64 = wwfc_uint64_t;
 
 #  define RMCXD_PORT(P, E, J, K, DJ) DJ
 #  define RMCXN_PORT(P, E, J, K)
-#  define DEMOTODO 0
 
 #endif
 

@@ -141,12 +141,12 @@ gpiSendLocalInfo(GPConnection* gpConnection, const char* key, const char* value)
 [[gnu::longcall]] GameSpy::gsi_bool gsXmlWriteBase64BinaryElement( //
     GameSpy::GSXmlStreamWriter stream, const char* namespaceName,
     const char* tag, const void* data, int len
-) AT(RMCXD_PORT(0x800F98A0, 0x800F9800, 0x800F97C0, 0x800F9918, DEMOTODO)
+) AT(RMCXD_PORT(0x800F98A0, 0x800F9800, 0x800F97C0, 0x800F9918, 0x800F9670)
      RMCXN_PORT(0x800E1358, 0x800E12C8, 0x800E12A8, 0x800E13E0));
 
 [[gnu::longcall]] void B64Encode( //
     const char* input, char* output, int inlen, int encodingType
-) AT(RMCXD_PORT(0x800F3278, 0x800F31D8, 0x800F3198, 0x800F32F0, DEMOTODO)
+) AT(RMCXD_PORT(0x800F3278, 0x800F31D8, 0x800F3198, 0x800F32F0, 0x800F3048)
      RMCXN_PORT(0x800DAD30, 0x800DACA0, 0x800DAC80, 0x800DADB8));
 
 #endif
