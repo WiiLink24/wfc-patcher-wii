@@ -70,16 +70,19 @@ public:
 
     void decideCourse()
     {
-        [[gnu::longcall]] void decideCourse(SelectHandler * selectHandler) AT(
-            RMCXD_PORT(0x80661CE8, 0x80659DAC, 0x80661354, 0x80650000, 0x8066222C)
-        );
+        [[gnu::longcall]] void decideCourse(SelectHandler * selectHandler)
+            AT(RMCXD_PORT(
+                0x80661CE8, 0x80659DAC, 0x80661354, 0x80650000, 0x8066222C
+            ));
 
         decideCourse(this);
     }
 
     void initPlayerIdsToPlayerAids()
     {
-        [[gnu::longcall]] void initPlayerIdsToPlayerAids(SelectHandler * selectHandler)
+        [[gnu::longcall]] void initPlayerIdsToPlayerAids(
+            SelectHandler * selectHandler
+        )
             AT(RMCXD_PORT(
                 0x80662034, 0x8065A0F8, 0x806616A0, 0x8065034C, 0x80662578
             ));
@@ -167,7 +170,7 @@ private:
     static constexpr u32 s_kickTimerThresholdFrames = 90 * 60;
 
     static SelectHandler* s_instance AT(
-        RMCXD_PORT(0x809C2100, 0x809BD930, 0x809C1160, 0x809B0740, 0x809C2998) //Please Check The Demo Port
+        RMCXD_PORT(0x809C2100, 0x809BD930, 0x809C1160, 0x809B0740, 0x809C2998)
     );
 };
 

@@ -185,7 +185,7 @@ private:
     /* 0x0000 */ u8 _0000[0x2B88 - 0x0000];
 
     static EventHandler* s_instance AT(
-        RMCXD_PORT(0x809C20F0, 0x809BD928, 0x809C1150, 0x809B0730, 0x809C2988) //Please Check The Demo Port
+        RMCXD_PORT(0x809C20F0, 0x809BD928, 0x809C1150, 0x809B0730, 0x809C2988)
     );
 };
 

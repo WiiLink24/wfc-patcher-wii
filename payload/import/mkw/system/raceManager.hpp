@@ -12,9 +12,9 @@ class RaceManager
 public:
     static RaceManager* Instance()
     {
-        extern RaceManager* s_instance AT(
-            RMCXD_PORT(0x809BD730, 0x809B8F70, 0x809BC790, 0x809ABD70, 0x809BDFB0) //Please Check The Demo Port
-        );
+        extern RaceManager* s_instance AT(RMCXD_PORT(
+            0x809BD730, 0x809B8F70, 0x809BC790, 0x809ABD70, 0x809BDFB0
+        ));
         return s_instance;
     }
 
