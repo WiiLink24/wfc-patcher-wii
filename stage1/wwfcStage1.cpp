@@ -38,17 +38,17 @@
 #  define NON_SBCM_ONLY(...) __VA_ARGS__
 #endif
 
-namespace
+namespace wwfc
 {
 
-using s8 = wwfc_int8_t;
-using s16 = wwfc_int16_t;
-using s32 = wwfc_int32_t;
-using s64 = wwfc_int64_t;
-using u8 = wwfc_uint8_t;
-using u16 = wwfc_uint16_t;
-using u32 = wwfc_uint32_t;
-using u64 = wwfc_uint64_t;
+using s8 = ::wwfc_int8_t;
+using s16 = ::wwfc_int16_t;
+using s32 = ::wwfc_int32_t;
+using s64 = ::wwfc_int64_t;
+using u8 = ::wwfc_uint8_t;
+using u16 = ::wwfc_uint16_t;
+using u32 = ::wwfc_uint32_t;
+using u64 = ::wwfc_uint64_t;
 using size_t = decltype(sizeof(0));
 
 /**
@@ -775,9 +775,9 @@ s32 HTTPCallback(s32 result, void* response, void* user_data)
     if (result != 0) {
         result = WL_ERROR_PAYLOAD_STAGE1_RESPONSE;
     } else {
-        result = HandleResponse(
-            param->block NON_SBCM_ONLY(, param->payload_entry_callback)
-        );
+        result = HandleResponse(NON_SBCM_ONLY(
+            param->block, param->payload_entry_callback
+        ) SBCM_ONLY(self->m_block));
     }
 
     // If success, return -1 to DWC to redo auth
@@ -1079,4 +1079,4 @@ asm(
     "blr"
 );
 
-} // namespace
+} // namespace wwfc
