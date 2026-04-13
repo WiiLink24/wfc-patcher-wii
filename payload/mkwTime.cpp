@@ -120,31 +120,22 @@ void FixRaceFinishTime(System::RaceManager::Player& player)
 
 } // namespace
 
-WWFC_DEFINE_CTR_STUB_SAVE_LR( //
-    RMCXD_PORT(0x80531F80, 0x8052D438, 0x80531900, 0x8051FFD8, 0x8053179C) +
-        0x10, //
-    u32 RaceConfig_loadNextCourse(mkw::System::RaceConfig* raceConfig),
-
-    // clang-format off
-    lwz     r0, 0xB70(r3);
-    cmpwi   r0, 0;
-    bnelr;
-    lwz     r4, 0xB8C(r3);
-    // clang-format on
-)
-
-WWFC_DEFINE_PATCH = Patch::BranchWithCTR(
+WWFC_DEFINE_PATCH = Patch::CallWithCTR(
     WWFC_PATCH_LEVEL_PARITY | WWFC_PATCH_LEVEL_BUGFIX, //
-    RMCXD_PORT(0x80531F80, 0x8052D438, 0x80531900, 0x8051FFD8, 0x8053179C),
+    RMCXD_PORT(0x8053355C, 0x8052EA14, 0x80532EDC, 0x805215B4, 0x80532D78),
 
-    [](mkw::System::RaceConfig* raceConfig) -> void {
+    [] {
+        System::RaceConfig* raceConfig = System::RaceConfig::Instance();
+
         s_raceStartMs = 0;
         if (raceConfig->raceScenario().isOnlineVersusRace()) {
             if (auto result = GetElapsedMsec(0); result.has_value()) {
                 s_raceStartMs = *result;
             }
         }
-        RaceConfig_loadNextCourse(raceConfig);
+        raceConfig->loadNextCourse();
+        System::RaceManager::Instance()->m_state =
+            System::RaceManager::State::Race;
     }
 );
 

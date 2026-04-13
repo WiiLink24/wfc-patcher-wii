@@ -27,9 +27,21 @@ public:
         /* 0x40 */ Time* m_raceFinishTime;
     };
 
+    enum class State {
+        Intro = 0,
+        Countdown = 1,
+        Race = 2,
+        Finished = 3,
+        FinishedTimeAttack = 4,
+    };
+
     FILL(0x00, 0x14);
 
-    Timer* m_timer;
+    /* 0x14 */ Timer* m_timer;
+
+    FILL(0x14, 0x28);
+
+    /* 0x28 */ State m_state;
 };
 
 } // namespace wwfc::mkw::System

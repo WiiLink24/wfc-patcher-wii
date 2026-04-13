@@ -97,6 +97,14 @@ public:
         return s_instance;
     }
 
+    void loadNextCourse()
+    {
+        [[gnu::longcall]] void loadNextCourse( //
+            RaceConfig* self
+        ) AT(RMCXD_PORT(0x80531F80, 0x8052D438, 0x80531900, 0x8051FFD8, 0x8053179C));
+        return loadNextCourse(this);
+    }
+
 private:
     /* 0x0000 */ u8 _0000[0x0020 - 0x0000];
     /* 0x0020 */ Scenario m_raceScenario;
