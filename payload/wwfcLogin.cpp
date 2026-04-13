@@ -162,7 +162,7 @@ void SendExtendedLogin(
     // TODO: Add more detailed information
     GameSpy::gpiAppendStringToBuffer(connection, outputBuffer, "\\wl:host\\");
     GameSpy::gpiAppendStringToBuffer(
-        connection, outputBuffer, HostPlatform::IsDolphin() ? "Dolphin" : "Wii"
+        connection, outputBuffer, HostPlatform::s_isDolphin ? "Dolphin" : "Wii"
     );
 
     GameSpy::gpiAppendStringToBuffer(connection, outputBuffer, "\\final\\");

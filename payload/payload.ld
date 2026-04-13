@@ -28,6 +28,11 @@ SECTIONS
 		_G_WWFCPatchEnd = .;
 
 		. = ALIGN(4);
+		_G_WWFCTestingStart = .;
+		KEEP(*(wwfc_testing))
+		_G_WWFCTestingEnd = .;
+
+		. = ALIGN(4);
 		__CTORS_START__ = .;
 		KEEP(*(.ctors*))
 		__CTORS_END__ = .;

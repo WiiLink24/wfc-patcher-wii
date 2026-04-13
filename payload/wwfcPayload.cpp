@@ -4,6 +4,7 @@
 #include "wwfcLogin.hpp"
 #include "wwfcPatch.hpp"
 #include "wwfcSupport.hpp"
+#include "wwfcTesting.hpp"
 #include "wwfcTypes.h"
 #include "wwfcVersion.h"
 #include <wwfcError.h>
@@ -161,6 +162,8 @@ s32 EntryAfterGOT(wwfc_payload* payload)
         reinterpret_cast<u32>(payload), &PatchStart,
         std::distance(&PatchStart, &PatchEnd)
     );
+
+    Testing().RunTests();
 
     Support::ChangeAuthURL();
     Login::Init();

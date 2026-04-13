@@ -48,6 +48,8 @@ typedef enum {
 typedef int GPIBool;
 typedef int gsi_bool;
 
+typedef unsigned int gsi_time;
+
 enum GPEnum {
     GP_FATAL = 1,
     GP_NON_FATAL = 0,

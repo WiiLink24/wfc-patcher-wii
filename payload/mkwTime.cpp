@@ -1,12 +1,15 @@
 
+#include "wwfcLog.hpp"
 #if RMC
 
+#  include "import/gamespy.h"
 #  include "import/mkw/system/raceConfig.hpp"
 #  include "import/mkw/system/raceManager.hpp"
 #  include "import/revolution.h"
 #  include "wwfcGPReport.hpp"
 #  include "wwfcHostPlatform.hpp"
 #  include "wwfcPatch.hpp"
+#  include "wwfcTesting.hpp"
 #  include "wwfcTypes.h"
 
 namespace wwfc::mkw::Time
@@ -172,6 +175,52 @@ void Tick()
 
     GPReport::ReportB64Encode("wl:mkw_finish_time", &report, sizeof(report));
 }
+
+WWFC_DEFINE_TEST = [](const Testing& t) {
+    // Test that GetElapsedMsec works properly
+    auto base = GetElapsedMsec(0);
+    if (!base.has_value()) {
+        return t.Error();
+    }
+
+    [[gnu::longcall]] void msleep(GameSpy::gsi_time msec)
+        AT(RMCXD_PORT(0x800F2510, 0x800F2470, 0x800F2430, 0x800F2588, 0));
+
+    msleep(100);
+    auto result = GetElapsedMsec(*base);
+    if (!result.has_value()) {
+        return t.Error();
+    }
+    int difference = __builtin_abs(int(*result - 100));
+    WWFC_LOG_NOTICE_FMT("Difference: %d", difference);
+    if (difference > 83) {
+        return t.Error();
+    }
+
+    msleep(1000);
+    result = GetElapsedMsec(*base);
+    if (!result.has_value()) {
+        return t.Error();
+    }
+    difference = __builtin_abs(int(*result - 1100));
+    WWFC_LOG_NOTICE_FMT("Difference: %d", difference);
+    if (difference > 83) {
+        return t.Error();
+    }
+
+    msleep(10000);
+    result = GetElapsedMsec(*base);
+    if (!result.has_value()) {
+        return t.Error();
+    }
+    difference = __builtin_abs(int(*result - 11100));
+    WWFC_LOG_NOTICE_FMT("Difference: %d", difference);
+    if (difference > 83) {
+        return t.Error();
+    }
+
+    return 0;
+};
 
 } // namespace wwfc::mkw::Time
 
