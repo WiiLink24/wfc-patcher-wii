@@ -77,6 +77,10 @@ std::optional<u64> GetElapsedMsec(u64 ms)
 
 void FixRaceFinishTime(System::RaceManager::Player& player)
 {
+    if (s_raceStartMs == 0) {
+        return;
+    }
+
     if (auto& scenario = System::RaceConfig::Instance()->raceScenario();
         !scenario.isOnlineVersusRace() ||
         scenario.getPlayer(player.m_id)->m_type !=
@@ -136,7 +140,9 @@ WWFC_DEFINE_PATCH = Patch::BranchWithCTR(
     [](mkw::System::RaceConfig* raceConfig) -> void {
         s_raceStartMs = 0;
         if (raceConfig->raceScenario().isOnlineVersusRace()) {
-            GetElapsedMsec(s_raceStartMs);
+            if (auto result = GetElapsedMsec(0); result.has_value()) {
+                s_raceStartMs = *result;
+            }
         }
         RaceConfig_loadNextCourse(raceConfig);
     }
