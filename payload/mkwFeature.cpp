@@ -7,13 +7,15 @@
 #  include "import/mkw/ui/page/wifiMenuPage.hpp"
 #  include "wwfcPatch.hpp"
 
-namespace wwfc::mkw::Net
+namespace wwfc
 {
 
-u32 NetController::s_reportedAids = 0x00000000;
-u32 SelectHandler::s_kickTimerFrames = 0;
+using namespace mkw;
 
-} // namespace wwfc::mkw::Net
+u32 NetController::s_reportedAids = 0x00000000;
+u32 NetSelectHandler::s_kickTimerFrames = 0;
+
+} // namespace wwfc
 
 namespace wwfc::mkw::UI
 {
@@ -198,14 +200,12 @@ WWFC_DEFINE_PATCH =
     Patch::CallWithCTR( //
         WWFC_PATCH_LEVEL_FEATURE, //
         RMCXD_PORT(0x806579A0, 0x80653518, 0x8065700C, 0x80645CB8, 0x80657EE4), //
-        [](mkw::Net::NetController* netController) -> void {
-    using namespace mkw::Net;
-
+        [](mkw::NetController* netController) -> void {
     netController->sendRacePacket();
 
-    UserHandler::Instance()->calc();
+    NetUserHandler::Instance()->calc();
 
-    SelectHandler* selectHandler = SelectHandler::Instance();
+    NetSelectHandler* selectHandler = NetSelectHandler::Instance();
     if (selectHandler) {
         selectHandler->processKicks();
     }
@@ -218,7 +218,7 @@ WWFC_DEFINE_PATCH =
     Patch::BranchWithCTR( //
         WWFC_PATCH_LEVEL_FEATURE, //
         RMCXD_PORT(0x806588C8, 0x80654440, 0x80657F34, 0x80646BE0, 0x80658E0C), //
-        ASM_LAMBDA((:ASM_IMPORT_AS(i, mkw::Net::NetController::ClearReportedAid, ClearReportedAid)),
+        ASM_LAMBDA((:ASM_IMPORT_AS(i, mkw::NetController::ClearReportedAid, ClearReportedAid)),
             // clang-format off
             mr        r3, r28;
 
@@ -236,16 +236,14 @@ WWFC_DEFINE_PATCH =
     Patch::CallWithCTR( //
         WWFC_PATCH_LEVEL_FEATURE, //
         RMCXD_PORT(0x8065FF34, 0x80657FF8, 0x8065F5A0, 0x8064E24C, 0x80660478), //
-        [](mkw::Net::SelectHandler* selectHandler,
-           mkw::Net::NetController* netController) -> mkw::Net::SelectHandler* {
-    using namespace mkw::Net;
-
+        [](mkw::NetSelectHandler* selectHandler,
+           mkw::NetController* netController) -> mkw::NetSelectHandler* {
     netController->_29B0 = 0;
     netController->_29B4 = 0;
     netController->_29B8 = 0;
     netController->_29BC = 0;
 
-    SelectHandler::ResetKickTimer();
+    NetSelectHandler::ResetKickTimer();
 
     return selectHandler;
 }
@@ -257,15 +255,13 @@ WWFC_DEFINE_PATCH =
         WWFC_PATCH_LEVEL_FEATURE, //
         RMCXD_PORT(0x8066148C, 0x80659550, 0x80660AF8, 0x8064F7A4, 0x806619D0),
         []() -> void {
-    using namespace mkw::Net;
-
-    SelectHandler* selectHandler = SelectHandler::Instance();
+    NetSelectHandler* selectHandler = NetSelectHandler::Instance();
     selectHandler->decideCourse();
     selectHandler->initPlayerIdsToPlayerAids();
 
-    SelectHandler::Packet::SelectedCourse selectedCourse =
+    NetSelectHandler::Packet::SelectedCourse selectedCourse =
         selectHandler->sendPacket().selectedCourse;
-    SelectHandler::Packet::EngineClass engineClass =
+    NetSelectHandler::Packet::EngineClass engineClass =
         selectHandler->sendPacket().engineClass;
 
     wwfc::GPReport::ReportU32(

@@ -5,11 +5,11 @@
 #  include "import/mkw/item.hpp"
 #  include "wwfcLibC.hpp"
 
-namespace wwfc::mkw::Net
+namespace wwfc::mkw
 {
 
 // https://github.com/SeekyCt/mkw-structures/blob/master/eventhandler.h
-class EventHandler
+class NetEventHandler
 {
 public:
     struct __attribute__((packed)) Packet {
@@ -25,8 +25,6 @@ public:
 
             bool isItemObjectValid() const
             {
-                using namespace mkw::Item;
-
                 ItemObject item = static_cast<ItemObject>(itemObject);
 
                 if (item == ItemObject::NoObject) {
@@ -38,8 +36,6 @@ public:
 
             bool isValid() const
             {
-                using namespace mkw::Item;
-
                 if (!isItemObjectValid()) {
                     return false;
                 }
@@ -85,8 +81,6 @@ public:
         struct ItemUsedEvent {
             bool isValid(u8 itemObject, u8 playerAid) const
             {
-                using namespace mkw::Item;
-
                 ItemObject item = static_cast<ItemObject>(itemObject);
 
                 switch (item) {
@@ -176,7 +170,7 @@ public:
         return GetEventDataSize(itemObject, eventType);
     }
 
-    static EventHandler* Instance()
+    static NetEventHandler* Instance()
     {
         return s_instance;
     }
@@ -184,13 +178,13 @@ public:
 private:
     /* 0x0000 */ u8 _0000[0x2B88 - 0x0000];
 
-    static EventHandler* s_instance AT(
+    static NetEventHandler* s_instance AT(
         RMCXD_PORT(0x809C20F0, 0x809BD928, 0x809C1150, 0x809B0730, 0x809C2988)
     );
 };
 
-static_assert(sizeof(EventHandler) == 0x2B88);
+static_assert(sizeof(NetEventHandler) == 0x2B88);
 
-} // namespace wwfc::mkw::Net
+} // namespace wwfc::mkw
 
 #endif // RMC

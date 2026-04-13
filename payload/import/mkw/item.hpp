@@ -4,7 +4,7 @@
 
 #  include <wwfcTypes.h>
 
-namespace wwfc::mkw::Item
+namespace wwfc::mkw
 {
 
 enum class ItemBox {
@@ -319,6 +319,6 @@ static ItemBox ItemObjectToItemBox(ItemObject itemObject)
     }
 }
 
-} // namespace wwfc::mkw::Item
+} // namespace wwfc::mkw
 
 #endif // RMC

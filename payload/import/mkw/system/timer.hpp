@@ -2,7 +2,7 @@
 
 #if RMC
 
-namespace wwfc::mkw::System
+namespace wwfc::mkw
 {
 
 struct Time {
@@ -20,6 +20,6 @@ public:
     /* 0x4 */ Time m_time[3];
 };
 
-} // namespace wwfc::mkw::System
+} // namespace wwfc::mkw
 
 #endif // RMC

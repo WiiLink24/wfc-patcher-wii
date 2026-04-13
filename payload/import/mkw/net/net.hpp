@@ -8,10 +8,10 @@
 #  include <wwfcGPReport.hpp>
 #  include <wwfcPayload.hpp>
 
-namespace wwfc::mkw::Net
+namespace wwfc::mkw
 {
 
-struct __attribute__((packed)) RacePacket {
+struct __attribute__((packed)) NetRacePacket {
     enum EType {
         Header,
         MatchHeader,
@@ -28,7 +28,7 @@ struct __attribute__((packed)) RacePacket {
     /* 0x08 */ u8 sizes[8];
 };
 
-static_assert(sizeof(RacePacket) == 0x10);
+static_assert(sizeof(NetRacePacket) == 0x10);
 
 // https://github.com/SeekyCt/mkw-structures/blob/master/rknetcontroller.h
 class NetController
@@ -50,19 +50,20 @@ public:
 
     void sendRacePacket()
     {
-        [[gnu::longcall]] void sendRacePacket(NetController * netController) AT(
-            RMCXD_PORT(0x80657E30, 0x806539A8, 0x8065749C, 0x80646148, 0x80658374)
-        );
+        [[gnu::longcall]] void sendRacePacket(NetController * netController)
+            AT(RMCXD_PORT(
+                0x80657E30, 0x806539A8, 0x8065749C, 0x80646148, 0x80658374
+            ));
 
         sendRacePacket(this);
     }
 
     void
-    processRacePacket(u32 playerAid, RacePacket* racePacket, u32 packetSize)
+    processRacePacket(u32 playerAid, NetRacePacket* racePacket, u32 packetSize)
     {
         [[gnu::longcall]] void processRacePacket(
             NetController * netController, u32 playerAid,
-            RacePacket * racePacket, u32 packetSize
+            NetRacePacket * racePacket, u32 packetSize
         )
             AT(RMCXD_PORT(
                 0x80659A84, 0x806555FC, 0x806590F0, 0x80647D9C, 0x80659FC8
@@ -156,10 +157,8 @@ public:
 
     bool inVanillaRaceScene() const
     {
-        int sceneId =
-            System::System::Instance().sceneManager()->getCurrentSceneID();
-        if (static_cast<System::Scene::SceneID>(sceneId) !=
-            System::Scene::SceneID::Race) {
+        int sceneId = System::Instance().sceneManager()->getCurrentSceneID();
+        if (static_cast<Scene::SceneID>(sceneId) != Scene::SceneID::Race) {
             return false;
         }
 
@@ -238,6 +237,6 @@ private:
 
 static_assert(sizeof(NetController) == 0x29C8);
 
-} // namespace wwfc::mkw::Net
+} // namespace wwfc::mkw
 
 #endif // RMC

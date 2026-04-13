@@ -7,7 +7,7 @@
 namespace wwfc::AntiFreeze
 {
 
-using namespace mkw::System;
+using namespace mkw;
 
 static const MapdataItemPoint::Data s_mapdataItemPointData = {
     EGG::Vector3f{0.0f, 0.0f, 0.0f},

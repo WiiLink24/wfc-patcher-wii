@@ -6,10 +6,10 @@
 #  include "import/rfl.h"
 #  include "wwfcLibC.hpp"
 
-namespace wwfc::mkw::Net
+namespace wwfc::mkw
 {
 
-class UserHandler
+class NetUserHandler
 {
 public:
     struct __attribute__((packed)) Packet {
@@ -100,14 +100,14 @@ public:
 
     void calc()
     {
-        [[gnu::longcall]] void calc(UserHandler * userHandler) AT(RMCXD_PORT(
+        [[gnu::longcall]] void calc(NetUserHandler * userHandler) AT(RMCXD_PORT(
             0x806629C0, 0x806608DC, 0x8066202C, 0x80650CD8, 0x80662F04
         ));
 
         calc(this);
     }
 
-    static UserHandler* Instance()
+    static NetUserHandler* Instance()
     {
         return s_instance;
     }
@@ -115,13 +115,13 @@ public:
 private:
     /* 0x000 */ u8 _000[0x9F0 - 0x000];
 
-    static UserHandler* s_instance AT(
+    static NetUserHandler* s_instance AT(
         RMCXD_PORT(0x809C2108, 0x809BD958, 0x809C1168, 0x809B0748, 0x809C29A0)
     );
 };
 
-static_assert(sizeof(UserHandler) == 0x9F0);
+static_assert(sizeof(NetUserHandler) == 0x9F0);
 
-} // namespace wwfc::mkw::Net
+} // namespace wwfc::mkw
 
 #endif // RMC

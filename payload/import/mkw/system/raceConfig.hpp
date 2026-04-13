@@ -2,7 +2,7 @@
 
 #if RMC
 
-namespace wwfc::mkw::System
+namespace wwfc::mkw
 {
 
 class RaceConfig
@@ -118,6 +118,6 @@ private:
 
 static_assert(sizeof(RaceConfig) == 0x73F0);
 
-} // namespace wwfc::mkw::System
+} // namespace wwfc::mkw
 
 #endif

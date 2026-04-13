@@ -15,7 +15,7 @@ namespace wwfc::Mii
 static void ClearMiiInfo(RFL::RFLiStoreData* miiData);
 
 #  if RMC
-static void ClearUserMiiInfo(mkw::Net::UserHandler::Packet* packet)
+static void ClearUserMiiInfo(mkw::NetUserHandler::Packet* packet)
 {
     // Clear hidden Mii info
     // Mii Group count _should_ be 2, but could be higher if the code has been
@@ -33,7 +33,7 @@ static void ClearUserMiiInfo(mkw::Net::UserHandler::Packet* packet)
 
     // Send User packet to the server
     wwfc::GPReport::ReportB64Encode(
-        "wl:mkw_user", packet, sizeof(mkw::Net::UserHandler::Packet)
+        "wl:mkw_user", packet, sizeof(mkw::NetUserHandler::Packet)
     );
 }
 

@@ -2,7 +2,7 @@
 
 #if RMC
 
-namespace wwfc::mkw::Time
+namespace wwfc::Time
 {
 
 void Tick();

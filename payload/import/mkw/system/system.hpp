@@ -5,7 +5,7 @@
 #  include "import/egg/heap.hpp"
 #  include "import/egg/sceneManager.hpp"
 
-namespace wwfc::mkw::System
+namespace wwfc::mkw
 {
 
 class Scene
@@ -55,6 +55,6 @@ private:
 
 static_assert(sizeof(System) == 0x74);
 
-} // namespace wwfc::mkw::System
+} // namespace wwfc::mkw
 
 #endif // RMC

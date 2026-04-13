@@ -15,26 +15,26 @@
 #  include "wwfcPayload.hpp"
 #  include "wwfcTypes.h"
 
-namespace wwfc::mkw::Security
+namespace wwfc::Security
 {
 
-using namespace Net;
+using namespace mkw;
 
-static std::size_t s_vanillaPacketBufferSizes[sizeof(RacePacket::sizes)] = {
-    sizeof(RacePacket),
-    sizeof(MatchHeaderHandler::Packet),
+static std::size_t s_vanillaPacketBufferSizes[sizeof(NetRacePacket::sizes)] = {
+    sizeof(NetRacePacket),
+    sizeof(NetMatchHeaderHandler::Packet),
     0x28,
-    sizeof(SelectHandler::Packet),
+    sizeof(NetSelectHandler::Packet),
     0x40 << 1,
-    sizeof(UserHandler::Packet),
-    sizeof(ItemHandler::Packet) << 1,
-    sizeof(EventHandler::Packet),
+    sizeof(NetUserHandler::Packet),
+    sizeof(NetItemHandler::Packet) << 1,
+    sizeof(NetEventHandler::Packet),
 };
 
-static bool IsPacketSizeValid(RacePacket::EType packetType, u8 packetSize)
+static bool IsPacketSizeValid(NetRacePacket::EType packetType, u8 packetSize)
 {
-    if (packetType >= RacePacket::MatchHeader &&
-        packetType <= RacePacket::Event) {
+    if (packetType >= NetRacePacket::MatchHeader &&
+        packetType <= NetRacePacket::Event) {
         if (packetSize == 0) {
             return true;
         }
@@ -42,8 +42,10 @@ static bool IsPacketSizeValid(RacePacket::EType packetType, u8 packetSize)
 
     std::size_t* packetBufferSizesPointer;
     if (!NetController::Instance()->isEnableAggressivePacketChecks()) {
-        extern std::size_t packetBufferSizes[sizeof(RacePacket::sizes)] AT(
-            RMCXD_PORT(0x8089A194, 0x80895AC4, 0x808992F4, 0x808885CC, 0x8089A864)
+        extern std::size_t packetBufferSizes[sizeof(NetRacePacket::sizes)] AT(
+            RMCXD_PORT(
+                0x8089A194, 0x80895AC4, 0x808992F4, 0x808885CC, 0x8089A864
+            )
         );
 
         packetBufferSizesPointer = packetBufferSizes;
@@ -52,70 +54,70 @@ static bool IsPacketSizeValid(RacePacket::EType packetType, u8 packetSize)
     }
 
     switch (packetType) {
-    case RacePacket::Header: {
-        if (packetSize < sizeof(RacePacket) ||
-            packetSize > packetBufferSizesPointer[RacePacket::Header]) {
+    case NetRacePacket::Header: {
+        if (packetSize < sizeof(NetRacePacket) ||
+            packetSize > packetBufferSizesPointer[NetRacePacket::Header]) {
             return false;
         }
 
         return true;
     }
-    case RacePacket::MatchHeader: {
-        if (packetSize < sizeof(MatchHeaderHandler::Packet) ||
-            packetSize > packetBufferSizesPointer[RacePacket::MatchHeader]) {
+    case NetRacePacket::MatchHeader: {
+        if (packetSize < sizeof(NetMatchHeaderHandler::Packet) ||
+            packetSize > packetBufferSizesPointer[NetRacePacket::MatchHeader]) {
             return false;
         }
 
         return true;
     }
-    case RacePacket::MatchData: {
+    case NetRacePacket::MatchData: {
         if (packetSize < 0x28 ||
-            packetSize > packetBufferSizesPointer[RacePacket::MatchData]) {
+            packetSize > packetBufferSizesPointer[NetRacePacket::MatchData]) {
             return false;
         }
 
         return true;
     }
-    case RacePacket::RoomSelect: {
+    case NetRacePacket::RoomSelect: {
         // 'Room' packet
-        if (packetSize < sizeof(SelectHandler::Packet)) {
-            return packetSize >= sizeof(RoomHandler::Packet);
+        if (packetSize < sizeof(NetSelectHandler::Packet)) {
+            return packetSize >= sizeof(NetRoomHandler::Packet);
         }
 
         // 'Select' packet
-        if (packetSize > packetBufferSizesPointer[RacePacket::RoomSelect]) {
+        if (packetSize > packetBufferSizesPointer[NetRacePacket::RoomSelect]) {
             return false;
         }
 
         return true;
     }
-    case RacePacket::PlayerData: {
+    case NetRacePacket::PlayerData: {
         if (packetSize < 0x40 ||
-            packetSize > packetBufferSizesPointer[RacePacket::PlayerData]) {
+            packetSize > packetBufferSizesPointer[NetRacePacket::PlayerData]) {
             return false;
         }
 
         return true;
     }
-    case RacePacket::User: {
-        if (packetSize < sizeof(UserHandler::Packet) ||
-            packetSize > packetBufferSizesPointer[RacePacket::User]) {
+    case NetRacePacket::User: {
+        if (packetSize < sizeof(NetUserHandler::Packet) ||
+            packetSize > packetBufferSizesPointer[NetRacePacket::User]) {
             return false;
         }
 
         return true;
     }
-    case RacePacket::Item: {
-        if (packetSize < sizeof(ItemHandler::Packet) ||
-            packetSize > packetBufferSizesPointer[RacePacket::Item]) {
+    case NetRacePacket::Item: {
+        if (packetSize < sizeof(NetItemHandler::Packet) ||
+            packetSize > packetBufferSizesPointer[NetRacePacket::Item]) {
             return false;
         }
 
         return true;
     }
-    case RacePacket::Event: {
-        if (packetSize < sizeof(EventHandler::Packet::eventInfo) ||
-            packetSize > packetBufferSizesPointer[RacePacket::Event]) {
+    case NetRacePacket::Event: {
+        if (packetSize < sizeof(NetEventHandler::Packet::eventInfo) ||
+            packetSize > packetBufferSizesPointer[NetRacePacket::Event]) {
             return false;
         }
 
@@ -139,12 +141,10 @@ static bool IsMatchHeaderPacketDataValid(
     const void* packet, u8 /* packetSize */, u8 /* playerAid */
 )
 {
-    using namespace mkw::Net;
     using namespace mkw::Registry;
-    using namespace mkw::System;
 
-    const MatchHeaderHandler::Packet* matchHeaderPacket =
-        reinterpret_cast<const MatchHeaderHandler::Packet*>(packet);
+    const NetMatchHeaderHandler::Packet* matchHeaderPacket =
+        reinterpret_cast<const NetMatchHeaderHandler::Packet*>(packet);
 
     if (wwfc::Payload::g_enableAggressivePacketChecks == WWFC_BOOLEAN_FALSE ||
         (wwfc::Payload::g_enableAggressivePacketChecks == WWFC_BOOLEAN_RESET &&
@@ -155,14 +155,14 @@ static bool IsMatchHeaderPacketDataValid(
     RaceConfig::Scenario* scenario = &RaceConfig::Instance()->raceScenario();
 
     for (std::size_t n = 0; n < std::size(matchHeaderPacket->player); n++) {
-        MatchHeaderHandler::Packet::Player player =
+        NetMatchHeaderHandler::Packet::Player player =
             matchHeaderPacket->player[n];
 
-        MatchHeaderHandler::Packet::Vehicle playerVehicle = player.vehicle;
-        MatchHeaderHandler::Packet::Character playerCharacter =
+        NetMatchHeaderHandler::Packet::Vehicle playerVehicle = player.vehicle;
+        NetMatchHeaderHandler::Packet::Character playerCharacter =
             player.character;
-        if (playerVehicle == MatchHeaderHandler::Packet::Vehicle::None &&
-            playerCharacter == MatchHeaderHandler::Packet::Character::None) {
+        if (playerVehicle == NetMatchHeaderHandler::Packet::Vehicle::None &&
+            playerCharacter == NetMatchHeaderHandler::Packet::Character::None) {
             continue;
         }
 
@@ -179,9 +179,9 @@ static bool IsMatchHeaderPacketDataValid(
         }
     }
 
-    MatchHeaderHandler::Packet::Course currentCourse =
+    NetMatchHeaderHandler::Packet::Course currentCourse =
         matchHeaderPacket->course;
-    if (currentCourse != MatchHeaderHandler::Packet::Course::None) {
+    if (currentCourse != NetMatchHeaderHandler::Packet::Course::None) {
         Course course = static_cast<Course>(currentCourse);
         if (scenario->isOnlineVersusRace()) {
             if (!IsRaceCourse(course)) {
@@ -208,12 +208,12 @@ static bool
 IsRoomSelectPacketDataValid(const void* packet, u8 packetSize, u8 playerAid)
 {
     // 'Room' packet
-    if (packetSize == sizeof(RoomHandler::Packet)) {
-        const RoomHandler::Packet* roomPacket =
-            reinterpret_cast<const RoomHandler::Packet*>(packet);
+    if (packetSize == sizeof(NetRoomHandler::Packet)) {
+        const NetRoomHandler::Packet* roomPacket =
+            reinterpret_cast<const NetRoomHandler::Packet*>(packet);
 
         switch (roomPacket->event) {
-        case RoomHandler::Packet::Event::StartRoom: {
+        case NetRoomHandler::Packet::Event::StartRoom: {
             // Ensure that guests can't start rooms
             if (!NetController::Instance()->isAidTheServer(playerAid)) {
                 return false;
@@ -231,28 +231,28 @@ IsRoomSelectPacketDataValid(const void* packet, u8 packetSize, u8 playerAid)
             return true;
         }
 
-        System::RaceConfig::Scenario* scenario;
-        if (static_cast<System::Scene::SceneID>(
-                System::System::Instance().sceneManager()->getCurrentSceneID()
-            ) == System::Scene::SceneID::Race) {
-            scenario = &System::RaceConfig::Instance()->raceScenario();
+        RaceConfig::Scenario* scenario;
+        if (static_cast<Scene::SceneID>(
+                System::Instance().sceneManager()->getCurrentSceneID()
+            ) == Scene::SceneID::Race) {
+            scenario = &RaceConfig::Instance()->raceScenario();
         } else {
-            scenario = &System::RaceConfig::Instance()->menuScenario();
+            scenario = &RaceConfig::Instance()->menuScenario();
         }
 
-        const SelectHandler::Packet* selectPacket =
-            reinterpret_cast<const SelectHandler::Packet*>(packet);
+        const NetSelectHandler::Packet* selectPacket =
+            reinterpret_cast<const NetSelectHandler::Packet*>(packet);
         for (std::size_t n = 0; n < std::size(selectPacket->player); n++) {
-            SelectHandler::Packet::Player player = selectPacket->player[n];
+            NetSelectHandler::Packet::Player player = selectPacket->player[n];
 
-            SelectHandler::Packet::Player::Character selectedCharacter =
+            NetSelectHandler::Packet::Player::Character selectedCharacter =
                 player.character;
-            SelectHandler::Packet::Player::Vehicle selectedVehicle =
+            NetSelectHandler::Packet::Player::Vehicle selectedVehicle =
                 player.vehicle;
             if (selectedCharacter !=
-                    SelectHandler::Packet::Player::Character::NotSelected ||
+                    NetSelectHandler::Packet::Player::Character::NotSelected ||
                 selectedVehicle !=
-                    SelectHandler::Packet::Player::Vehicle::NotSelected) {
+                    NetSelectHandler::Packet::Player::Vehicle::NotSelected) {
                 Registry::Character character =
                     static_cast<Registry::Character>(selectedCharacter);
                 Registry::Vehicle vehicle =
@@ -268,12 +268,12 @@ IsRoomSelectPacketDataValid(const void* packet, u8 packetSize, u8 playerAid)
                 }
             }
 
-            SelectHandler::Packet::Player::CourseVote courseVote =
+            NetSelectHandler::Packet::Player::CourseVote courseVote =
                 selectPacket->player[n].courseVote;
             if (courseVote ==
-                    SelectHandler::Packet::Player::CourseVote::NotSelected ||
+                    NetSelectHandler::Packet::Player::CourseVote::NotSelected ||
                 courseVote ==
-                    SelectHandler::Packet::Player::CourseVote::Random) {
+                    NetSelectHandler::Packet::Player::CourseVote::Random) {
                 continue;
             }
             Registry::Course course = static_cast<Registry::Course>(courseVote);
@@ -289,7 +289,7 @@ IsRoomSelectPacketDataValid(const void* packet, u8 packetSize, u8 playerAid)
         }
 
         if (selectPacket->selectedCourse !=
-            SelectHandler::Packet::SelectedCourse::NotSelected) {
+            NetSelectHandler::Packet::SelectedCourse::NotSelected) {
             Registry::Course course =
                 static_cast<Registry::Course>(selectPacket->selectedCourse);
             if (scenario->isOnlineVersusRace()) {
@@ -318,8 +318,8 @@ static bool IsUserPacketDataValid(
     const void* packet, u8 /* packetSize */, u8 /* playerAid */
 )
 {
-    const UserHandler::Packet* userPacket =
-        reinterpret_cast<const UserHandler::Packet*>(packet);
+    const NetUserHandler::Packet* userPacket =
+        reinterpret_cast<const NetUserHandler::Packet*>(packet);
 
     if (!userPacket->isValid()) {
         return false;
@@ -331,9 +331,6 @@ static bool IsUserPacketDataValid(
 static bool
 IsItemPacketDataValid(const void* packet, u8 packetSize, u8 /* playerAid */)
 {
-    using namespace mkw::Item;
-    using namespace mkw::System;
-
     if (wwfc::Payload::g_enableAggressivePacketChecks == WWFC_BOOLEAN_FALSE ||
         (wwfc::Payload::g_enableAggressivePacketChecks == WWFC_BOOLEAN_RESET &&
          !NetController::Instance()->inVanillaRaceScene())) {
@@ -343,10 +340,10 @@ IsItemPacketDataValid(const void* packet, u8 packetSize, u8 /* playerAid */)
     RaceConfig::Scenario* scenario = &RaceConfig::Instance()->raceScenario();
 
     for (u8 n = 0; n < (packetSize >> 3); n++) {
-        const ItemHandler::Packet* itemPacket =
-            reinterpret_cast<const ItemHandler::Packet*>(
+        const NetItemHandler::Packet* itemPacket =
+            reinterpret_cast<const NetItemHandler::Packet*>(
                 reinterpret_cast<const char*>(packet) +
-                (sizeof(ItemHandler::Packet) * n)
+                (sizeof(NetItemHandler::Packet) * n)
             );
 
         ItemBox heldItem = static_cast<ItemBox>(itemPacket->heldItem);
@@ -396,14 +393,14 @@ IsItemPacketDataValid(const void* packet, u8 packetSize, u8 /* playerAid */)
 static bool
 IsEventPacketDataValid(const void* packet, u8 packetSize, u8 playerAid)
 {
-    if (static_cast<System::Scene::SceneID>(
-            System::System::Instance().sceneManager()->getCurrentSceneID()
-        ) != System::Scene::SceneID::Race) {
+    if (static_cast<Scene::SceneID>(
+            System::Instance().sceneManager()->getCurrentSceneID()
+        ) != Scene::SceneID::Race) {
         return true;
     }
 
-    const EventHandler::Packet* eventPacket =
-        reinterpret_cast<const EventHandler::Packet*>(packet);
+    const NetEventHandler::Packet* eventPacket =
+        reinterpret_cast<const NetEventHandler::Packet*>(packet);
     const bool packetChecks =
         NetController::Instance()->isEnableAggressivePacketChecks();
 
@@ -430,7 +427,7 @@ typedef bool (*IsPacketDataValid)(
     const void* packet, u8 packetSize, u8 playerAid
 );
 
-static std::array<IsPacketDataValid, sizeof(RacePacket::sizes)>
+static std::array<IsPacketDataValid, sizeof(NetRacePacket::sizes)>
     s_isPacketDataValid{
         IsHeaderPacketDataValid,     IsMatchHeaderPacketDataValid,
         IsMatchDataPacketDataValid,  IsRoomSelectPacketDataValid,
@@ -439,16 +436,16 @@ static std::array<IsPacketDataValid, sizeof(RacePacket::sizes)>
     };
 
 bool IsRacePacketValid(
-    const RacePacket* racePacket, u32 racePacketSize, u8 playerAid
+    const NetRacePacket* racePacket, u32 racePacketSize, u8 playerAid
 )
 {
-    if (racePacketSize < sizeof(RacePacket)) {
+    if (racePacketSize < sizeof(NetRacePacket)) {
         return false;
     }
 
     u32 expectedPacketSize = 0;
     for (std::size_t n = 0; n < std::size(racePacket->sizes); n++) {
-        RacePacket::EType packetType = static_cast<RacePacket::EType>(n);
+        NetRacePacket::EType packetType = static_cast<NetRacePacket::EType>(n);
         u8 packetSize = racePacket->sizes[n];
 
         if (!IsPacketSizeValid(packetType, packetSize)) {
@@ -488,6 +485,6 @@ bool IsRacePacketValid(
     return true;
 }
 
-} // namespace wwfc::mkw::Security
+} // namespace wwfc::Security
 
 #endif // RMC

@@ -12,7 +12,7 @@ namespace wwfc::Process
  */
 void Tick()
 {
-    mkw::Time::Tick();
+    Time::Tick();
 }
 
 // Call the tick function every frame

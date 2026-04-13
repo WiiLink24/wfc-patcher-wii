@@ -4,7 +4,7 @@
 
 #  include "timer.hpp"
 
-namespace wwfc::mkw::System
+namespace wwfc::mkw
 {
 
 class RaceManager
@@ -44,6 +44,6 @@ public:
     /* 0x28 */ State m_state;
 };
 
-} // namespace wwfc::mkw::System
+} // namespace wwfc::mkw
 
 #endif // RMC

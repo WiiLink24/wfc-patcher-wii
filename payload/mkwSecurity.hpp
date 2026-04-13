@@ -4,13 +4,13 @@
 
 #  include "import/mkw/net/net.hpp"
 
-namespace wwfc::mkw::Security
+namespace wwfc::Security
 {
 
 bool IsRacePacketValid(
-    const Net::RacePacket* racePacket, u32 racePacketSize, u8 playerAid
+    const mkw::NetRacePacket* racePacket, u32 racePacketSize, u8 playerAid
 );
 
-} // namespace wwfc::mkw::Security
+} // namespace wwfc::Security
 
 #endif // RMC

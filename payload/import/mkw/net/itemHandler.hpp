@@ -4,11 +4,11 @@
 
 #  include "import/mkw/item.hpp"
 
-namespace wwfc::mkw::Net
+namespace wwfc::mkw
 {
 
 // https://github.com/SeekyCt/mkw-structures/blob/master/itemhandler.h
-class ItemHandler
+class NetItemHandler
 {
 public:
     struct __attribute__((packed)) Packet {
@@ -36,8 +36,6 @@ public:
 
         bool isHeldPhaseValid() const
         {
-            using namespace mkw::Item;
-
             ItemBox item = static_cast<ItemBox>(heldItem);
 
             switch (heldPhase) {
@@ -73,8 +71,6 @@ public:
 
         bool isTrailPhaseValid() const
         {
-            using namespace mkw::Item;
-
             ItemBox item = static_cast<ItemBox>(trailedItem);
 
             switch (trailPhase) {
@@ -108,7 +104,7 @@ public:
 
     static_assert(sizeof(Packet) == 0x08);
 
-    static ItemHandler* Instance()
+    static NetItemHandler* Instance()
     {
         return s_instance;
     }
@@ -116,13 +112,13 @@ public:
 private:
     /* 0x000 */ u8 _000[0x184 - 0x000];
 
-    static ItemHandler* s_instance AT(
+    static NetItemHandler* s_instance AT(
         RMCXD_PORT(0x809C20F8, 0x809BD950, 0x809C1158, 0x809B0738, 0x809C2990)
     );
 };
 
-static_assert(sizeof(ItemHandler) == 0x184);
+static_assert(sizeof(NetItemHandler) == 0x184);
 
-} // namespace wwfc::mkw::Net
+} // namespace wwfc::mkw
 
 #endif // RMC

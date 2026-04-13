@@ -9,8 +9,10 @@
 #  include "wwfcPatch.hpp"
 #  include "wwfcTypes.h"
 
-namespace wwfc::mkw::Time
+namespace wwfc::Time
 {
+
+using namespace mkw;
 
 namespace
 {
@@ -75,16 +77,16 @@ std::optional<u64> GetElapsedMsec(u64 ms)
     return ms2 - static_cast<u32>(ms);
 }
 
-void FixRaceFinishTime(System::RaceManager::Player& player)
+void FixRaceFinishTime(RaceManager::Player& player)
 {
     if (s_raceStartMs == 0) {
         return;
     }
 
-    if (auto& scenario = System::RaceConfig::Instance()->raceScenario();
+    if (auto& scenario = RaceConfig::Instance()->raceScenario();
         !scenario.isOnlineVersusRace() ||
         scenario.getPlayer(player.m_id)->m_type !=
-            System::RaceConfig::Player::Type::Master) {
+            RaceConfig::Player::Type::Master) {
         return;
     }
 
@@ -94,10 +96,10 @@ void FixRaceFinishTime(System::RaceManager::Player& player)
     }
     u64 ms = MsecRoundFrames(static_cast<u32>(*result));
 
-    System::Time& time = System::RaceManager::Instance()->m_timer->m_time[0];
+    mkw::Time& time = RaceManager::Instance()->m_timer->m_time[0];
     u32 inGameMs =
         time.m_milliseconds + time.m_seconds * 1000 + time.m_minutes * 60000;
-    System::Time& finishTime = *player.m_raceFinishTime;
+    mkw::Time& finishTime = *player.m_raceFinishTime;
     u32 finishTimeMs = finishTime.m_milliseconds + finishTime.m_seconds * 1000 +
                        finishTime.m_minutes * 60000;
     u32 difference = ms - inGameMs;
@@ -125,7 +127,7 @@ WWFC_DEFINE_PATCH = Patch::CallWithCTR(
     RMCXD_PORT(0x8053355C, 0x8052EA14, 0x80532EDC, 0x805215B4, 0x80532D78),
 
     [] {
-        System::RaceConfig* raceConfig = System::RaceConfig::Instance();
+        RaceConfig* raceConfig = RaceConfig::Instance();
 
         s_raceStartMs = 0;
         if (raceConfig->raceScenario().isOnlineVersusRace()) {
@@ -134,8 +136,7 @@ WWFC_DEFINE_PATCH = Patch::CallWithCTR(
             }
         }
         raceConfig->loadNextCourse();
-        System::RaceManager::Instance()->m_state =
-            System::RaceManager::State::Race;
+        RaceManager::Instance()->m_state = RaceManager::State::Race;
     }
 );
 
@@ -170,6 +171,6 @@ void Tick()
     GPReport::ReportB64Encode("wl:mkw_finish_time", &report, sizeof(report));
 }
 
-} // namespace wwfc::mkw::Time
+} // namespace wwfc::Time
 
 #endif // RMC

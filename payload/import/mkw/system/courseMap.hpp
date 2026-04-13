@@ -4,7 +4,7 @@
 
 #  include "import/egg/vector.hpp"
 
-namespace wwfc::mkw::System
+namespace wwfc::mkw
 {
 
 // https://github.com/riidefi/mkw/blob/master/source/game/system/CourseMap.hpp#L359-L373
@@ -63,6 +63,6 @@ private:
 
 static_assert(sizeof(MapdataItemPoint) == 0x14);
 
-} // namespace wwfc::mkw::System
+} // namespace wwfc::mkw
 
 #endif // RMC

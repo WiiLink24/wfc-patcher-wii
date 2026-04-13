@@ -104,7 +104,9 @@ WWFC_DEFINE_PATCH = Patch::CallWithCTR(
 // expecting.
 WWFC_DEFINE_PATCH = Patch::WriteASM(
     WWFC_PATCH_LEVEL_CRITICAL, //
-    RMCXD_PORT(0x800CE220, 0x800CE180, 0x800CE140, 0x800CE280, 0x800CDFF0) // Disc
+    RMCXD_PORT(
+        0x800CE220, 0x800CE180, 0x800CE140, 0x800CE280, 0x800CDFF0
+    ) // Disc
     RMCXN_PORT(0x800B5D98, 0x800B5D08, 0x800B5CE8, 0x800B5E08), // Channel
     1, ASM_LAMBDA((), li r6, 0x10)
 );
@@ -122,9 +124,9 @@ WWFC_DEFINE_PATCH = Patch::WriteASM(
 WWFC_DEFINE_PATCH = Patch::BranchWithCTR( //
     WWFC_PATCH_LEVEL_CRITICAL, //
     RMCXD_PORT(0x80658604, 0x8065417C, 0x80657C70, 0x8064691C, 0x80658B48), //
-    [](mkw::Net::NetController* netController, mkw::Net::RacePacket* racePacket,
+    [](mkw::NetController* netController, mkw::NetRacePacket* racePacket,
        u32 packetSize, u32 _, u8 playerAid) -> void {
-    if (packetSize < sizeof(mkw::Net::RacePacket)) {
+    if (packetSize < sizeof(mkw::NetRacePacket)) {
         WWFC_LOG_WARN_FMT(
             "Invalid Race packet from aid %u (insufficient size)", playerAid
         );
@@ -152,7 +154,7 @@ WWFC_DEFINE_PATCH = Patch::BranchWithCTR( //
         return;
     }
 
-    if (!mkw::Security::IsRacePacketValid(racePacket, packetSize, playerAid)) {
+    if (!IsRacePacketValid(racePacket, packetSize, playerAid)) {
         WWFC_LOG_WARN_FMT(
             "Invalid Race packet from aid %u (malicious packet)", playerAid
         );

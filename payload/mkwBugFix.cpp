@@ -5,7 +5,7 @@
 #  include "wwfcPatch.hpp"
 #  include "wwfcPayload.hpp"
 
-namespace wwfc::mkw::BugFix
+namespace wwfc::BugFix
 {
 
 // Prevent forced disconnection from circumstances such as a player using "No
@@ -78,11 +78,11 @@ static u64 IsUltraShortcutCheckEnabled(u32 r3Discard, u32 r4Save)
 {
     bool enabled = false;
 
-    auto raceConfig = mkw::System::RaceConfig::Instance();
+    auto raceConfig = mkw::RaceConfig::Instance();
     if (raceConfig->raceScenario().isOnlineVersusRace()) {
         if (Payload::g_enableUltraUncut == WWFC_BOOLEAN_RESET) {
             // Check if Worldwide or other vanilla match
-            auto netController = mkw::Net::NetController::Instance();
+            auto netController = mkw::NetController::Instance();
             if (netController && netController->inVanillaMatch()) {
                 enabled = true;
             }
@@ -95,6 +95,6 @@ static u64 IsUltraShortcutCheckEnabled(u32 r3Discard, u32 r4Save)
     return (u64(enabled ? 1 : 0) << 32) | r4Save;
 }
 
-} // namespace wwfc::mkw::BugFix
+} // namespace wwfc::BugFix
 
 #endif // RMC

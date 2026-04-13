@@ -2,10 +2,10 @@
 
 #if RMC
 
-namespace wwfc::mkw::Net
+namespace wwfc::mkw
 {
 
-class MatchHeaderHandler
+class NetMatchHeaderHandler
 {
 public:
     struct __attribute__((packed)) Packet {
@@ -37,7 +37,7 @@ public:
 
     static_assert(sizeof(Packet) == 0x28);
 
-    static MatchHeaderHandler* Instance()
+    static NetMatchHeaderHandler* Instance()
     {
         return s_instance;
     }
@@ -45,13 +45,13 @@ public:
 private:
     /* 0x000 */ u8 _000[0x260 - 0x000];
 
-    static MatchHeaderHandler* s_instance AT(
+    static NetMatchHeaderHandler* s_instance AT(
         RMCXD_PORT(0x809C2118, 0x809BD940, 0x809C1178, 0x809B0758, 0x809C29B0)
     );
 };
 
-static_assert(sizeof(MatchHeaderHandler) == 0x260);
+static_assert(sizeof(NetMatchHeaderHandler) == 0x260);
 
-} // namespace wwfc::mkw::Net
+} // namespace wwfc::mkw
 
 #endif // RMC
