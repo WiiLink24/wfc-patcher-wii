@@ -105,7 +105,7 @@ void FixRaceFinishTime(System::RaceManager::Player& player)
     if (s32(difference) > 83) {
         // If more than 5 frames difference, add the difference to the finish
         // time
-        ms = finishTimeMs + difference;
+        ms = finishTimeMs += difference;
         finishTime.m_minutes = ms / 60000;
         ms -= finishTime.m_minutes * 60000;
         finishTime.m_seconds = ms / 1000;
