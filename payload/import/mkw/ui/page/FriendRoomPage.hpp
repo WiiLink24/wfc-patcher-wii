@@ -2,8 +2,8 @@
 
 #if RMC
 
-#  include "import/mkw/net/net.hpp"
-#  include "openHostPage.hpp"
+#  include "OpenHostPage.hpp"
+#  include "import/mkw/net/NetManager.hpp"
 
 namespace wwfc::mkw::UI
 {
@@ -20,7 +20,7 @@ public:
 
         onActivate(this);
 
-        if (mkw::NetController::Instance()->amITheRoomHost()) {
+        if (mkw::NetManager::Instance()->amITheRoomHost()) {
             OpenHostPage::onActivate();
         }
     }
@@ -34,7 +34,7 @@ public:
 
         onDeactivate(this);
 
-        if (mkw::NetController::Instance()->amITheRoomHost()) {
+        if (mkw::NetManager::Instance()->amITheRoomHost()) {
             OpenHostPage::onDeactivate();
         }
     }
@@ -48,7 +48,7 @@ public:
 
         onRefocus(this);
 
-        if (mkw::NetController::Instance()->amITheRoomHost()) {
+        if (mkw::NetManager::Instance()->amITheRoomHost()) {
             OpenHostPage::onRefocus();
         }
     }

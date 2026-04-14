@@ -1,7 +1,7 @@
 #if RMC
 
-#  include "import/mkw/animation.hpp"
-#  include "import/mkw/system/courseMap.hpp"
+#  include "import/mkw/Animation.hpp"
+#  include "import/mkw/system/CourseMap.hpp"
 #  include "wwfcPatch.hpp"
 
 namespace wwfc::AntiFreeze

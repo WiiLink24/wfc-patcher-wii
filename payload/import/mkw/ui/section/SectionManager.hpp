@@ -2,7 +2,7 @@
 
 #if RMC
 
-#  include "section.hpp"
+#  include "Section.hpp"
 
 namespace wwfc::mkw::UI
 {

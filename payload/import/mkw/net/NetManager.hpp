@@ -3,8 +3,8 @@
 #if RMC
 
 #  include "import/dwc.h"
-#  include "import/mkw/hostSystem.hpp"
-#  include "import/mkw/system/system.hpp"
+#  include "import/mkw/boot/SystemManager.hpp"
+#  include "import/mkw/system/System.hpp"
 #  include <wwfcGPReport.hpp>
 #  include <wwfcPayload.hpp>
 
@@ -31,7 +31,7 @@ struct __attribute__((packed)) NetRacePacket {
 static_assert(sizeof(NetRacePacket) == 0x10);
 
 // https://github.com/SeekyCt/mkw-structures/blob/master/rknetcontroller.h
-class NetController
+class NetManager
 {
 public:
     enum class JoinType {
@@ -50,7 +50,7 @@ public:
 
     void sendRacePacket()
     {
-        [[gnu::longcall]] void sendRacePacket(NetController * netController)
+        [[gnu::longcall]] void sendRacePacket(NetManager * netController)
             AT(RMCXD_PORT(
                 0x80657E30, 0x806539A8, 0x8065749C, 0x80646148, 0x80658374
             ));
@@ -62,7 +62,7 @@ public:
     processRacePacket(u32 playerAid, NetRacePacket* racePacket, u32 packetSize)
     {
         [[gnu::longcall]] void processRacePacket(
-            NetController * netController, u32 playerAid,
+            NetManager * netController, u32 playerAid,
             NetRacePacket * racePacket, u32 packetSize
         )
             AT(RMCXD_PORT(
@@ -104,8 +104,6 @@ public:
 
     bool usingCustomRegion() const
     {
-        using namespace mkw::HostSystem;
-
         // Allow clients to modify their region without having to change
         // their matching area.
         extern SystemManager::MatchingArea customMatchingArea AT(0x80005EFC);
@@ -190,7 +188,7 @@ public:
         s_reportedAids &= ~(1 << playerAid);
     }
 
-    static NetController* Instance()
+    static NetManager* Instance()
     {
         return s_instance;
     }
@@ -230,12 +228,12 @@ private:
 
     static u32 s_reportedAids;
 
-    static NetController* s_instance AT(
+    static NetManager* s_instance AT(
         RMCXD_PORT(0x809C20D8, 0x809BD918, 0x809C1138, 0x809B0718, 0x809C2970)
     );
 };
 
-static_assert(sizeof(NetController) == 0x29C8);
+static_assert(sizeof(NetManager) == 0x29C8);
 
 } // namespace wwfc::mkw
 

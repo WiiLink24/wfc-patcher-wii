@@ -2,7 +2,7 @@
 
 #if RMC
 
-#  include "openHostPage.hpp"
+#  include "OpenHostPage.hpp"
 
 namespace wwfc::mkw::UI
 {

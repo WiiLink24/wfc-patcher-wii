@@ -1,15 +1,15 @@
 #if RMC
 
-#  include "import/mkw/net/eventHandler.hpp"
-#  include "import/mkw/net/itemHandler.hpp"
-#  include "import/mkw/net/matchHeaderHandler.hpp"
-#  include "import/mkw/net/net.hpp"
-#  include "import/mkw/net/roomHandler.hpp"
-#  include "import/mkw/net/selectHandler.hpp"
-#  include "import/mkw/net/userHandler.hpp"
-#  include "import/mkw/registry.hpp"
-#  include "import/mkw/system/raceConfig.hpp"
-#  include "import/mkw/system/system.hpp"
+#  include "import/mkw/Registry.hpp"
+#  include "import/mkw/net/NetEventHandler.hpp"
+#  include "import/mkw/net/NetItemHandler.hpp"
+#  include "import/mkw/net/NetManager.hpp"
+#  include "import/mkw/net/NetMatchHeaderHandler.hpp"
+#  include "import/mkw/net/NetRoomHandler.hpp"
+#  include "import/mkw/net/NetSelectHandler.hpp"
+#  include "import/mkw/net/NetUserHandler.hpp"
+#  include "import/mkw/system/RaceConfig.hpp"
+#  include "import/mkw/system/System.hpp"
 #  include "wwfcLibC.hpp"
 #  include "wwfcLog.hpp"
 #  include "wwfcPayload.hpp"
@@ -41,7 +41,7 @@ static bool IsPacketSizeValid(NetRacePacket::EType packetType, u8 packetSize)
     }
 
     std::size_t* packetBufferSizesPointer;
-    if (!NetController::Instance()->isEnableAggressivePacketChecks()) {
+    if (!NetManager::Instance()->isEnableAggressivePacketChecks()) {
         extern std::size_t packetBufferSizes[sizeof(NetRacePacket::sizes)] AT(
             RMCXD_PORT(
                 0x8089A194, 0x80895AC4, 0x808992F4, 0x808885CC, 0x8089A864
@@ -141,18 +141,16 @@ static bool IsMatchHeaderPacketDataValid(
     const void* packet, u8 /* packetSize */, u8 /* playerAid */
 )
 {
-    using namespace mkw::Registry;
-
     const NetMatchHeaderHandler::Packet* matchHeaderPacket =
         reinterpret_cast<const NetMatchHeaderHandler::Packet*>(packet);
 
     if (wwfc::Payload::g_enableAggressivePacketChecks == WWFC_BOOLEAN_FALSE ||
         (wwfc::Payload::g_enableAggressivePacketChecks == WWFC_BOOLEAN_RESET &&
-         !NetController::Instance()->inVanillaRaceScene())) {
+         !NetManager::Instance()->inVanillaRaceScene())) {
         return true;
     }
 
-    RaceConfig::Scenario* scenario = &RaceConfig::Instance()->raceScenario();
+    RaceConfig* scenario = &RaceConfigManager::Instance()->getConfig();
 
     for (std::size_t n = 0; n < std::size(matchHeaderPacket->player); n++) {
         NetMatchHeaderHandler::Packet::Player player =
@@ -166,8 +164,8 @@ static bool IsMatchHeaderPacketDataValid(
             continue;
         }
 
-        Vehicle vehicle = static_cast<Vehicle>(playerVehicle);
-        Character character = static_cast<Character>(playerCharacter);
+        EVehicle vehicle = static_cast<EVehicle>(playerVehicle);
+        ECharacter character = static_cast<ECharacter>(playerCharacter);
         if (scenario->isOnlineVersusRace()) {
             if (!IsCombinationValidVS(character, vehicle)) {
                 return false;
@@ -182,7 +180,7 @@ static bool IsMatchHeaderPacketDataValid(
     NetMatchHeaderHandler::Packet::Course currentCourse =
         matchHeaderPacket->course;
     if (currentCourse != NetMatchHeaderHandler::Packet::Course::None) {
-        Course course = static_cast<Course>(currentCourse);
+        ECourse course = static_cast<ECourse>(currentCourse);
         if (scenario->isOnlineVersusRace()) {
             if (!IsRaceCourse(course)) {
                 return false;
@@ -215,7 +213,7 @@ IsRoomSelectPacketDataValid(const void* packet, u8 packetSize, u8 playerAid)
         switch (roomPacket->event) {
         case NetRoomHandler::Packet::Event::StartRoom: {
             // Ensure that guests can't start rooms
-            if (!NetController::Instance()->isAidTheServer(playerAid)) {
+            if (!NetManager::Instance()->isAidTheServer(playerAid)) {
                 return false;
             }
             break;
@@ -227,17 +225,17 @@ IsRoomSelectPacketDataValid(const void* packet, u8 packetSize, u8 playerAid)
     }
     // 'Select' packet
     else {
-        if (!NetController::Instance()->isEnableAggressivePacketChecks()) {
+        if (!NetManager::Instance()->isEnableAggressivePacketChecks()) {
             return true;
         }
 
-        RaceConfig::Scenario* scenario;
+        RaceConfig* scenario;
         if (static_cast<Scene::SceneID>(
                 System::Instance().sceneManager()->getCurrentSceneID()
             ) == Scene::SceneID::Race) {
-            scenario = &RaceConfig::Instance()->raceScenario();
+            scenario = &RaceConfigManager::Instance()->getConfig();
         } else {
-            scenario = &RaceConfig::Instance()->menuScenario();
+            scenario = &RaceConfigManager::Instance()->getConfigNext();
         }
 
         const NetSelectHandler::Packet* selectPacket =
@@ -245,18 +243,15 @@ IsRoomSelectPacketDataValid(const void* packet, u8 packetSize, u8 playerAid)
         for (std::size_t n = 0; n < std::size(selectPacket->player); n++) {
             NetSelectHandler::Packet::Player player = selectPacket->player[n];
 
-            NetSelectHandler::Packet::Player::Character selectedCharacter =
-                player.character;
-            NetSelectHandler::Packet::Player::Vehicle selectedVehicle =
-                player.vehicle;
+            auto selectedCharacter = player.character;
+            auto selectedVehicle = player.vehicle;
             if (selectedCharacter !=
                     NetSelectHandler::Packet::Player::Character::NotSelected ||
                 selectedVehicle !=
                     NetSelectHandler::Packet::Player::Vehicle::NotSelected) {
-                Registry::Character character =
-                    static_cast<Registry::Character>(selectedCharacter);
-                Registry::Vehicle vehicle =
-                    static_cast<Registry::Vehicle>(selectedVehicle);
+                ECharacter character =
+                    static_cast<ECharacter>(selectedCharacter);
+                EVehicle vehicle = static_cast<EVehicle>(selectedVehicle);
                 if (scenario->isOnlineVersusRace()) {
                     if (!IsCombinationValidVS(character, vehicle)) {
                         return false;
@@ -276,7 +271,7 @@ IsRoomSelectPacketDataValid(const void* packet, u8 packetSize, u8 playerAid)
                     NetSelectHandler::Packet::Player::CourseVote::Random) {
                 continue;
             }
-            Registry::Course course = static_cast<Registry::Course>(courseVote);
+            ECourse course = static_cast<ECourse>(courseVote);
             if (scenario->isOnlineVersusRace()) {
                 if (!IsRaceCourse(course)) {
                     return false;
@@ -290,8 +285,7 @@ IsRoomSelectPacketDataValid(const void* packet, u8 packetSize, u8 playerAid)
 
         if (selectPacket->selectedCourse !=
             NetSelectHandler::Packet::SelectedCourse::NotSelected) {
-            Registry::Course course =
-                static_cast<Registry::Course>(selectPacket->selectedCourse);
+            ECourse course = static_cast<ECourse>(selectPacket->selectedCourse);
             if (scenario->isOnlineVersusRace()) {
                 if (!IsRaceCourse(course)) {
                     return false;
@@ -333,11 +327,11 @@ IsItemPacketDataValid(const void* packet, u8 packetSize, u8 /* playerAid */)
 {
     if (wwfc::Payload::g_enableAggressivePacketChecks == WWFC_BOOLEAN_FALSE ||
         (wwfc::Payload::g_enableAggressivePacketChecks == WWFC_BOOLEAN_RESET &&
-         !NetController::Instance()->inVanillaRaceScene())) {
+         !NetManager::Instance()->inVanillaRaceScene())) {
         return true;
     }
 
-    RaceConfig::Scenario* scenario = &RaceConfig::Instance()->raceScenario();
+    RaceConfig* scenario = &RaceConfigManager::Instance()->getConfig();
 
     for (u8 n = 0; n < (packetSize >> 3); n++) {
         const NetItemHandler::Packet* itemPacket =
@@ -346,33 +340,33 @@ IsItemPacketDataValid(const void* packet, u8 packetSize, u8 /* playerAid */)
                 (sizeof(NetItemHandler::Packet) * n)
             );
 
-        ItemBox heldItem = static_cast<ItemBox>(itemPacket->heldItem);
-        ItemBox trailedItem = static_cast<ItemBox>(itemPacket->trailedItem);
+        EItemType heldItem = static_cast<EItemType>(itemPacket->heldItem);
+        EItemType trailedItem = static_cast<EItemType>(itemPacket->trailedItem);
 
         if (scenario->isOnlineVersusRace()) {
-            if (heldItem != ItemBox::NoItem && !IsHeldItemValidVS(heldItem)) {
+            if (heldItem != EItemType::EMPTY && !IsHeldItemValidVS(heldItem)) {
                 return false;
             }
-            if (trailedItem != ItemBox::NoItem &&
+            if (trailedItem != EItemType::EMPTY &&
                 !IsTrailedItemValidVS(trailedItem)) {
                 return false;
             }
         } else /* if (scenario->isOnlineBattle()) */ {
             if (scenario->isBalloonBattle()) {
-                if (heldItem != ItemBox::NoItem &&
+                if (heldItem != EItemType::EMPTY &&
                     !IsHeldItemValidBB(heldItem)) {
                     return false;
                 }
-                if (trailedItem != ItemBox::NoItem &&
+                if (trailedItem != EItemType::EMPTY &&
                     !IsTrailedItemValidBB(trailedItem)) {
                     return false;
                 }
             } else /* if (scenario->isCoinRunners()) */ {
-                if (heldItem != ItemBox::NoItem &&
+                if (heldItem != EItemType::EMPTY &&
                     !IsHeldItemValidCR(heldItem)) {
                     return false;
                 }
-                if (trailedItem != ItemBox::NoItem &&
+                if (trailedItem != EItemType::EMPTY &&
                     !IsTrailedItemValidCR(trailedItem)) {
                     return false;
                 }
@@ -402,7 +396,7 @@ IsEventPacketDataValid(const void* packet, u8 packetSize, u8 playerAid)
     const NetEventHandler::Packet* eventPacket =
         reinterpret_cast<const NetEventHandler::Packet*>(packet);
     const bool packetChecks =
-        NetController::Instance()->isEnableAggressivePacketChecks();
+        NetManager::Instance()->isEnableAggressivePacketChecks();
 
     // Always ensure that the packet does not contain any invalid item
     // objects, as this can cause a buffer overflow to occur.

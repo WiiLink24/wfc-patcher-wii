@@ -2,7 +2,7 @@
 
 #if RMC
 
-#  include "timer.hpp"
+#  include "Timer.hpp"
 
 namespace wwfc::mkw
 {

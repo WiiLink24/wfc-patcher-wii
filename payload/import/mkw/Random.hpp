@@ -2,7 +2,6 @@
 
 #if RMC
 
-
 namespace wwfc::mkw::Util
 {
 
@@ -11,9 +10,13 @@ class Random
 public:
     Random* dt(Random* random, s32 type)
     {
-        [[gnu::longcall]] Random* dt( //
+        [[gnu::longcall]] Random*
+        dt( //
             Random * random, s32 type
-        ) AT(RMCXD_PORT(0x80555538, 0x8054F518, 0x80554EB8, 0x80543590, 0x80554B60));
+        )
+            AT(RMCXD_PORT(
+                0x80555538, 0x8054F518, 0x80554EB8, 0x80543590, 0x80554B60
+            ));
 
         return dt(this, type);
     }

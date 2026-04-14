@@ -2,7 +2,7 @@
 
 #if RMC
 
-#  include "yesNoPage.hpp"
+#  include "YesNoPage.hpp"
 
 namespace wwfc::mkw::UI
 {

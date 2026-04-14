@@ -2,8 +2,7 @@
 
 #if RMC
 
-#  include "import/mkw/util.hpp"
-#  include "net.hpp"
+#  include "NetManager.hpp"
 
 namespace wwfc::mkw
 {
@@ -93,7 +92,7 @@ public:
     // https://github.com/CLF78/OpenPayload/blob/master/payload/wiimmfi/RoomStall.cpp
     void processKicks()
     {
-        NetController* netController = NetController::Instance();
+        NetManager* netController = NetManager::Instance();
         if (!netController->amITheServer()) {
             return;
         }

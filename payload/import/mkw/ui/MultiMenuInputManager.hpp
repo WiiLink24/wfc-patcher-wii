@@ -2,7 +2,7 @@
 
 #if RMC
 
-#  include "menuInputManager.hpp"
+#  include "MenuInputManager.hpp"
 
 namespace wwfc::mkw::UI
 {
@@ -20,7 +20,10 @@ public:
             MultiControlInputManager * multiControlInputManager,
             InputType inputType, IHandler * handler, bool register6 = false,
             bool register7 = false
-        ) AT(RMCXD_PORT(0x805F0D84, 0x805D62B0, 0x805F0660, 0x805DF1A4, 0x805EF81C));
+        )
+            AT(RMCXD_PORT(
+                0x805F0D84, 0x805D62B0, 0x805F0660, 0x805DF1A4, 0x805EF81C
+            ));
 
         setHandler(this, inputType, handler, register6, register7);
     }

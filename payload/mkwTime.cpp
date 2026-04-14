@@ -1,8 +1,8 @@
 
 #if RMC
 
-#  include "import/mkw/system/raceConfig.hpp"
-#  include "import/mkw/system/raceManager.hpp"
+#  include "import/mkw/system/RaceConfig.hpp"
+#  include "import/mkw/system/RaceManager.hpp"
 #  include "import/revolution.h"
 #  include "wwfcGPReport.hpp"
 #  include "wwfcHostPlatform.hpp"
@@ -83,10 +83,10 @@ void FixRaceFinishTime(RaceManager::Player& player)
         return;
     }
 
-    if (auto& scenario = RaceConfig::Instance()->raceScenario();
+    if (auto& scenario = RaceConfigManager::Instance()->getConfig();
         !scenario.isOnlineVersusRace() ||
         scenario.getPlayer(player.m_id)->m_type !=
-            RaceConfig::Player::Type::Master) {
+            RaceConfig::Player::EPlayerType::MASTER) {
         return;
     }
 
@@ -127,10 +127,10 @@ WWFC_DEFINE_PATCH = Patch::CallWithCTR(
     RMCXD_PORT(0x8053355C, 0x8052EA14, 0x80532EDC, 0x805215B4, 0x80532D78),
 
     [] {
-        RaceConfig* raceConfig = RaceConfig::Instance();
+        RaceConfigManager* raceConfig = RaceConfigManager::Instance();
 
         s_raceStartMs = 0;
-        if (raceConfig->raceScenario().isOnlineVersusRace()) {
+        if (raceConfig->getConfig().isOnlineVersusRace()) {
             if (auto result = GetElapsedMsec(0); result.has_value()) {
                 s_raceStartMs = *result;
             }

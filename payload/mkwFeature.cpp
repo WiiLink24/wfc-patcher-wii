@@ -1,10 +1,10 @@
 #if RMC
 
-#  include "import/mkw/net/selectHandler.hpp"
-#  include "import/mkw/net/userHandler.hpp"
-#  include "import/mkw/ui/page/friendRoomPage.hpp"
-#  include "import/mkw/ui/page/wifiFriendMenuPage.hpp"
-#  include "import/mkw/ui/page/wifiMenuPage.hpp"
+#  include "import/mkw/net/NetSelectHandler.hpp"
+#  include "import/mkw/net/NetUserHandler.hpp"
+#  include "import/mkw/ui/page/FriendRoomPage.hpp"
+#  include "import/mkw/ui/page/WifiFriendMenuPage.hpp"
+#  include "import/mkw/ui/page/WifiMenuPage.hpp"
 #  include "wwfcPatch.hpp"
 
 namespace wwfc
@@ -12,7 +12,7 @@ namespace wwfc
 
 using namespace mkw;
 
-u32 NetController::s_reportedAids = 0x00000000;
+u32 NetManager::s_reportedAids = 0x00000000;
 u32 NetSelectHandler::s_kickTimerFrames = 0;
 
 } // namespace wwfc
@@ -200,7 +200,7 @@ WWFC_DEFINE_PATCH =
     Patch::CallWithCTR( //
         WWFC_PATCH_LEVEL_FEATURE, //
         RMCXD_PORT(0x806579A0, 0x80653518, 0x8065700C, 0x80645CB8, 0x80657EE4), //
-        [](mkw::NetController* netController) -> void {
+        [](mkw::NetManager* netController) -> void {
     netController->sendRacePacket();
 
     NetUserHandler::Instance()->calc();
@@ -218,7 +218,7 @@ WWFC_DEFINE_PATCH =
     Patch::BranchWithCTR( //
         WWFC_PATCH_LEVEL_FEATURE, //
         RMCXD_PORT(0x806588C8, 0x80654440, 0x80657F34, 0x80646BE0, 0x80658E0C), //
-        ASM_LAMBDA((:ASM_IMPORT_AS(i, mkw::NetController::ClearReportedAid, ClearReportedAid)),
+        ASM_LAMBDA((:ASM_IMPORT_AS(i, mkw::NetManager::ClearReportedAid, ClearReportedAid)),
             // clang-format off
             mr        r3, r28;
 
@@ -237,7 +237,7 @@ WWFC_DEFINE_PATCH =
         WWFC_PATCH_LEVEL_FEATURE, //
         RMCXD_PORT(0x8065FF34, 0x80657FF8, 0x8065F5A0, 0x8064E24C, 0x80660478), //
         [](mkw::NetSelectHandler* selectHandler,
-           mkw::NetController* netController) -> mkw::NetSelectHandler* {
+           mkw::NetManager* netController) -> mkw::NetSelectHandler* {
     netController->_29B0 = 0;
     netController->_29B4 = 0;
     netController->_29B8 = 0;

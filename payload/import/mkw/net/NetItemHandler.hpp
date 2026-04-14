@@ -2,7 +2,7 @@
 
 #if RMC
 
-#  include "import/mkw/item.hpp"
+#  include "import/mkw/Item.hpp"
 
 namespace wwfc::mkw
 {
@@ -36,18 +36,18 @@ public:
 
         bool isHeldPhaseValid() const
         {
-            ItemBox item = static_cast<ItemBox>(heldItem);
+            EItemType item = static_cast<EItemType>(heldItem);
 
             switch (heldPhase) {
             case HeldPhase::NoItem:
             case HeldPhase::Rejected: {
-                return item == ItemBox::NoItem;
+                return item == EItemType::EMPTY;
             }
             case HeldPhase::Decided: {
                 return IsItemValid(item);
             }
             case HeldPhase::Finalised: {
-                if (item == ItemBox::NoItem) {
+                if (item == EItemType::EMPTY) {
                     // The item was rejected by another client
                     return true;
                 }
@@ -71,12 +71,12 @@ public:
 
         bool isTrailPhaseValid() const
         {
-            ItemBox item = static_cast<ItemBox>(trailedItem);
+            EItemType item = static_cast<EItemType>(trailedItem);
 
             switch (trailPhase) {
             case TrailPhase::NoItem:
             case TrailPhase::Used: {
-                return item == ItemBox::NoItem;
+                return item == EItemType::EMPTY;
             }
             case TrailPhase::ThreeLeftOdd:
             case TrailPhase::TwoLeftOdd:

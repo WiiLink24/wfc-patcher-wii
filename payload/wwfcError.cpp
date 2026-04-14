@@ -1,6 +1,6 @@
 #include "import/dwc.h"
 #include "import/gamespy.h"
-#include "import/mkw/ui/ui.hpp"
+#include "import/mkw/ui/FormatParam.hpp"
 #include "wwfcLibC.hpp"
 #include "wwfcPatch.hpp"
 
@@ -111,7 +111,10 @@ s32 ExplainWWFCError(s32 error, mkw::UI::FormatParam* formatParam)
 {
     [[gnu::longcall]] s32 ExplainDWCError( //
         s32 errorCode
-    ) AT(RMCXD_PORT(0x80649DA4, 0x80617594, 0x80649410, 0x806380BC, 0x8064A2D8));
+    )
+        AT(RMCXD_PORT(
+            0x80649DA4, 0x80617594, 0x80649410, 0x806380BC, 0x8064A2D8
+        ));
 
     if (s_wwfcErrorCode != 0) {
         error = s_wwfcErrorCode;

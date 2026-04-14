@@ -1,9 +1,9 @@
 #if RMC || RMCN
 
 #  if RMC
-#    include "import/mkw/net/userHandler.hpp"
+#    include "import/mkw/net/NetUserHandler.hpp"
 #  endif
-#  include "import/mkw/nwc24.hpp"
+#  include "import/mkw/Nwc24.hpp"
 #  include "import/rfl.h"
 #  include "wwfcGPReport.hpp"
 #  include "wwfcLibC.hpp"

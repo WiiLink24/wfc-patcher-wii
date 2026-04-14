@@ -2,7 +2,7 @@
 
 #if RMC
 
-#  include "import/mkw/ui/page/page.hpp"
+#  include "import/mkw/ui/page/Page.hpp"
 #  include "wwfcLibC.hpp"
 
 namespace wwfc::mkw::UI

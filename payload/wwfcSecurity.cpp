@@ -124,7 +124,7 @@ WWFC_DEFINE_PATCH = Patch::WriteASM(
 WWFC_DEFINE_PATCH = Patch::BranchWithCTR( //
     WWFC_PATCH_LEVEL_CRITICAL, //
     RMCXD_PORT(0x80658604, 0x8065417C, 0x80657C70, 0x8064691C, 0x80658B48), //
-    [](mkw::NetController* netController, mkw::NetRacePacket* racePacket,
+    [](mkw::NetManager* netController, mkw::NetRacePacket* racePacket,
        u32 packetSize, u32 _, u8 playerAid) -> void {
     if (packetSize < sizeof(mkw::NetRacePacket)) {
         WWFC_LOG_WARN_FMT(

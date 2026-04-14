@@ -2,14 +2,14 @@
 
 #if RMC
 
+#  include "MessagePopupPage.hpp"
+#  include "YesNoPopupPage.hpp"
 #  include "import/dwc.h"
 #  include "import/egg/heap.hpp"
-#  include "import/mkw/system/system.hpp"
-#  include "import/mkw/ui/multiMenuInputManager.hpp"
-#  include "import/mkw/ui/section/sectionManager.hpp"
+#  include "import/mkw/system/System.hpp"
+#  include "import/mkw/ui/MultiMenuInputManager.hpp"
+#  include "import/mkw/ui/section/SectionManager.hpp"
 #  include "import/revolution.h"
-#  include "messagePopupPage.hpp"
-#  include "yesNoPopupPage.hpp"
 
 namespace wwfc::mkw::UI
 {

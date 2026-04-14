@@ -2,8 +2,8 @@
 
 #if RMC
 
-#  include "import/mkw/ui/section/sectionManager.hpp"
-#  include "messagePopupPage.hpp"
+#  include "MessagePopupPage.hpp"
+#  include "import/mkw/ui/section/SectionManager.hpp"
 #  include "wwfcLibC.hpp"
 
 namespace wwfc::mkw::UI

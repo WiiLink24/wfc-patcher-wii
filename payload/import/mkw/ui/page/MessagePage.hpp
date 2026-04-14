@@ -2,8 +2,8 @@
 
 #if RMC
 
-#  include "import/mkw/ui/ui.hpp"
-#  include "page.hpp"
+#  include "../FormatParam.hpp"
+#  include "Page.hpp"
 
 namespace wwfc::mkw::UI
 {

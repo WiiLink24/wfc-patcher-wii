@@ -2,7 +2,7 @@
 
 #if RMC
 
-namespace wwfc::mkw::HostSystem
+namespace wwfc::mkw
 {
 
 class SystemManager
@@ -40,6 +40,6 @@ private:
 
 static_assert(sizeof(SystemManager) == 0x1100);
 
-} // namespace wwfc::mkw::HostSystem
+} // namespace wwfc::mkw
 
 #endif // RMC

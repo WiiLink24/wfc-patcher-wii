@@ -2,8 +2,8 @@
 
 #if RMC
 
-#  include "import/mkw/ui/menuInputManager.hpp"
-#  include "pageId.hpp"
+#  include "PageId.hpp"
+#  include "import/mkw/ui/MenuInputManager.hpp"
 
 namespace wwfc::mkw::UI
 {

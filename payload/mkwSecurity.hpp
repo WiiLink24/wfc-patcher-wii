@@ -2,7 +2,7 @@
 
 #if RMC
 
-#  include "import/mkw/net/net.hpp"
+#  include "import/mkw/net/NetManager.hpp"
 
 namespace wwfc::Security
 {

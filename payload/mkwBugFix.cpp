@@ -1,7 +1,7 @@
 #if RMC
 
-#  include "import/mkw/net/net.hpp"
-#  include "import/mkw/system/raceConfig.hpp"
+#  include "import/mkw/net/NetManager.hpp"
+#  include "import/mkw/system/RaceConfig.hpp"
 #  include "wwfcPatch.hpp"
 #  include "wwfcPayload.hpp"
 
@@ -78,11 +78,11 @@ static u64 IsUltraShortcutCheckEnabled(u32 r3Discard, u32 r4Save)
 {
     bool enabled = false;
 
-    auto raceConfig = mkw::RaceConfig::Instance();
-    if (raceConfig->raceScenario().isOnlineVersusRace()) {
+    auto raceConfig = mkw::RaceConfigManager::Instance();
+    if (raceConfig->getConfig().isOnlineVersusRace()) {
         if (Payload::g_enableUltraUncut == WWFC_BOOLEAN_RESET) {
             // Check if Worldwide or other vanilla match
-            auto netController = mkw::NetController::Instance();
+            auto netController = mkw::NetManager::Instance();
             if (netController && netController->inVanillaMatch()) {
                 enabled = true;
             }

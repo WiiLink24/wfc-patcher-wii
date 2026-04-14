@@ -2,7 +2,7 @@
 
 #if RMC
 
-#  include "import/mkw/item.hpp"
+#  include "import/mkw/Item.hpp"
 #  include "wwfcLibC.hpp"
 
 namespace wwfc::mkw
@@ -25,9 +25,9 @@ public:
 
             bool isItemObjectValid() const
             {
-                ItemObject item = static_cast<ItemObject>(itemObject);
+                EItemGeoObjType item = static_cast<EItemGeoObjType>(itemObject);
 
-                if (item == ItemObject::NoObject) {
+                if (item == EItemGeoObjType::EMPTY) {
                     return true;
                 }
 
@@ -40,11 +40,11 @@ public:
                     return false;
                 }
 
-                ItemObject item = static_cast<ItemObject>(itemObject);
+                EItemGeoObjType item = static_cast<EItemGeoObjType>(itemObject);
 
                 switch (eventType) {
                 case EventType::NoEvent: {
-                    return item == ItemObject::NoObject;
+                    return item == EItemGeoObjType::EMPTY;
                 }
                 case EventType::ItemUsed: {
                     return CanUseItem(ItemObjectToItemBox(item));
@@ -81,10 +81,10 @@ public:
         struct ItemUsedEvent {
             bool isValid(u8 itemObject, u8 playerAid) const
             {
-                ItemObject item = static_cast<ItemObject>(itemObject);
+                EItemGeoObjType item = static_cast<EItemGeoObjType>(itemObject);
 
                 switch (item) {
-                case ItemObject::ThunderCloud: {
+                case EItemGeoObjType::KUMO: {
                     return this->playerAid == playerAid;
                 }
                 default: {
