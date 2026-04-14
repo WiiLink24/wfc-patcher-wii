@@ -2,7 +2,7 @@
 
 #if RMC
 
-#  include "import/mkw/Item.hpp"
+#  include "import/mkw/item/ItemType.hpp"
 #  include "wwfcLibC.hpp"
 
 namespace wwfc::mkw
@@ -15,12 +15,12 @@ public:
     struct __attribute__((packed)) Packet {
         struct EventInfo {
             enum class EventType : u8 {
-                NoEvent = 0,
-                ItemUsed = 1,
-                ItemThrown = 2,
+                NoEvent       = 0,
+                ItemUsed      = 1,
+                ItemThrown    = 2,
                 ItemObjectHit = 3,
-                ItemLockedOn = 5,
-                ItemDropped = 7,
+                ItemLockedOn  = 5,
+                ItemDropped   = 7,
             };
 
             bool isItemObjectValid() const
@@ -31,7 +31,7 @@ public:
                     return true;
                 }
 
-                return IsItemObjectValid(item);
+                return ItemDefaults::isObjectValid(item);
             }
 
             bool isValid() const
@@ -47,19 +47,19 @@ public:
                     return item == EItemGeoObjType::EMPTY;
                 }
                 case EventType::ItemUsed: {
-                    return CanUseItem(ItemObjectToItemBox(item));
+                    return ItemDefaults::canUse(ItemDefaults::ItemTypeFromGeoObjType(item));
                 }
                 case EventType::ItemThrown: {
-                    return CanThrowItem(ItemObjectToItemBox(item));
+                    return ItemDefaults::canThrow(ItemDefaults::ItemTypeFromGeoObjType(item));
                 }
                 case EventType::ItemObjectHit: {
-                    return CanHitItemObject(item);
+                    return ItemDefaults::canHitObject(item);
                 }
                 case EventType::ItemLockedOn: {
-                    return CanItemObjectLockOn(item);
+                    return ItemDefaults::canObjectLockOn(item);
                 }
                 case EventType::ItemDropped: {
-                    return CanDropItemObject(item);
+                    return ItemDefaults::canDropObject(item);
                 }
                 default: {
                     return true;
@@ -73,7 +73,7 @@ public:
             }
 
             /* 0x00 */ EventType eventType : 3;
-            /* 0x00 */ u8 itemObject : 5;
+            /* 0x00 */ u8        itemObject : 5;
         };
 
         static_assert(sizeof(EventInfo) == 0x01);
@@ -128,9 +128,9 @@ public:
 
             expectedPacketSize = 0;
             for (std::size_t n = 0; n < sizeof(eventInfo); n++) {
-                EventInfo info = eventInfo[n];
-                u8 itemObject = info.itemObject;
-                const u8* data = eventData + expectedPacketSize;
+                EventInfo info       = eventInfo[n];
+                u8        itemObject = info.itemObject;
+                const u8* data       = eventData + expectedPacketSize;
 
                 switch (info.eventType) {
                 case EventInfo::EventType::ItemUsed: {
@@ -152,20 +152,15 @@ public:
         }
 
         /* 0x00 */ EventInfo eventInfo[0x18];
-        /* 0x18 */ u8 eventData[0xF8 - 0x18];
+        /* 0x18 */ u8        eventData[0xF8 - 0x18];
     };
 
     static_assert(sizeof(Packet) == 0xF8);
 
-    static u8
-    GetEventDataSize(u8 itemObject, Packet::EventInfo::EventType eventType)
+    static u8 GetEventDataSize(u8 itemObject, Packet::EventInfo::EventType eventType)
     {
-        [[gnu::longcall]] u8 GetEventDataSize(
-            u8 itemObject, Packet::EventInfo::EventType eventType
-        )
-            AT(RMCXD_PORT(
-                0x8079D76C, 0x80794760, 0x8079CDD8, 0x8078BB2C, 0x8079DD00
-            ));
+        [[gnu::longcall]] u8 GetEventDataSize(u8 itemObject, Packet::EventInfo::EventType eventType)
+            AT(RMCXD_PORT(0x8079D76C, 0x80794760, 0x8079CDD8, 0x8078BB2C, 0x8079DD00));
 
         return GetEventDataSize(itemObject, eventType);
     }
@@ -178,9 +173,8 @@ public:
 private:
     /* 0x0000 */ u8 _0000[0x2B88 - 0x0000];
 
-    static NetEventHandler* s_instance AT(
-        RMCXD_PORT(0x809C20F0, 0x809BD928, 0x809C1150, 0x809B0730, 0x809C2988)
-    );
+    static NetEventHandler*
+        s_instance AT(RMCXD_PORT(0x809C20F0, 0x809BD928, 0x809C1150, 0x809B0730, 0x809C2988));
 };
 
 static_assert(sizeof(NetEventHandler) == 0x2B88);

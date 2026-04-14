@@ -2,7 +2,7 @@
 
 #if RMC
 
-#  include "import/mkw/Item.hpp"
+#  include "import/mkw/item/ItemType.hpp"
 
 namespace wwfc::mkw
 {
@@ -11,27 +11,27 @@ namespace wwfc::mkw
 class NetItemHandler
 {
 public:
-    struct __attribute__((packed)) Packet {
+    struct [[gnu::packed]] Packet {
         enum class HeldPhase : u8 {
-            NoItem = 0,
-            Decided = 1,
+            NoItem    = 0,
+            Decided   = 1,
             Finalised = 2,
-            Reset = 3,
+            Reset     = 3,
             ThreeLeft = 4,
-            TwoLeft = 5,
-            OneLeft = 6,
-            Rejected = 7,
+            TwoLeft   = 5,
+            OneLeft   = 6,
+            Rejected  = 7,
         };
 
         enum class TrailPhase : u8 {
-            NoItem = 0,
-            ThreeLeftOdd = 1,
-            TwoLeftOdd = 2,
-            OneLeftOdd = 3,
-            Used = 4,
+            NoItem        = 0,
+            ThreeLeftOdd  = 1,
+            TwoLeftOdd    = 2,
+            OneLeftOdd    = 3,
+            Used          = 4,
             ThreeLeftEven = 5,
-            TwoLeftEven = 6,
-            OneLeftEven = 7,
+            TwoLeftEven   = 6,
+            OneLeftEven   = 7,
         };
 
         bool isHeldPhaseValid() const
@@ -40,32 +40,30 @@ public:
 
             switch (heldPhase) {
             case HeldPhase::NoItem:
-            case HeldPhase::Rejected: {
+            case HeldPhase::Rejected:
                 return item == EItemType::EMPTY;
-            }
-            case HeldPhase::Decided: {
-                return IsItemValid(item);
-            }
-            case HeldPhase::Finalised: {
+
+            case HeldPhase::Decided:
+                return ItemDefaults::isValid(item);
+
+            case HeldPhase::Finalised:
                 if (item == EItemType::EMPTY) {
                     // The item was rejected by another client
                     return true;
                 }
+                return ItemDefaults::isValid(item);
 
-                return IsItemValid(item);
-            }
             case HeldPhase::ThreeLeft:
-            case HeldPhase::TwoLeft: {
-                return DoesItemHaveQuantity(item);
-            }
-            case HeldPhase::OneLeft: {
-                return CanHoldItem(item);
-            }
+            case HeldPhase::TwoLeft:
+                return ItemDefaults::hasQuantity(item);
+
+            case HeldPhase::OneLeft:
+                return ItemDefaults::canHold(item);
+
             // This value is not transmitted over the network
             case HeldPhase::Reset:
-            default: {
+            default:
                 return false;
-            }
             }
         }
 
@@ -82,11 +80,11 @@ public:
             case TrailPhase::TwoLeftOdd:
             case TrailPhase::ThreeLeftEven:
             case TrailPhase::TwoLeftEven: {
-                return DoesItemHaveQuantity(item);
+                return ItemDefaults::hasQuantity(item);
             }
             case TrailPhase::OneLeftOdd: {
             case TrailPhase::OneLeftEven:
-                return CanTrailItem(item);
+                return ItemDefaults::canTrail(item);
             }
             default: {
                 return false;
@@ -94,12 +92,12 @@ public:
             }
         }
 
-        /* 0x00 */ u8 _00;
-        /* 0x01 */ u8 heldItem;
-        /* 0x02 */ u8 trailedItem;
-        /* 0x03 */ HeldPhase heldPhase;
+        /* 0x00 */ u8         _00;
+        /* 0x01 */ u8         heldItem;
+        /* 0x02 */ u8         trailedItem;
+        /* 0x03 */ HeldPhase  heldPhase;
         /* 0x04 */ TrailPhase trailPhase;
-        /* 0x05 */ u8 _05[0x08 - 0x05];
+        /* 0x05 */ u8         _05[0x08 - 0x05];
     };
 
     static_assert(sizeof(Packet) == 0x08);
@@ -112,9 +110,8 @@ public:
 private:
     /* 0x000 */ u8 _000[0x184 - 0x000];
 
-    static NetItemHandler* s_instance AT(
-        RMCXD_PORT(0x809C20F8, 0x809BD950, 0x809C1158, 0x809B0738, 0x809C2990)
-    );
+    static NetItemHandler*
+        s_instance AT(RMCXD_PORT(0x809C20F8, 0x809BD950, 0x809C1158, 0x809B0738, 0x809C2990));
 };
 
 static_assert(sizeof(NetItemHandler) == 0x184);

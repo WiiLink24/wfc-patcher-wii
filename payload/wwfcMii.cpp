@@ -109,8 +109,8 @@ WWFC_DEFINE_PATCH = Patch::CallWithCTR(
     RMCXD_PORT(0x80677488, 0x8066FD24, 0x80676AF4, 0x80665830, 0x806779CC) //
     RMCXN_PORT(0x801FF0E0, 0x801FF040, 0x801FEE78, 0x801FF920), //
 
-    [](const mkw::Nwc24::PlayerInfo* info) {
-        mkw::Nwc24::PlayerInfo copy = *info;
+    [](const mkw::Nwc24PlayerInfo* info) {
+        mkw::Nwc24PlayerInfo copy = *info;
         ClearMiiInfo(&copy.mii);
     // Such behavior is a little scary:
 #  pragma GCC diagnostic push
@@ -120,7 +120,7 @@ WWFC_DEFINE_PATCH = Patch::CallWithCTR(
 #  pragma GCC diagnostic pop
         return GameSpy::B64Encode(
             reinterpret_cast<char*>(&copy), output,
-            sizeof(mkw::Nwc24::PlayerInfo), 2
+            sizeof(mkw::Nwc24PlayerInfo), 2
         );
     }
 );
@@ -133,12 +133,12 @@ WWFC_DEFINE_PATCH = Patch::CallWithCTR(
     RMCXN_PORT(0x80201180, 0x802010E0, 0x80200F18, 0x802019C0), //
 
     [](GameSpy::GSXmlStreamWriter stream, const char*, const char*,
-       const mkw::Nwc24::PlayerInfo* data) -> GameSpy::gsi_bool {
-        mkw::Nwc24::PlayerInfo copy = *data;
+       const mkw::Nwc24PlayerInfo* data) -> GameSpy::gsi_bool {
+        mkw::Nwc24PlayerInfo copy = *data;
         ClearMiiInfo(&copy.mii);
         return GameSpy::gsXmlWriteBase64BinaryElement(
             stream, "ns1", "playerinfobase64", &copy,
-            sizeof(mkw::Nwc24::PlayerInfo)
+            sizeof(mkw::Nwc24PlayerInfo)
         );
     }
 );

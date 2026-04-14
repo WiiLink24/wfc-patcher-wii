@@ -4,11 +4,11 @@
 
 #  include "import/rfl.h"
 
-namespace wwfc::mkw::Nwc24
+namespace wwfc::mkw
 {
 
 // RACE: SubmitScores->ScoreDatas->ScoreData->playerinfobase64
-struct PlayerInfo {
+struct Nwc24PlayerInfo {
     /* 0x00 */ RFL::RFLiStoreData mii;
     /* 0x4C */ u8 controller;
     /* 0x4D */ u8 character;
@@ -16,10 +16,10 @@ struct PlayerInfo {
     /* 0x4F */ u8 country;
 };
 
-static_assert(sizeof(PlayerInfo) == 0x50);
+static_assert(sizeof(Nwc24PlayerInfo) == 0x50);
 
 // SAKE: mariokartwii/FriendInfo->info
-struct FriendInfo {
+struct Nwc24FriendInfo {
     /* 0x00 */ RFL::RFLiStoreData mii;
     /* 0x4C */ u32 wiiNumberHi;
     /* 0x50 */ u32 wiiNumberLo;
@@ -29,8 +29,8 @@ struct FriendInfo {
     /* 0x5E */ u16 longitude;
 };
 
-static_assert(sizeof(FriendInfo) == 0x60);
+static_assert(sizeof(Nwc24FriendInfo) == 0x60);
 
-} // namespace wwfc::mkw::Nwc24
+} // namespace wwfc::mkw
 
 #endif // RMC || RMCN
