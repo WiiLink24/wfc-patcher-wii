@@ -39,7 +39,7 @@ public:
 
     /* 0x14 */ Timer* m_timer;
 
-    FILL(0x14, 0x28);
+    FILL(0x18, 0x28);
 
     /* 0x28 */ EState m_state;
 };
