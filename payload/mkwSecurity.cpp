@@ -1,4 +1,3 @@
-#include "import/mkw/registry.hpp"
 #if RMC
 
 #  include "import/mkw/Registry.hpp"

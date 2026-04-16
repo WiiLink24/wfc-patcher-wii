@@ -1,4 +1,3 @@
-
 #if RMC
 
 #  include "import/mkw/system/RaceConfig.hpp"
