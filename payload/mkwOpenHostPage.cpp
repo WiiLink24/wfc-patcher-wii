@@ -9,7 +9,7 @@
 #  include "import/mkw/ui/page/FriendRoomPage.hpp"
 #  include "import/mkw/ui/page/MessagePopupPage.hpp"
 #  include "import/mkw/ui/page/YesNoPopupPage.hpp"
-#  include "import/mkw/ui/page/wifiFriendMenuPage.hpp"
+#  include "import/mkw/ui/page/WifiFriendMenuPage.hpp"
 #  include "import/mkw/ui/section/SectionManager.hpp"
 #  include "import/revolution.h"
 #  include "wwfcPatch.hpp"
