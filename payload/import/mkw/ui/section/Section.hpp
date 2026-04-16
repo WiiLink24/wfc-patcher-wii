@@ -13,7 +13,7 @@ class Section
 {
 public:
     template <typename T>
-    T* getPage(PageId pageId)
+    T* getPage(EPageID pageId)
     {
         return static_cast<T*>(m_page[static_cast<s32>(pageId)]);
     }

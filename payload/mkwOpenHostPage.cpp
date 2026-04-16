@@ -54,10 +54,10 @@ public:
 private:
     OpenHostPage();
 
-    enum class State {
-        Previous,
-        Prompt,
-        Result,
+    enum class EState {
+        PREVIOUS,
+        PROMPT,
+        RESULT,
     };
 
     const wchar_t* openHostPromptMessage() const
@@ -108,24 +108,24 @@ private:
         return s_openHostDisabledMessages[RVL::SCLanguageEnglish];
     }
 
-    State resolve() const
+    EState resolve() const
     {
         switch (s_state) {
-        case State::Previous: {
+        case EState::PREVIOUS: {
             break;
         }
-        case State::Prompt: {
-            return State::Result;
+        case EState::PROMPT: {
+            return EState::RESULT;
         }
-        case State::Result: {
-            return State::Previous;
+        case EState::RESULT: {
+            return EState::PREVIOUS;
         }
         }
 
         return s_state;
     }
 
-    void transition(State state)
+    void transition(EState state)
     {
         Section* section = SectionManager::Instance()->currentSection();
 
@@ -134,24 +134,25 @@ private:
         }
 
         switch (state) {
-        case State::Previous:
+        case EState::PREVIOUS:
             break;
 
-        case State::Prompt: {
+        case EState::PROMPT: {
             FormatParam formatParam{};
             formatParam.strings[0] = openHostPromptMessage();
 
-            YesNoPopupPage* yesNoPopupPage = section->getPage<YesNoPopupPage>(PageId::YesNoPopup);
+            YesNoPopupPage* yesNoPopupPage =
+                section->getPage<YesNoPopupPage>(EPageID::POPUP_YES_NO);
             yesNoPopupPage->reset();
             yesNoPopupPage->setWindowMessage(0x19CA, &formatParam);
-            yesNoPopupPage->configureButton(0, 0xFAC, nullptr, Animation::None, s_onYesOrNo);
-            yesNoPopupPage->configureButton(1, 0xFAD, nullptr, Animation::None, s_onYesOrNo);
+            yesNoPopupPage->configureButton(0, 0xFAC, nullptr, EFadeDirection::NONE, s_onYesOrNo);
+            yesNoPopupPage->configureButton(1, 0xFAD, nullptr, EFadeDirection::NONE, s_onYesOrNo);
             yesNoPopupPage->setDefaultChoice(1);
 
-            push(PageId::YesNoPopup, Animation::Next);
+            push(EPageID::POPUP_YES_NO, EFadeDirection::FORWARD);
             break;
         }
-        case State::Result: {
+        case EState::RESULT: {
             FormatParam formatParam{};
             if (!s_sentOpenHostValue) {
                 formatParam.strings[0] = connectionLostMessage();
@@ -164,11 +165,11 @@ private:
             }
 
             MessagePopupPage* messagePopupPage =
-                section->getPage<MessagePopupPage>(PageId::MessagePopup);
+                section->getPage<MessagePopupPage>(EPageID::POPUP_YES_NO);
             messagePopupPage->reset();
             messagePopupPage->setWindowMessage(0x19CA, &formatParam);
 
-            push(PageId::MessagePopup, Animation::Next);
+            push(EPageID::POPUP_YES_NO, EFadeDirection::FORWARD);
             break;
         }
         }
@@ -178,7 +179,7 @@ private:
 
     void onOption(u32 /* localPlayerId */)
     {
-        transition(State::Prompt);
+        transition(EState::PROMPT);
     }
 
     void onYesOrNo(int choice, void* /* pushButton */)
@@ -200,7 +201,7 @@ private:
         s_openHostEnabled = openHostEnabled;
     }
 
-    static State                                             s_state;
+    static EState                                            s_state;
     static mkw::UI::MenuInputManager::Handler<OpenHostPage>* s_onOption;
     static mkw::UI::YesNoPage::Handler<OpenHostPage>*        s_onYesOrNo;
     static bool                                              s_openHostEnabled, s_sentOpenHostValue;
@@ -212,7 +213,7 @@ private:
 
 static_assert(sizeof(OpenHostPage) == sizeof(Page));
 
-OpenHostPage::State                      OpenHostPage::s_state     = OpenHostPage::State::Previous;
+OpenHostPage::EState                     OpenHostPage::s_state     = OpenHostPage::EState::PREVIOUS;
 MenuInputManager::Handler<OpenHostPage>* OpenHostPage::s_onOption  = nullptr;
 YesNoPage::Handler<OpenHostPage>*        OpenHostPage::s_onYesOrNo = nullptr;
 bool                                     OpenHostPage::s_openHostEnabled    = false;

@@ -42,15 +42,15 @@ private:
     {
         Section*          section = SectionManager::Instance()->currentSection();
         MessagePopupPage* messagePopupPage =
-            section->getPage<MessagePopupPage>(PageId::MessagePopup);
+            section->getPage<MessagePopupPage>(EPageID::POPUP_MESSAGE);
 
-        FormatParam formatParam{};
-        formatParam.strings[0] = s_messageOfTheDay;
-
+        FormatParam formatParam{
+            .strings = { s_messageOfTheDay },
+        };
         messagePopupPage->reset();
         messagePopupPage->setWindowMessage(0x19CA, &formatParam);
 
-        push(PageId::MessagePopup, Animation::Next);
+        push(EPageID::POPUP_MESSAGE, EFadeDirection::FORWARD);
     }
 
     /* 0x044 */ u8 _044[0xF34 - 0x044];

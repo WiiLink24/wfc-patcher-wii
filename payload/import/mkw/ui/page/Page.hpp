@@ -2,7 +2,7 @@
 
 #if RMC
 
-#  include "PageId.hpp"
+#  include "PageID.hpp"
 #  include "import/mkw/ui/MenuInputManager.hpp"
 
 namespace wwfc::mkw::UI
@@ -12,10 +12,10 @@ namespace wwfc::mkw::UI
 class Page
 {
 public:
-    enum class Animation {
-        None = -1,
-        Next = 0,
-        Previous = 1,
+    enum class EFadeDirection {
+        NONE     = -1,
+        FORWARD  = 0,
+        BACKWARD = 1,
     };
 
     Page();
@@ -27,7 +27,7 @@ public:
     virtual void vf_18();
     virtual void vf_1C();
     virtual void vf_20();
-    virtual void push(PageId pageId, Animation animation);
+    virtual void push(EPageID pageId, EFadeDirection animation);
     virtual void vf_28();
     virtual void vf_2C();
     virtual void onActivate();
@@ -50,9 +50,9 @@ public:
     }
 
 private:
-    /* 0x04 */ u8 _04[0x38 - 0x04];
+    /* 0x04 */ u8                _04[0x38 - 0x04];
     /* 0x38 */ MenuInputManager* m_menuInputManager;
-    /* 0x3C */ u8 _3C[0x44 - 0x3C];
+    /* 0x3C */ u8                _3C[0x44 - 0x3C];
 };
 
 static_assert(sizeof(Page) == 0x44);

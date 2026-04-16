@@ -33,7 +33,7 @@ public:
     public:
         Handler(T* object, void (T::*function)(int choice, void* pushButton))
         {
-            m_object = object;
+            m_object   = object;
             m_function = function;
         }
 
@@ -52,32 +52,23 @@ public:
     void setWindowMessage(u32 messageId, FormatParam* formatParam = nullptr)
     {
         [[gnu::longcall]] void setWindowMessage(
-            YesNoPage * yesNoPage, u32 messageId,
-            FormatParam* formatParam = nullptr
-        )
-            AT(RMCXD_PORT(
-                0x806525FC, 0x8061EBE8, 0x80651C68, 0x80640914, 0x80652B40
-            ));
+            YesNoPage * yesNoPage, u32 messageId, FormatParam* formatParam = nullptr
+        ) AT(RMCXD_PORT(0x806525FC, 0x8061EBE8, 0x80651C68, 0x80640914, 0x80652B40));
 
         setWindowMessage(this, messageId, formatParam);
     }
 
     void configureButton(
-        u32 index, u32 messageId, FormatParam* formatParam, Animation animation,
+        u32 index, u32 messageId, FormatParam* formatParam, EFadeDirection animation,
         IHandler* handler
     )
     {
         [[gnu::longcall]] void configureButton(
-            YesNoPage * yesNoPage, u32 index, u32 messageId,
-            FormatParam * formatParam, Animation animation, IHandler * handler
-        )
-            AT(RMCXD_PORT(
-                0x80652604, 0x8061EBF0, 0x80651C70, 0x8064091C, 0x80652B48
-            ));
+            YesNoPage * yesNoPage, u32 index, u32 messageId, FormatParam * formatParam,
+            EFadeDirection animation, IHandler * handler
+        ) AT(RMCXD_PORT(0x80652604, 0x8061EBF0, 0x80651C70, 0x8064091C, 0x80652B48));
 
-        configureButton(
-            this, index, messageId, formatParam, animation, handler
-        );
+        configureButton(this, index, messageId, formatParam, animation, handler);
     }
 
     void setDefaultChoice(u32 defaultChoice)
@@ -86,9 +77,9 @@ public:
     }
 
 private:
-    /* 0x044 */ u8 _044[0x27C - 0x044];
+    /* 0x044 */ u8  _044[0x27C - 0x044];
     /* 0x27C */ u32 m_defaultChoice;
-    /* 0x280 */ u8 _280[0x8B8 - 0x280];
+    /* 0x280 */ u8  _280[0x8B8 - 0x280];
 };
 
 static_assert(sizeof(YesNoPage) == 0x8B8);
