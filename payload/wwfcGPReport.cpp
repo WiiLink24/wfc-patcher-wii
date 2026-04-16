@@ -19,21 +19,11 @@ void Report(const char* key, const char* string)
 
     auto iconnection = reinterpret_cast<GameSpy::GPIConnection*>(*connection);
 
-    GameSpy::gpiAppendStringToBuffer(
-        connection, &iconnection->outputBuffer, "\\wl:report\\\\"
-    );
-    GameSpy::gpiAppendStringToBuffer(
-        connection, &iconnection->outputBuffer, key
-    );
-    GameSpy::gpiAppendStringToBuffer(
-        connection, &iconnection->outputBuffer, "\\"
-    );
-    GameSpy::gpiAppendStringToBuffer(
-        connection, &iconnection->outputBuffer, string
-    );
-    GameSpy::gpiAppendStringToBuffer(
-        connection, &iconnection->outputBuffer, "\\final\\"
-    );
+    GameSpy::gpiAppendStringToBuffer(connection, &iconnection->outputBuffer, "\\wl:report\\\\");
+    GameSpy::gpiAppendStringToBuffer(connection, &iconnection->outputBuffer, key);
+    GameSpy::gpiAppendStringToBuffer(connection, &iconnection->outputBuffer, "\\");
+    GameSpy::gpiAppendStringToBuffer(connection, &iconnection->outputBuffer, string);
+    GameSpy::gpiAppendStringToBuffer(connection, &iconnection->outputBuffer, "\\final\\");
 
     WWFC_LOG_INFO_FMT("REPORT '%s': %s", key, string);
 }
@@ -56,12 +46,9 @@ void ReportB64Encode(const char* key, const void* data, std::size_t dataSize)
 {
     char b64Data[0x400];
 
-    s32 b64Size =
-        DWC::DWC_Base64Encode(data, dataSize, b64Data, sizeof(b64Data));
+    s32 b64Size = DWC::DWC_Base64Encode(data, dataSize, b64Data, sizeof(b64Data));
     if (b64Size == -1 || b64Size == sizeof(b64Data)) {
-        WWFC_LOG_ERROR(
-            "Could not fit the base64-encoded data into the provided buffer!"
-        );
+        WWFC_LOG_ERROR("Could not fit the base64-encoded data into the provided buffer!");
         return;
     }
     b64Data[b64Size] = '\0';

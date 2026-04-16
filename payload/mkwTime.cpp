@@ -22,17 +22,16 @@ constexpr u64 MS_TO_TB = 4000ull;
 constinit u64 s_raceStartMs = 0;
 
 struct FinishTimeReport {
-    u32 inGameTime;
+    u32          inGameTime;
     volatile u32 finishTime;
-    u32 difference;
+    u32          difference;
 } static constinit s_finishTimeReport = {};
 
 u64 GetTimebase()
 {
     u32 hi, lo, hi2;
     do {
-        asm volatile("mftbu %0; mftbl %1; mftbu %2"
-                     : "=r"(hi), "=r"(lo), "=r"(hi2));
+        asm volatile("mftbu %0; mftbl %1; mftbu %2" : "=r"(hi), "=r"(lo), "=r"(hi2));
     } while (hi != hi2);
     return (static_cast<u64>(hi) << 32) | lo;
 }
@@ -68,9 +67,9 @@ std::optional<u64> GetElapsedMsec(u64 ms)
     }
 
     alignas(32) RVL::IOVector vectors[1];
-    alignas(32) u32 ms2 = 0;
-    vectors[0].data = &ms2;
-    vectors[0].size = sizeof(ms2);
+    alignas(32) u32           ms2 = 0;
+    vectors[0].data               = &ms2;
+    vectors[0].size               = sizeof(ms2);
     if (RVL::IOS_Ioctlv(HostPlatform::g_dolphinFd, 0x01, 0, 1, vectors)) {
         return std::nullopt;
     }
@@ -84,9 +83,8 @@ void FixRaceFinishTime(RaceManager::Player& player)
     }
 
     if (auto& scenario = RaceConfigManager::Instance()->getConfig();
-        !scenario.isOnlineVersusRace() ||
-        scenario.getPlayer(player.m_id)->m_type !=
-            RaceConfig::Player::EPlayerType::MASTER) {
+        !scenario.isWifiVSRace() ||
+        scenario.getPlayer(player.m_id)->m_type != RaceConfig::Player::EPlayerType::MASTER) {
         return;
     }
 
@@ -96,18 +94,17 @@ void FixRaceFinishTime(RaceManager::Player& player)
     }
     u64 ms = MsecRoundFrames(static_cast<u32>(*result));
 
-    mkw::Time& time = RaceManager::Instance()->m_timer->m_time[0];
-    u32 inGameMs =
-        time.m_milliseconds + time.m_seconds * 1000 + time.m_minutes * 60000;
+    mkw::Time& time       = RaceManager::Instance()->m_timer->m_time[0];
+    u32        inGameMs   = time.m_milliseconds + time.m_seconds * 1000 + time.m_minutes * 60000;
     mkw::Time& finishTime = *player.m_raceFinishTime;
-    u32 finishTimeMs = finishTime.m_milliseconds + finishTime.m_seconds * 1000 +
-                       finishTime.m_minutes * 60000;
+    u32        finishTimeMs =
+        finishTime.m_milliseconds + finishTime.m_seconds * 1000 + finishTime.m_minutes * 60000;
     u32 difference = ms - inGameMs;
 
     if (s32(difference) > 83) {
         // If more than 5 frames difference, add the difference to the finish
         // time
-        ms = finishTimeMs += difference;
+        ms                   = finishTimeMs += difference;
         finishTime.m_minutes = ms / 60000;
         ms -= finishTime.m_minutes * 60000;
         finishTime.m_seconds = ms / 1000;
@@ -130,13 +127,13 @@ WWFC_DEFINE_PATCH = Patch::CallWithCTR(
         RaceConfigManager* raceConfig = RaceConfigManager::Instance();
 
         s_raceStartMs = 0;
-        if (raceConfig->getConfig().isOnlineVersusRace()) {
+        if (raceConfig->getConfig().isWifiVSRace()) {
             if (auto result = GetElapsedMsec(0); result.has_value()) {
                 s_raceStartMs = *result;
             }
         }
         raceConfig->loadNextCourse();
-        RaceManager::Instance()->m_state = RaceManager::State::Race;
+        RaceManager::Instance()->m_state = RaceManager::EState::RACE;
     }
 );
 
@@ -165,7 +162,7 @@ void Tick()
     if (s_finishTimeReport.finishTime == 0) {
         return;
     }
-    FinishTimeReport report = s_finishTimeReport;
+    FinishTimeReport report       = s_finishTimeReport;
     s_finishTimeReport.finishTime = 0;
 
     GPReport::ReportB64Encode("wl:mkw_finish_time", &report, sizeof(report));

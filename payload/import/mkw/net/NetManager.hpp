@@ -25,7 +25,7 @@ struct __attribute__((packed)) NetRacePacket {
 
     /* 0x00 */ u32 pad;
     /* 0x04 */ u32 checksum;
-    /* 0x08 */ u8 sizes[8];
+    /* 0x08 */ u8  sizes[8];
 };
 
 static_assert(sizeof(NetRacePacket) == 0x10);
@@ -34,45 +34,38 @@ static_assert(sizeof(NetRacePacket) == 0x10);
 class NetManager
 {
 public:
-    enum class JoinType {
-        NotJoining = 0,
-        WorldwideVersusRace = 1,
-        ContinentalVersusRace = 2,
-        WorldwideBattle = 3,
-        ContinentalBattle = 4,
-        RoomHost = 5,
-        RoomGuest = 6,
-        FriendWorldwideVersusRace = 7,
-        FriendContinentalVersusRace = 8,
-        FriendWorldwideBattle = 9,
-        FriendContinentalBattle = 10,
+    enum class EJoinType {
+        NOT_JOINING           = 0,
+        WW_VS                 = 1,
+        CONTINENTAL_VS        = 2,
+        WW_BT                 = 3,
+        CONTINENTAL_BT        = 4,
+        ROOM_HOST             = 5,
+        ROOM_GUEST            = 6,
+        FRIEND_WW_VS          = 7,
+        FRIEND_CONTINENTAL_VS = 8,
+        FRIEND_WW_BT          = 9,
+        FRIEND_CONTINENTAL_BT = 10,
     };
 
     void sendRacePacket()
     {
         [[gnu::longcall]] void sendRacePacket(NetManager * netController)
-            AT(RMCXD_PORT(
-                0x80657E30, 0x806539A8, 0x8065749C, 0x80646148, 0x80658374
-            ));
+            AT(RMCXD_PORT(0x80657E30, 0x806539A8, 0x8065749C, 0x80646148, 0x80658374));
 
         sendRacePacket(this);
     }
 
-    void
-    processRacePacket(u32 playerAid, NetRacePacket* racePacket, u32 packetSize)
+    void processRacePacket(u32 playerAid, NetRacePacket* racePacket, u32 packetSize)
     {
         [[gnu::longcall]] void processRacePacket(
-            NetManager * netController, u32 playerAid,
-            NetRacePacket * racePacket, u32 packetSize
-        )
-            AT(RMCXD_PORT(
-                0x80659A84, 0x806555FC, 0x806590F0, 0x80647D9C, 0x80659FC8
-            ));
+            NetManager * netController, u32 playerAid, NetRacePacket * racePacket, u32 packetSize
+        ) AT(RMCXD_PORT(0x80659A84, 0x806555FC, 0x806590F0, 0x80647D9C, 0x80659FC8));
 
         processRacePacket(this, playerAid, racePacket, packetSize);
     }
 
-    JoinType joinType() const
+    EJoinType joinType() const
     {
         return m_joinType;
     }
@@ -99,44 +92,43 @@ public:
 
     bool amITheRoomHost() const
     {
-        return m_joinType == JoinType::RoomHost;
+        return m_joinType == EJoinType::ROOM_HOST;
     }
 
     bool usingCustomRegion() const
     {
         // Allow clients to modify their region without having to change
         // their matching area.
-        extern SystemManager::MatchingArea customMatchingArea AT(0x80005EFC);
-        if (customMatchingArea < SystemManager::MatchingArea::Japan ||
-            customMatchingArea > SystemManager::MatchingArea::China) {
+        extern SystemManager::EWifiRegion customMatchingArea AT(0x80005EFC);
+        if (customMatchingArea < SystemManager::EWifiRegion::JP ||
+            customMatchingArea > SystemManager::EWifiRegion::CH) {
             return true;
         }
 
-        SystemManager::MatchingArea matchingArea =
-            SystemManager::Instance()->matchingArea();
-        return matchingArea < SystemManager::MatchingArea::Japan ||
-               matchingArea > SystemManager::MatchingArea::China;
+        SystemManager::EWifiRegion matchingArea = SystemManager::Instance()->getWifiRegion();
+        return matchingArea < SystemManager::EWifiRegion::JP ||
+               matchingArea > SystemManager::EWifiRegion::CH;
     }
 
     bool inVanillaMatch() const
     {
         switch (m_joinType) {
-        case JoinType::WorldwideVersusRace:
-        case JoinType::WorldwideBattle:
-        case JoinType::FriendWorldwideVersusRace:
-        case JoinType::FriendWorldwideBattle: {
+        case EJoinType::WW_VS:
+        case EJoinType::WW_BT:
+        case EJoinType::FRIEND_WW_VS:
+        case EJoinType::FRIEND_WW_BT:
             return true;
-        }
-        case JoinType::ContinentalVersusRace:
-        case JoinType::ContinentalBattle:
-        case JoinType::FriendContinentalVersusRace:
-        case JoinType::FriendContinentalBattle: {
+
+        case EJoinType::CONTINENTAL_VS:
+        case EJoinType::CONTINENTAL_BT:
+        case EJoinType::FRIEND_CONTINENTAL_VS:
+        case EJoinType::FRIEND_CONTINENTAL_BT:
             return !usingCustomRegion();
-        }
-        case JoinType::RoomHost:
-        case JoinType::RoomGuest: {
+
+        case EJoinType::ROOM_HOST:
+        case EJoinType::ROOM_GUEST:
             return false;
-        }
+
         default:
             return false;
         }
@@ -144,10 +136,8 @@ public:
 
     bool isEnableAggressivePacketChecks() const
     {
-        if (wwfc::Payload::g_enableAggressivePacketChecks !=
-            WWFC_BOOLEAN_RESET) {
-            return wwfc::Payload::g_enableAggressivePacketChecks !=
-                   WWFC_BOOLEAN_FALSE;
+        if (wwfc::Payload::g_enableAggressivePacketChecks != WWFC_BOOLEAN_RESET) {
+            return wwfc::Payload::g_enableAggressivePacketChecks != WWFC_BOOLEAN_FALSE;
         }
 
         return inVanillaMatch();
@@ -155,8 +145,7 @@ public:
 
     bool inVanillaRaceScene() const
     {
-        int sceneId = System::Instance().sceneManager()->getCurrentSceneID();
-        if (static_cast<Scene::SceneID>(sceneId) != Scene::SceneID::Race) {
+        if (!System::Instance().isCurrentSceneID(Scene::ESceneID::RACE)) {
             return false;
         }
 
@@ -195,12 +184,12 @@ public:
 
 private:
     struct ConnectionInfo {
-        /* 0x00 */ u8 _00[0x10 - 0x00];
+        /* 0x00 */ u8  _00[0x10 - 0x00];
         /* 0x10 */ u32 availableAids;
-        /* 0x14 */ u8 _14[0x21 - 0x14];
-        /* 0x21 */ u8 myAid;
-        /* 0x22 */ u8 serverAid;
-        /* 0x23 */ u8 _23[0x58 - 0x23];
+        /* 0x14 */ u8  _14[0x21 - 0x14];
+        /* 0x21 */ u8  myAid;
+        /* 0x22 */ u8  serverAid;
+        /* 0x23 */ u8  _23[0x58 - 0x23];
     };
 
     static_assert(sizeof(ConnectionInfo) == 0x58);
@@ -210,12 +199,12 @@ private:
         return m_connectionInfo[m_currentConnectionInfoIndex];
     }
 
-    /* 0x0000 */ u8 _0000[0x0038 - 0x0000];
+    /* 0x0000 */ u8             _0000[0x0038 - 0x0000];
     /* 0x0038 */ ConnectionInfo m_connectionInfo[2];
-    /* 0x00E8 */ JoinType m_joinType;
-    /* 0x00EC */ u8 _00EC[0x291C - 0x00EC];
-    /* 0x291C */ int m_currentConnectionInfoIndex;
-    /* 0x2920 */ u8 _2920[0x29B0 - 0x2920];
+    /* 0x00E8 */ EJoinType      m_joinType;
+    /* 0x00EC */ u8             _00EC[0x291C - 0x00EC];
+    /* 0x291C */ int            m_currentConnectionInfoIndex;
+    /* 0x2920 */ u8             _2920[0x29B0 - 0x2920];
 
 public:
     /* 0x29B0 */ u32 _29B0;
@@ -228,9 +217,8 @@ private:
 
     static u32 s_reportedAids;
 
-    static NetManager* s_instance AT(
-        RMCXD_PORT(0x809C20D8, 0x809BD918, 0x809C1138, 0x809B0718, 0x809C2970)
-    );
+    static NetManager*
+        s_instance AT(RMCXD_PORT(0x809C20D8, 0x809BD918, 0x809C1138, 0x809B0718, 0x809C2970));
 };
 
 static_assert(sizeof(NetManager) == 0x29C8);

@@ -14,13 +14,13 @@ class NetEventHandler
 public:
     struct __attribute__((packed)) Packet {
         struct EventInfo {
-            enum class EventType : u8 {
-                NoEvent       = 0,
-                ItemUsed      = 1,
-                ItemThrown    = 2,
-                ItemObjectHit = 3,
-                ItemLockedOn  = 5,
-                ItemDropped   = 7,
+            enum class EEventType : u8 {
+                NO_EVENT        = 0,
+                ITEM_USED       = 1,
+                ITEM_THROWN     = 2,
+                ITEM_OBJECT_HIT = 3,
+                ITEM_LOCKED_ON  = 5,
+                ITEM_DROPPED    = 7,
             };
 
             bool isItemObjectValid() const
@@ -43,27 +43,20 @@ public:
                 EItemGeoObjType item = static_cast<EItemGeoObjType>(itemObject);
 
                 switch (eventType) {
-                case EventType::NoEvent: {
+                case EEventType::NO_EVENT:
                     return item == EItemGeoObjType::EMPTY;
-                }
-                case EventType::ItemUsed: {
+                case EEventType::ITEM_USED:
                     return ItemDefaults::canUse(ItemDefaults::ItemTypeFromGeoObjType(item));
-                }
-                case EventType::ItemThrown: {
+                case EEventType::ITEM_THROWN:
                     return ItemDefaults::canThrow(ItemDefaults::ItemTypeFromGeoObjType(item));
-                }
-                case EventType::ItemObjectHit: {
+                case EEventType::ITEM_OBJECT_HIT:
                     return ItemDefaults::canHitObject(item);
-                }
-                case EventType::ItemLockedOn: {
+                case EEventType::ITEM_LOCKED_ON:
                     return ItemDefaults::canObjectLockOn(item);
-                }
-                case EventType::ItemDropped: {
+                case EEventType::ITEM_DROPPED:
                     return ItemDefaults::canDropObject(item);
-                }
-                default: {
+                default:
                     return true;
-                }
                 }
             }
 
@@ -72,8 +65,8 @@ public:
                 return GetEventDataSize(itemObject, eventType);
             }
 
-            /* 0x00 */ EventType eventType : 3;
-            /* 0x00 */ u8        itemObject : 5;
+            /* 0x00 */ EEventType eventType : 3;
+            /* 0x00 */ u8         itemObject : 5;
         };
 
         static_assert(sizeof(EventInfo) == 0x01);
@@ -133,7 +126,7 @@ public:
                 const u8* data       = eventData + expectedPacketSize;
 
                 switch (info.eventType) {
-                case EventInfo::EventType::ItemUsed: {
+                case EventInfo::EEventType::ITEM_USED: {
                     const ItemUsedEvent* itemUsedEvent =
                         reinterpret_cast<const ItemUsedEvent*>(data);
 
@@ -157,10 +150,11 @@ public:
 
     static_assert(sizeof(Packet) == 0xF8);
 
-    static u8 GetEventDataSize(u8 itemObject, Packet::EventInfo::EventType eventType)
+    static u8 GetEventDataSize(u8 itemObject, Packet::EventInfo::EEventType eventType)
     {
-        [[gnu::longcall]] u8 GetEventDataSize(u8 itemObject, Packet::EventInfo::EventType eventType)
-            AT(RMCXD_PORT(0x8079D76C, 0x80794760, 0x8079CDD8, 0x8078BB2C, 0x8079DD00));
+        [[gnu::longcall]] u8 GetEventDataSize(
+            u8 itemObject, Packet::EventInfo::EEventType eventType
+        ) AT(RMCXD_PORT(0x8079D76C, 0x80794760, 0x8079CDD8, 0x8078BB2C, 0x8079DD00));
 
         return GetEventDataSize(itemObject, eventType);
     }

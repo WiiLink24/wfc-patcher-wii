@@ -40,9 +40,9 @@ public:
 private:
     void pushMessageOfTheDayMessagePopup()
     {
-        Section* section = SectionManager::Instance()->currentSection();
+        Section*          section = SectionManager::Instance()->currentSection();
         MessagePopupPage* messagePopupPage =
-            section->page<MessagePopupPage>(PageId::MessagePopup);
+            section->getPage<MessagePopupPage>(PageId::MessagePopup);
 
         FormatParam formatParam{};
         formatParam.strings[0] = s_messageOfTheDay;
@@ -56,14 +56,13 @@ private:
     /* 0x044 */ u8 _044[0xF34 - 0x044];
 
     static const wchar_t* s_messageOfTheDay;
-    static wchar_t s_messageOfTheDayBuffer[256];
-    static bool s_hasSeenMessageOfTheDay;
+    static wchar_t        s_messageOfTheDayBuffer[256];
+    static bool           s_hasSeenMessageOfTheDay;
 };
 
 static_assert(sizeof(WifiMenuPage) == 0xF34);
 
-inline void
-WifiMenuPage_showMessageOfTheDay(mkw::UI::WifiMenuPage* wifiMenuPage)
+inline void WifiMenuPage_showMessageOfTheDay(mkw::UI::WifiMenuPage* wifiMenuPage)
 {
     wifiMenuPage->showMessageOfTheDay();
 }

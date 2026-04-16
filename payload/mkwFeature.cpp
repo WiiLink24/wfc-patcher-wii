@@ -12,7 +12,7 @@ namespace wwfc
 
 using namespace mkw;
 
-u32 NetManager::s_reportedAids = 0x00000000;
+u32 NetManager::s_reportedAids          = 0x00000000;
 u32 NetSelectHandler::s_kickTimerFrames = 0;
 
 } // namespace wwfc
@@ -20,11 +20,11 @@ u32 NetSelectHandler::s_kickTimerFrames = 0;
 namespace wwfc::mkw::UI
 {
 
-OpenHostPage::State OpenHostPage::s_state = OpenHostPage::State::Previous;
-MenuInputManager::Handler<OpenHostPage>* OpenHostPage::s_onOption = nullptr;
-YesNoPage::Handler<OpenHostPage>* OpenHostPage::s_onYesOrNo = nullptr;
-bool OpenHostPage::s_openHostEnabled = false;
-bool OpenHostPage::s_sentOpenHostValue = false;
+OpenHostPage::State                      OpenHostPage::s_state     = OpenHostPage::State::Previous;
+MenuInputManager::Handler<OpenHostPage>* OpenHostPage::s_onOption  = nullptr;
+YesNoPage::Handler<OpenHostPage>*        OpenHostPage::s_onYesOrNo = nullptr;
+bool                                     OpenHostPage::s_openHostEnabled    = false;
+bool                                     OpenHostPage::s_sentOpenHostValue  = false;
 const wchar_t* OpenHostPage::s_openHostPromptMessages[RVL::SCLanguageCount] = {
     L"こうかいホストをゆうこうにしますか？\n"
     L"\n"
@@ -81,58 +81,50 @@ const wchar_t* OpenHostPage::s_openHostEnabledMessages[RVL::SCLanguageCount] = {
     nullptr,
     nullptr,
 };
-const wchar_t* OpenHostPage::s_openHostDisabledMessages[RVL::SCLanguageCount] =
-    {
-        L"こうかいホストをむこうにしました！",
-        L"Open Host is now disabled!",
-        nullptr,
-        L"Open Host est maintenant désactivé!",
-        nullptr,
-        nullptr,
-        nullptr,
-        nullptr,
-        nullptr,
-        nullptr,
+const wchar_t* OpenHostPage::s_openHostDisabledMessages[RVL::SCLanguageCount] = {
+    L"こうかいホストをむこうにしました！",
+    L"Open Host is now disabled!",
+    nullptr,
+    L"Open Host est maintenant désactivé!",
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
 };
 
-const wchar_t* WifiMenuPage::s_messageOfTheDay =
-    L"Welcome to\nWiiLink Wi-Fi Connection!";
-wchar_t WifiMenuPage::s_messageOfTheDayBuffer[256] = {};
-bool WifiMenuPage::s_hasSeenMessageOfTheDay = false;
+const wchar_t* WifiMenuPage::s_messageOfTheDay = L"Welcome to\nWiiLink Wi-Fi Connection!";
+wchar_t        WifiMenuPage::s_messageOfTheDayBuffer[256] = {};
+bool           WifiMenuPage::s_hasSeenMessageOfTheDay     = false;
 
 } // namespace wwfc::mkw::UI
 
 namespace wwfc::mkw::Feature
 {
 
-static GameSpy::GPResult
-GetMessageOfTheDay(GameSpy::GPResult gpResult, const char* message)
+static GameSpy::GPResult GetMessageOfTheDay(GameSpy::GPResult gpResult, const char* message)
 {
     using namespace wwfc::mkw::UI;
 
     const char loginChallenge2Message[] = "\\lc\\2";
-    if (std::strncmp(
-            message, loginChallenge2Message, sizeof(loginChallenge2Message) - 1
-        )) {
+    if (std::strncmp(message, loginChallenge2Message, sizeof(loginChallenge2Message) - 1)) {
         return gpResult;
     }
 
     const char motdKey[] = "\\wl:motd\\";
-    char value[512];
+    char       value[512];
     if (!GameSpy::gpiValueForKey(message, motdKey, value, sizeof(value))) {
         return gpResult;
     }
 
     wchar_t* messageOfTheDayBuffer = WifiMenuPage::MessageOfTheDayBuffer();
-    s32 messageOfTheDayBufferSize =
-        static_cast<s32>(WifiMenuPage::MessageOfTheDayBufferSize());
-    s32 messageOfTheDayLength = DWC::DWC_Base64Decode(
-        value, std::strlen(value),
-        reinterpret_cast<char*>(messageOfTheDayBuffer),
+    s32 messageOfTheDayBufferSize  = static_cast<s32>(WifiMenuPage::MessageOfTheDayBufferSize());
+    s32 messageOfTheDayLength      = DWC::DWC_Base64Decode(
+        value, std::strlen(value), reinterpret_cast<char*>(messageOfTheDayBuffer),
         messageOfTheDayBufferSize
     );
-    if (messageOfTheDayLength == -1 ||
-        messageOfTheDayLength == messageOfTheDayBufferSize) {
+    if (messageOfTheDayLength == -1 || messageOfTheDayLength == messageOfTheDayBufferSize) {
         return gpResult;
     }
     messageOfTheDayBuffer[messageOfTheDayLength / sizeof(wchar_t)] = L'\0';
@@ -166,9 +158,7 @@ WWFC_DEFINE_PATCH = Patch::BranchWithCTR(
     WWFC_PATCH_LEVEL_FEATURE,
     RMCXD_PORT(0x8064BCD4, 0x806189C0, 0x8064B340, 0x80639FEC, 0x8064C208), //
     ASM_LAMBDA(
-        ( : ASM_IMPORT_AS(
-            i, UI::WifiMenuPage_showMessageOfTheDay, ShowMessageOfTheDay
-        )),
+        ( : ASM_IMPORT_AS(i, UI::WifiMenuPage_showMessageOfTheDay, ShowMessageOfTheDay)),
         // clang-format off
             mr        r3, r31;
             
@@ -259,16 +249,12 @@ WWFC_DEFINE_PATCH =
     selectHandler->decideCourse();
     selectHandler->initPlayerIdsToPlayerAids();
 
-    NetSelectHandler::Packet::SelectedCourse selectedCourse =
-        selectHandler->sendPacket().selectedCourse;
-    NetSelectHandler::Packet::EngineClass engineClass =
-        selectHandler->sendPacket().engineClass;
 
     wwfc::GPReport::ReportU32(
-        "wl:mkw_select_course", static_cast<u32>(selectedCourse)
+        "wl:mkw_select_course", static_cast<u32>(selectHandler->getSendPacket().selectedCourse)
     );
     wwfc::GPReport::ReportU32(
-        "wl:mkw_select_cc", static_cast<u32>(engineClass)
+        "wl:mkw_select_cc", static_cast<u32>(selectHandler->getSendPacket().engineClass)
     );
 }
     );

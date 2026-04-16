@@ -15,12 +15,12 @@ public:
 
     virtual ~PlayerRating();
 
-    constexpr short GetPoints() const
+    constexpr short get() const
     {
         return m_points;
     }
 
-    constexpr void SetPoints(short points)
+    constexpr void set(short points)
     {
         m_points = points;
     }

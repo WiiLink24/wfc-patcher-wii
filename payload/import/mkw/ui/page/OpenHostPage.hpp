@@ -19,29 +19,23 @@ class OpenHostPage : public Page
 public:
     void onActivate() override
     {
-        EGG::Heap* systemHeap = mkw::System::System::Instance().systemHeap();
+        EGG::Heap* systemHeap = mkw::System::System::Instance().getSystemHeap();
 
-        s_onOption =
-            new (systemHeap, 4) MenuInputManager::Handler<OpenHostPage>(
-                this, &OpenHostPage::onOption
-            );
+        s_onOption = new (systemHeap, 4)
+            MenuInputManager::Handler<OpenHostPage>(this, &OpenHostPage::onOption);
         MultiControlInputManager* multiControlInputManager =
-            reinterpret_cast<MultiControlInputManager*>(menuInputManager());
-        multiControlInputManager->setHandler(
-            MenuInputManager::InputType::Option, s_onOption
-        );
+            static_cast<MultiControlInputManager*>(menuInputManager());
+        multiControlInputManager->setHandler(MenuInputManager::InputType::Option, s_onOption);
 
-        s_onYesOrNo = new (systemHeap, 4)
-            YesNoPage::Handler<OpenHostPage>(this, &OpenHostPage::onYesOrNo);
+        s_onYesOrNo =
+            new (systemHeap, 4) YesNoPage::Handler<OpenHostPage>(this, &OpenHostPage::onYesOrNo);
     }
 
     void onDeactivate() override
     {
         MultiControlInputManager* multiControlInputManager =
-            reinterpret_cast<MultiControlInputManager*>(menuInputManager());
-        multiControlInputManager->setHandler(
-            MenuInputManager::InputType::Option, nullptr
-        );
+            static_cast<MultiControlInputManager*>(menuInputManager());
+        multiControlInputManager->setHandler(MenuInputManager::InputType::Option, nullptr);
         EGG::Heap::Free(s_onOption, nullptr);
         s_onOption = nullptr;
 
@@ -67,8 +61,7 @@ private:
     {
         u8 language = RVL::SCGetLanguage();
 
-        const wchar_t* openHostPromptMessage =
-            s_openHostPromptMessages[language];
+        const wchar_t* openHostPromptMessage = s_openHostPromptMessages[language];
         if (openHostPromptMessage) {
             return openHostPromptMessage;
         }
@@ -80,8 +73,7 @@ private:
     {
         u8 language = RVL::SCGetLanguage();
 
-        const wchar_t* connectionLostMessage =
-            s_connectionLostMessages[language];
+        const wchar_t* connectionLostMessage = s_connectionLostMessages[language];
         if (connectionLostMessage) {
             return connectionLostMessage;
         }
@@ -93,8 +85,7 @@ private:
     {
         u8 language = RVL::SCGetLanguage();
 
-        const wchar_t* openHostEnabledMessage =
-            s_openHostEnabledMessages[language];
+        const wchar_t* openHostEnabledMessage = s_openHostEnabledMessages[language];
         if (openHostEnabledMessage) {
             return openHostEnabledMessage;
         }
@@ -106,8 +97,7 @@ private:
     {
         u8 language = RVL::SCGetLanguage();
 
-        const wchar_t* openHostDisabledMessage =
-            s_openHostDisabledMessages[language];
+        const wchar_t* openHostDisabledMessage = s_openHostDisabledMessages[language];
         if (openHostDisabledMessage) {
             return openHostDisabledMessage;
         }
@@ -148,16 +138,11 @@ private:
             FormatParam formatParam{};
             formatParam.strings[0] = openHostPromptMessage();
 
-            YesNoPopupPage* yesNoPopupPage =
-                section->page<YesNoPopupPage>(PageId::YesNoPopup);
+            YesNoPopupPage* yesNoPopupPage = section->getPage<YesNoPopupPage>(PageId::YesNoPopup);
             yesNoPopupPage->reset();
             yesNoPopupPage->setWindowMessage(0x19CA, &formatParam);
-            yesNoPopupPage->configureButton(
-                0, 0xFAC, nullptr, Animation::None, s_onYesOrNo
-            );
-            yesNoPopupPage->configureButton(
-                1, 0xFAD, nullptr, Animation::None, s_onYesOrNo
-            );
+            yesNoPopupPage->configureButton(0, 0xFAC, nullptr, Animation::None, s_onYesOrNo);
+            yesNoPopupPage->configureButton(1, 0xFAD, nullptr, Animation::None, s_onYesOrNo);
             yesNoPopupPage->setDefaultChoice(1);
 
             push(PageId::YesNoPopup, Animation::Next);
@@ -176,7 +161,7 @@ private:
             }
 
             MessagePopupPage* messagePopupPage =
-                section->page<MessagePopupPage>(PageId::MessagePopup);
+                section->getPage<MessagePopupPage>(PageId::MessagePopup);
             messagePopupPage->reset();
             messagePopupPage->setWindowMessage(0x19CA, &formatParam);
 
@@ -212,11 +197,11 @@ private:
         s_openHostEnabled = openHostEnabled;
     }
 
-    static State s_state;
+    static State                                             s_state;
     static mkw::UI::MenuInputManager::Handler<OpenHostPage>* s_onOption;
-    static mkw::UI::YesNoPage::Handler<OpenHostPage>* s_onYesOrNo;
-    static bool s_openHostEnabled;
-    static bool s_sentOpenHostValue;
+    static mkw::UI::YesNoPage::Handler<OpenHostPage>*        s_onYesOrNo;
+    static bool                                              s_openHostEnabled;
+    static bool                                              s_sentOpenHostValue;
     static const wchar_t* s_openHostPromptMessages[RVL::SCLanguageCount];
     static const wchar_t* s_connectionLostMessages[RVL::SCLanguageCount];
     static const wchar_t* s_openHostEnabledMessages[RVL::SCLanguageCount];

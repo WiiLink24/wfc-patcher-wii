@@ -1,3 +1,4 @@
+#include "import/mkw/registry.hpp"
 #if RMC
 
 #  include "import/mkw/Registry.hpp"
@@ -137,7 +138,7 @@ static bool IsMatchHeaderPacketDataValid(
 )
 {
     const NetMatchHeaderHandler::Packet* matchHeaderPacket =
-        reinterpret_cast<const NetMatchHeaderHandler::Packet*>(packet);
+        static_cast<const NetMatchHeaderHandler::Packet*>(packet);
 
     if (wwfc::Payload::g_enableAggressivePacketChecks == WWFC_BOOLEAN_FALSE ||
         (wwfc::Payload::g_enableAggressivePacketChecks == WWFC_BOOLEAN_RESET &&
@@ -145,46 +146,36 @@ static bool IsMatchHeaderPacketDataValid(
         return true;
     }
 
-    RaceConfig* scenario = &RaceConfigManager::Instance()->getConfig();
+    RaceConfig* config = &RaceConfigManager::Instance()->getConfig();
 
     for (std::size_t n = 0; n < std::size(matchHeaderPacket->player); n++) {
         NetMatchHeaderHandler::Packet::Player player = matchHeaderPacket->player[n];
 
-        NetMatchHeaderHandler::Packet::Vehicle   playerVehicle   = player.vehicle;
-        NetMatchHeaderHandler::Packet::Character playerCharacter = player.character;
-        if (playerVehicle == NetMatchHeaderHandler::Packet::Vehicle::None &&
-            playerCharacter == NetMatchHeaderHandler::Packet::Character::None) {
+        if (static_cast<u8>(player.vehicle) == NetMatchHeaderHandler::Packet::NONE &&
+            static_cast<u8>(player.character) == NetMatchHeaderHandler::Packet::NONE) {
             continue;
         }
 
-        EVehicle   vehicle   = static_cast<EVehicle>(playerVehicle);
-        ECharacter character = static_cast<ECharacter>(playerCharacter);
-        if (scenario->isOnlineVersusRace()) {
-            if (!IsCombinationValidVS(character, vehicle)) {
+        if (config->isWifiVSRace()) {
+            if (!IsCombinationValidVS(player.character, player.vehicle)) {
                 return false;
             }
-        } else /* if (scenario->isOnlineBattle()) */ {
-            if (!IsCombinationValidBT(character, vehicle)) {
-                return false;
-            }
-        }
-    }
-
-    NetMatchHeaderHandler::Packet::Course currentCourse = matchHeaderPacket->course;
-    if (currentCourse != NetMatchHeaderHandler::Packet::Course::None) {
-        ECourse course = static_cast<ECourse>(currentCourse);
-        if (scenario->isOnlineVersusRace()) {
-            if (!IsRaceCourse(course)) {
-                return false;
-            }
-        } else /* if (scenario->isOnlineBattle()) */ {
-            if (!IsBattleCourse(course)) {
+        } else /* if (config->isOnlineBattle()) */ {
+            if (!IsCombinationValidBT(player.character, player.vehicle)) {
                 return false;
             }
         }
     }
 
-    return true;
+    if (static_cast<u8>(matchHeaderPacket->course) == NetMatchHeaderHandler::Packet::NONE) {
+        return true;
+    }
+
+    if (config->isWifiVSRace()) {
+        return IsRaceCourse(matchHeaderPacket->course);
+    } else /* if (config->isOnlineBattle()) */ {
+        return IsBattleCourse(matchHeaderPacket->course);
+    }
 }
 
 static bool IsMatchDataPacketDataValid(
@@ -199,90 +190,73 @@ static bool IsRoomSelectPacketDataValid(const void* packet, u8 packetSize, u8 pl
     // 'Room' packet
     if (packetSize == sizeof(NetRoomHandler::Packet)) {
         const NetRoomHandler::Packet* roomPacket =
-            reinterpret_cast<const NetRoomHandler::Packet*>(packet);
+            static_cast<const NetRoomHandler::Packet*>(packet);
 
         switch (roomPacket->event) {
-        case NetRoomHandler::Packet::Event::StartRoom: {
+        case NetRoomHandler::Packet::EEvent::START_ROOM:
             // Ensure that guests can't start rooms
             if (!NetManager::Instance()->isAidTheServer(playerAid)) {
                 return false;
             }
             break;
-        }
-        default: {
+
+        default:
             break;
-        }
         }
     }
     // 'Select' packet
-    else {
-        if (!NetManager::Instance()->isEnableAggressivePacketChecks()) {
-            return true;
-        }
 
-        RaceConfig* scenario;
-        if (static_cast<Scene::SceneID>(System::Instance().sceneManager()->getCurrentSceneID()) ==
-            Scene::SceneID::Race) {
-            scenario = &RaceConfigManager::Instance()->getConfig();
-        } else {
-            scenario = &RaceConfigManager::Instance()->getConfigNext();
-        }
+    if (!NetManager::Instance()->isEnableAggressivePacketChecks()) {
+        return true;
+    }
 
-        const NetSelectHandler::Packet* selectPacket =
-            reinterpret_cast<const NetSelectHandler::Packet*>(packet);
-        for (std::size_t n = 0; n < std::size(selectPacket->player); n++) {
-            NetSelectHandler::Packet::Player player = selectPacket->player[n];
+    RaceConfig* config = System::Instance().isCurrentSceneID(Scene::ESceneID::RACE)
+                             ? &RaceConfigManager::Instance()->getConfig()
+                             : &RaceConfigManager::Instance()->getConfigNext();
 
-            auto selectedCharacter = player.character;
-            auto selectedVehicle   = player.vehicle;
-            if (selectedCharacter != NetSelectHandler::Packet::Player::Character::NotSelected ||
-                selectedVehicle != NetSelectHandler::Packet::Player::Vehicle::NotSelected) {
-                ECharacter character = static_cast<ECharacter>(selectedCharacter);
-                EVehicle   vehicle   = static_cast<EVehicle>(selectedVehicle);
-                if (scenario->isOnlineVersusRace()) {
-                    if (!IsCombinationValidVS(character, vehicle)) {
-                        return false;
-                    }
-                } else /* if (scenario->isOnlineBattle()) */ {
-                    if (!IsCombinationValidBT(character, vehicle)) {
-                        return false;
-                    }
-                }
-            }
+    const NetSelectHandler::Packet* selectPacket =
+        static_cast<const NetSelectHandler::Packet*>(packet);
+    for (std::size_t n = 0; n < std::size(selectPacket->player); n++) {
+        NetSelectHandler::Packet::Player player = selectPacket->player[n];
 
-            NetSelectHandler::Packet::Player::CourseVote courseVote =
-                selectPacket->player[n].courseVote;
-            if (courseVote == NetSelectHandler::Packet::Player::CourseVote::NotSelected ||
-                courseVote == NetSelectHandler::Packet::Player::CourseVote::Random) {
-                continue;
-            }
-            ECourse course = static_cast<ECourse>(courseVote);
-            if (scenario->isOnlineVersusRace()) {
-                if (!IsRaceCourse(course)) {
+        if (player.character != ECharacter::CONTROL_VOTING_NOT_SELECTED ||
+            player.vehicle != EVehicle::CONTROL_VOTING_NOT_SELECTED) {
+            if (config->isWifiVSRace()) {
+                if (!IsCombinationValidVS(player.character, player.vehicle)) {
                     return false;
                 }
-            } else /* if (scenario->isOnlineBattle()) */ {
-                if (!IsBattleCourse(course)) {
+            } else /* if (config->isOnlineBattle()) */ {
+                if (!IsCombinationValidBT(player.character, player.vehicle)) {
                     return false;
                 }
             }
         }
 
-        if (selectPacket->selectedCourse != NetSelectHandler::Packet::SelectedCourse::NotSelected) {
-            ECourse course = static_cast<ECourse>(selectPacket->selectedCourse);
-            if (scenario->isOnlineVersusRace()) {
-                if (!IsRaceCourse(course)) {
-                    return false;
-                }
-            } else /* if (scenario->isOnlineBattle()) */ {
-                if (!IsBattleCourse(course)) {
-                    return false;
-                }
+        ECourse course = selectPacket->player[n].courseVote;
+        if (course == ECourse::CONTROL_VOTING_NOT_SELECTED ||
+            course == ECourse::CONTROL_VOTING_RANDOM) {
+            continue;
+        }
+        if (config->isWifiVSRace()) {
+            if (!IsRaceCourse(course)) {
+                return false;
+            }
+        } else /* if (config->isOnlineBattle()) */ {
+            if (!IsBattleCourse(course)) {
+                return false;
             }
         }
     }
 
-    return true;
+    if (selectPacket->selectedCourse == ECourse::CONTROL_VOTING_NOT_DECIDED) {
+        return true;
+    }
+
+    if (config->isWifiVSRace()) {
+        return IsRaceCourse(selectPacket->selectedCourse);
+    } else /* if (config->isOnlineBattle()) */ {
+        return IsBattleCourse(selectPacket->selectedCourse);
+    }
 }
 
 static bool IsPlayerDataPacketDataValid(
@@ -296,14 +270,9 @@ static bool IsUserPacketDataValid(
     const void* packet, u8 /* packetSize */, u8 /* playerAid */
 )
 {
-    const NetUserHandler::Packet* userPacket =
-        reinterpret_cast<const NetUserHandler::Packet*>(packet);
+    const NetUserHandler::Packet* userPacket = static_cast<const NetUserHandler::Packet*>(packet);
 
-    if (!userPacket->isValid()) {
-        return false;
-    }
-
-    return true;
+    return userPacket->isValid();
 }
 
 static bool IsItemPacketDataValid(const void* packet, u8 packetSize, u8 /* playerAid */)
@@ -314,25 +283,24 @@ static bool IsItemPacketDataValid(const void* packet, u8 packetSize, u8 /* playe
         return true;
     }
 
-    RaceConfig* scenario = &RaceConfigManager::Instance()->getConfig();
+    RaceConfig* config = &RaceConfigManager::Instance()->getConfig();
 
-    for (u8 n = 0; n < (packetSize >> 3); n++) {
-        const NetItemHandler::Packet* itemPacket = reinterpret_cast<const NetItemHandler::Packet*>(
-            reinterpret_cast<const char*>(packet) + (sizeof(NetItemHandler::Packet) * n)
-        );
+    for (u8 n = 0; n < packetSize / sizeof(NetItemHandler::Packet); n++) {
+        const NetItemHandler::Packet* const itemPacket =
+            static_cast<const NetItemHandler::Packet*>(packet) + n;
 
-        EItemType heldItem    = static_cast<EItemType>(itemPacket->heldItem);
-        EItemType trailedItem = static_cast<EItemType>(itemPacket->trailedItem);
+        const EItemType heldItem    = itemPacket->heldItem;
+        const EItemType trailedItem = itemPacket->trailedItem;
 
-        if (scenario->isOnlineVersusRace()) {
+        if (config->isWifiVSRace()) {
             if (heldItem != EItemType::EMPTY && !ItemDefaults::isValidVS(heldItem)) {
                 return false;
             }
             if (trailedItem != EItemType::EMPTY && !ItemDefaults::isTrailValidVS(trailedItem)) {
                 return false;
             }
-        } else /* if (scenario->isOnlineBattle()) */ {
-            if (scenario->isBalloonBattle()) {
+        } else /* if (config->isOnlineBattle()) */ {
+            if (config->isBattleBalloon()) {
                 if (heldItem != EItemType::EMPTY && !ItemDefaults::isValidBTBalloon(heldItem)) {
                     return false;
                 }
@@ -340,7 +308,7 @@ static bool IsItemPacketDataValid(const void* packet, u8 packetSize, u8 /* playe
                     !ItemDefaults::isTrailValidBTBalloon(trailedItem)) {
                     return false;
                 }
-            } else /* if (scenario->isCoinRunners()) */ {
+            } else /* if (config->isCoinRunners()) */ {
                 if (heldItem != EItemType::EMPTY && !ItemDefaults::isValidBTCoin(heldItem)) {
                     return false;
                 }
@@ -351,10 +319,7 @@ static bool IsItemPacketDataValid(const void* packet, u8 packetSize, u8 /* playe
             }
         }
 
-        if (!itemPacket->isHeldPhaseValid()) {
-            return false;
-        }
-        if (!itemPacket->isTrailPhaseValid()) {
+        if (!itemPacket->isHeldPhaseValid() || !itemPacket->isTrailPhaseValid()) {
             return false;
         }
     }
@@ -364,13 +329,12 @@ static bool IsItemPacketDataValid(const void* packet, u8 packetSize, u8 /* playe
 
 static bool IsEventPacketDataValid(const void* packet, u8 packetSize, u8 playerAid)
 {
-    if (static_cast<Scene::SceneID>(System::Instance().sceneManager()->getCurrentSceneID()) !=
-        Scene::SceneID::Race) {
+    if (!System::Instance().isCurrentSceneID(Scene::ESceneID::RACE)) {
         return true;
     }
 
     const NetEventHandler::Packet* eventPacket =
-        reinterpret_cast<const NetEventHandler::Packet*>(packet);
+        static_cast<const NetEventHandler::Packet*>(packet);
     const bool packetChecks = NetManager::Instance()->isEnableAggressivePacketChecks();
 
     // Always ensure that the packet does not contain any invalid item
@@ -381,15 +345,7 @@ static bool IsEventPacketDataValid(const void* packet, u8 packetSize, u8 playerA
         }
     }
 
-    if (!packetChecks) {
-        return true;
-    }
-
-    if (!eventPacket->isValid(packetSize, playerAid)) {
-        return false;
-    }
-
-    return true;
+    return !packetChecks || eventPacket->isValid(packetSize, playerAid);
 }
 
 typedef bool (*IsPacketDataValid)(const void* packet, u8 packetSize, u8 playerAid);

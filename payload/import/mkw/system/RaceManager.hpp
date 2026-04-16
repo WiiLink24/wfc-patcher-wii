@@ -12,9 +12,9 @@ class RaceManager
 public:
     static RaceManager* Instance()
     {
-        extern RaceManager* s_instance AT(RMCXD_PORT(
-            0x809BD730, 0x809B8F70, 0x809BC790, 0x809ABD70, 0x809BDFB0
-        ));
+        extern RaceManager* s_instance AT(
+            RMCXD_PORT(0x809BD730, 0x809B8F70, 0x809BC790, 0x809ABD70, 0x809BDFB0)
+        );
         return s_instance;
     }
 
@@ -27,12 +27,12 @@ public:
         /* 0x40 */ Time* m_raceFinishTime;
     };
 
-    enum class State {
-        Intro = 0,
-        Countdown = 1,
-        Race = 2,
-        Finished = 3,
-        FinishedTimeAttack = 4,
+    enum class EState {
+        INTRO                = 0,
+        COUNTDOWN            = 1,
+        RACE                 = 2,
+        FINISHED             = 3,
+        FINISHED_TIME_ATTACK = 4,
     };
 
     FILL(0x00, 0x14);
@@ -41,7 +41,7 @@ public:
 
     FILL(0x14, 0x28);
 
-    /* 0x28 */ State m_state;
+    /* 0x28 */ EState m_state;
 };
 
 } // namespace wwfc::mkw

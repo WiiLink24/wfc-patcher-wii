@@ -11,19 +11,19 @@ namespace wwfc::mkw
 class MapdataCannonPoint
 {
 public:
-    enum class CannonType : s16 {
-        Direct,
-        Curved,
-        CurvedSlow,
+    enum class ECannonType : s16 {
+        DIRECT      = 0,
+        CURVED      = 1,
+        CURVED_SLOW = 2,
 
-        Default = -1,
+        DEFAULT = -1,
     };
 
     struct Data {
         /* 0x00 */ EGG::Vector3f position;
         /* 0x0C */ EGG::Vector3f rotation;
-        /* 0x18 */ u16 id;
-        /* 0x1A */ CannonType cannonType;
+        /* 0x18 */ u16           id;
+        /* 0x1A */ ECannonType   cannonType;
     };
 
     static_assert(sizeof(Data) == 0x1C);
@@ -45,8 +45,8 @@ class MapdataItemPoint
 public:
     struct Data {
         /* 0x00 */ EGG::Vector3f position;
-        /* 0x0C */ float deviation;
-        /* 0x10 */ u16 parameters[2];
+        /* 0x0C */ float         deviation;
+        /* 0x10 */ u16           parameters[2];
     };
 
     static_assert(sizeof(Data) == 0x14);
@@ -58,7 +58,7 @@ public:
 
 private:
     /* 0x00 */ const Data* m_data;
-    /* 0x04 */ u8 _04[0x14 - 0x04];
+    /* 0x04 */ u8          _04[0x14 - 0x04];
 };
 
 static_assert(sizeof(MapdataItemPoint) == 0x14);

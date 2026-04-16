@@ -29,16 +29,16 @@ namespace wwfc::std
 using size_t = decltype(sizeof(0));
 
 extern "C" {
-void* memcpy(void* __restrict dest, const void* __restrict src, size_t n);
-void* memset(void* s, int c, size_t n);
-int memcmp(const void* s1, const void* s2, size_t n);
-void* memchr(const void* s, int c, size_t n);
+void*  memcpy(void* __restrict dest, const void* __restrict src, size_t n);
+void*  memset(void* s, int c, size_t n);
+int    memcmp(const void* s1, const void* s2, size_t n);
+void*  memchr(const void* s, int c, size_t n);
 size_t strlen(const char* s);
-int strcmp(const char* s1, const char* s2);
-int strncmp(const char* s1, const char* s2, size_t n);
-char* strchr(const char* s, int c);
-char* strcpy(char* __restrict dst, const char* __restrict src);
-char* strncpy(char* __restrict dst, const char* __restrict src, size_t n);
+int    strcmp(const char* s1, const char* s2);
+int    strncmp(const char* s1, const char* s2, size_t n);
+char*  strchr(const char* s, int c);
+char*  strcpy(char* __restrict dst, const char* __restrict src);
+char*  strncpy(char* __restrict dst, const char* __restrict src, size_t n);
 } // extern "C"
 
 #  ifndef NULL
@@ -134,12 +134,12 @@ class array
 {
 public:
     using value_type = T;
-    using size_type = std::size_t;
+    using size_type  = std::size_t;
     // Missing: difference_type
-    using reference = T&;
+    using reference       = T&;
     using const_reference = const T&;
-    using pointer = T*;
-    using const_pointer = const T*;
+    using pointer         = T*;
+    using const_pointer   = const T*;
 
     // Missing: iterator, const_iterator, reverse_iterator,
     // const_reverse_iterator
@@ -263,6 +263,18 @@ template <class T, class U>
 concept is_same_v = __is_same_as(T, U);
 
 template <class T>
+concept is_integral_v =
+    is_same_v<T, bool> || is_same_v<T, char> || is_same_v<T, signed char> ||
+    is_same_v<T, unsigned char> || is_same_v<T, wchar_t> || is_same_v<T, char16_t> ||
+    is_same_v<T, char32_t> || is_same_v<T, short> || is_same_v<T, unsigned short> ||
+    is_same_v<T, int> || is_same_v<T, unsigned int> || is_same_v<T, long> ||
+    is_same_v<T, unsigned long> || is_same_v<T, long long> || is_same_v<T, unsigned long long>
+#  if defined(__SIZEOF_INT128__)
+    || is_same_v<T, __int128> || is_same_v<T, unsigned __int128>
+#  endif
+    ;
+
+template <class T>
 struct identity {
     using type = T;
 };
@@ -296,8 +308,8 @@ struct remove_volatile<volatile T> : identity<T> {
 };
 
 template <class T>
-using remove_cvref_t = typename remove_const<
-    typename remove_volatile<typename remove_reference<T>::type>::type>::type;
+using remove_cvref_t =
+    typename remove_const<typename remove_volatile<typename remove_reference<T>::type>::type>::type;
 
 template <class T>
 constexpr remove_reference<T>::type&& move(T&& t) noexcept
@@ -313,7 +325,7 @@ public:
     }
 };
 
-constexpr nullopt_t nullopt{0};
+constexpr nullopt_t nullopt{ 0 };
 
 template <class T>
 class optional
@@ -332,14 +344,14 @@ public:
     }
 
     constexpr optional(const value_type& value) noexcept
-      : m_pointer(new (placement_new{m_storage}) value_type(value))
+      : m_pointer(new (placement_new{ m_storage }) value_type(value))
     {
     }
 
     constexpr optional(const optional& other) noexcept
     {
         if (other.has_value()) {
-            m_pointer = new (placement_new{m_storage}) value_type(*other);
+            m_pointer = new (placement_new{ m_storage }) value_type(*other);
         }
     }
 

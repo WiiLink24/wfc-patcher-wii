@@ -3,6 +3,7 @@
 #if RMC
 
 #  include "import/mkw/item/ItemType.hpp"
+#  include "wwfcEnum.hpp"
 
 namespace wwfc::mkw
 {
@@ -12,92 +13,87 @@ class NetItemHandler
 {
 public:
     struct [[gnu::packed]] Packet {
-        enum class HeldPhase : u8 {
-            NoItem    = 0,
-            Decided   = 1,
-            Finalised = 2,
-            Reset     = 3,
-            ThreeLeft = 4,
-            TwoLeft   = 5,
-            OneLeft   = 6,
-            Rejected  = 7,
+        enum class EHeldPhase : u8 {
+            NO_ITEM    = 0,
+            DECIDED    = 1,
+            FINALIZED  = 2,
+            RESET      = 3,
+            THREE_LEFT = 4,
+            TWO_LEFT   = 5,
+            ONE_LEFT   = 6,
+            REJECTED   = 7,
         };
 
-        enum class TrailPhase : u8 {
-            NoItem        = 0,
-            ThreeLeftOdd  = 1,
-            TwoLeftOdd    = 2,
-            OneLeftOdd    = 3,
-            Used          = 4,
-            ThreeLeftEven = 5,
-            TwoLeftEven   = 6,
-            OneLeftEven   = 7,
+        enum class ETrailPhase : u8 {
+            NO_ITEM         = 0,
+            THREE_LEFT_ODD  = 1,
+            TWO_LEFT_ODD    = 2,
+            ONE_LEFT_ODD    = 3,
+            USED            = 4,
+            THREE_LEFT_EVEN = 5,
+            TWO_LEFT_EVEN   = 6,
+            ONE_LEFT_EVEN   = 7,
         };
 
-        bool isHeldPhaseValid() const
+        constexpr bool isHeldPhaseValid() const
         {
-            EItemType item = static_cast<EItemType>(heldItem);
-
             switch (heldPhase) {
-            case HeldPhase::NoItem:
-            case HeldPhase::Rejected:
-                return item == EItemType::EMPTY;
+            case EHeldPhase::NO_ITEM:
+            case EHeldPhase::REJECTED:
+                return heldItem == EItemType::EMPTY;
 
-            case HeldPhase::Decided:
-                return ItemDefaults::isValid(item);
+            case EHeldPhase::DECIDED:
+                return ItemDefaults::isValid(heldItem);
 
-            case HeldPhase::Finalised:
-                if (item == EItemType::EMPTY) {
+            case EHeldPhase::FINALIZED:
+                if (heldItem == EItemType::EMPTY) {
                     // The item was rejected by another client
                     return true;
                 }
-                return ItemDefaults::isValid(item);
+                return ItemDefaults::isValid(heldItem);
 
-            case HeldPhase::ThreeLeft:
-            case HeldPhase::TwoLeft:
-                return ItemDefaults::hasQuantity(item);
+            case EHeldPhase::THREE_LEFT:
+            case EHeldPhase::TWO_LEFT:
+                return ItemDefaults::hasQuantity(heldItem);
 
-            case HeldPhase::OneLeft:
-                return ItemDefaults::canHold(item);
+            case EHeldPhase::ONE_LEFT:
+                return ItemDefaults::canHold(heldItem);
 
             // This value is not transmitted over the network
-            case HeldPhase::Reset:
+            case EHeldPhase::RESET:
             default:
                 return false;
             }
         }
 
-        bool isTrailPhaseValid() const
+        constexpr bool isTrailPhaseValid() const
         {
-            EItemType item = static_cast<EItemType>(trailedItem);
-
             switch (trailPhase) {
-            case TrailPhase::NoItem:
-            case TrailPhase::Used: {
-                return item == EItemType::EMPTY;
-            }
-            case TrailPhase::ThreeLeftOdd:
-            case TrailPhase::TwoLeftOdd:
-            case TrailPhase::ThreeLeftEven:
-            case TrailPhase::TwoLeftEven: {
-                return ItemDefaults::hasQuantity(item);
-            }
-            case TrailPhase::OneLeftOdd: {
-            case TrailPhase::OneLeftEven:
-                return ItemDefaults::canTrail(item);
-            }
-            default: {
+            case ETrailPhase::NO_ITEM:
+            case ETrailPhase::USED:
+                return trailedItem == EItemType::EMPTY;
+
+            case ETrailPhase::THREE_LEFT_ODD:
+            case ETrailPhase::TWO_LEFT_ODD:
+            case ETrailPhase::THREE_LEFT_EVEN:
+            case ETrailPhase::TWO_LEFT_EVEN:
+                return ItemDefaults::hasQuantity(trailedItem);
+
+            case ETrailPhase::ONE_LEFT_ODD:
+            case ETrailPhase::ONE_LEFT_EVEN:
+                return ItemDefaults::canTrail(trailedItem);
+
+            default:
                 return false;
-            }
             }
         }
 
-        /* 0x00 */ u8         _00;
-        /* 0x01 */ u8         heldItem;
-        /* 0x02 */ u8         trailedItem;
-        /* 0x03 */ HeldPhase  heldPhase;
-        /* 0x04 */ TrailPhase trailPhase;
-        /* 0x05 */ u8         _05[0x08 - 0x05];
+        /* 0x00 */ u8                  _00;
+        /* 0x01 */ Enum<u8, EItemType> heldItem;
+        /* 0x02 */ Enum<u8, EItemType> trailedItem;
+        /* 0x03 */ EHeldPhase          heldPhase;
+        /* 0x04 */ ETrailPhase         trailPhase;
+        /* 0x05 */ u8                  _05[0x08 - 0x05];
     };
 
     static_assert(sizeof(Packet) == 0x08);

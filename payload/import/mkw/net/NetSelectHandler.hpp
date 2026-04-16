@@ -2,7 +2,9 @@
 
 #if RMC
 
+#  include "../Registry.hpp"
 #  include "NetManager.hpp"
+#  include "wwfcEnum.hpp"
 
 namespace wwfc::mkw
 {
@@ -11,58 +13,41 @@ namespace wwfc::mkw
 class NetSelectHandler
 {
 public:
-    struct __attribute__((packed)) Packet {
-        enum class SelectedCourse : u8 {
-            NotSelected = 0xFF,
-        };
-
-        enum class Phase : u8 {
-            Preparing = 0,
-            Voting = 1,
-            Lottery = 2,
+    struct [[gnu::packed]] Packet {
+        enum class EPhase : u8 {
+            PREPARE = 0,
+            VOTING  = 1,
+            LOTTERY = 2,
         };
 
         enum class EngineClass : u8 {
-            e100cc = 1,
-            e150cc = 2,
-            eMirrorMode = 3,
+            CC_100 = 1,
+            CC_150 = 2,
+            MIRROR = 3,
         };
 
-        struct Player {
-            enum class Character : u8 {
-                NotSelected = 0x30,
-            };
-
-            enum class Vehicle : u8 {
-                NotSelected = 0x24,
-            };
-
-            enum class CourseVote : u8 {
-                NotSelected = 0x43,
-                Random = 0xFF,
-            };
-
-            /* 0x00 */ u8 _00[0x04 - 0x00];
-            /* 0x04 */ Character character;
-            /* 0x05 */ Vehicle vehicle;
-            /* 0x06 */ CourseVote courseVote;
-            /* 0x07 */ u8 _07;
+        struct [[gnu::packed]] Player {
+            /* 0x00 */ u8                   _00[0x04 - 0x00];
+            /* 0x04 */ Enum<u8, ECharacter> character;
+            /* 0x05 */ Enum<u8, EVehicle>   vehicle;
+            /* 0x06 */ Enum<u8, ECourse>    courseVote;
+            /* 0x07 */ u8                   _07;
         };
 
         static_assert(sizeof(Player) == 0x08);
 
-        /* 0x00 */ u8 _00[0x10 - 0x00];
-        /* 0x10 */ Player player[2];
-        /* 0x20 */ u8 _20[0x34 - 0x20];
-        /* 0x34 */ SelectedCourse selectedCourse;
-        /* 0x35 */ Phase phase;
-        /* 0x36 */ u8 _36;
-        /* 0x37 */ EngineClass engineClass;
+        /* 0x00 */ u8                _00[0x10 - 0x00];
+        /* 0x10 */ Player            player[2];
+        /* 0x20 */ u8                _20[0x34 - 0x20];
+        /* 0x34 */ Enum<u8, ECourse> selectedCourse;
+        /* 0x35 */ EPhase            phase;
+        /* 0x36 */ u8                _36;
+        /* 0x37 */ EngineClass       engineClass;
     };
 
     static_assert(sizeof(Packet) == 0x38);
 
-    Packet& sendPacket()
+    Packet& getSendPacket()
     {
         return m_sendPacket;
     }
@@ -70,21 +55,15 @@ public:
     void decideCourse()
     {
         [[gnu::longcall]] void decideCourse(NetSelectHandler * selectHandler)
-            AT(RMCXD_PORT(
-                0x80661CE8, 0x80659DAC, 0x80661354, 0x80650000, 0x8066222C
-            ));
+            AT(RMCXD_PORT(0x80661CE8, 0x80659DAC, 0x80661354, 0x80650000, 0x8066222C));
 
         decideCourse(this);
     }
 
     void initPlayerIdsToPlayerAids()
     {
-        [[gnu::longcall]] void initPlayerIdsToPlayerAids(
-            NetSelectHandler * selectHandler
-        )
-            AT(RMCXD_PORT(
-                0x80662034, 0x8065A0F8, 0x806616A0, 0x8065034C, 0x80662578
-            ));
+        [[gnu::longcall]] void initPlayerIdsToPlayerAids(NetSelectHandler * selectHandler)
+            AT(RMCXD_PORT(0x80662034, 0x8065A0F8, 0x806616A0, 0x8065034C, 0x80662578));
 
         initPlayerIdsToPlayerAids(this);
     }
@@ -99,17 +78,16 @@ public:
 
         if (s_kickTimerFrames < s_kickTimerThresholdFrames) {
             s_kickTimerFrames++;
-
             return;
         }
+
         s_kickTimerFrames = 0;
 
-        u32 availableAids =
-            netController->availableAids() & ~(1 << netController->myAid());
+        u32 availableAids = netController->availableAids() & ~(1 << netController->myAid());
 
         u32 aidsStillLoading = 0x00000000;
         switch (m_sendPacket.phase) {
-        case Packet::Phase::Preparing: {
+        case Packet::EPhase::PREPARE:
             aidsStillLoading = (~m_aidsWithNewSelectPacket) & availableAids;
             if (aidsStillLoading) {
                 break;
@@ -117,8 +95,8 @@ public:
 
             aidsStillLoading = (~m_aidsWithNewMatchSettings) & availableAids;
             break;
-        }
-        case Packet::Phase::Voting: {
+
+        case Packet::EPhase::VOTING:
             aidsStillLoading = (~m_aidsWithVote) & availableAids;
             if (aidsStillLoading) {
                 break;
@@ -126,10 +104,9 @@ public:
 
             aidsStillLoading = (~m_aidsWithVoteData) & availableAids;
             break;
-        }
-        default: {
+
+        default:
             return;
-        }
         }
 
         // Support modifications that allow for clients to be connected to more
@@ -154,23 +131,22 @@ public:
     }
 
 private:
-    /* 0x000 */ u8 _000[0x008 - 0x000];
+    /* 0x000 */ u8     _000[0x008 - 0x000];
     /* 0x008 */ Packet m_sendPacket;
-    /* 0x040 */ u8 _040[0x3E0 - 0x040];
-    /* 0x3E0 */ u32 m_aidsWithNewSelectPacket;
-    /* 0x3E4 */ u8 _3E4[0x3E8 - 0x3E4];
-    /* 0x3E8 */ u32 m_aidsWithNewMatchSettings;
-    /* 0x3EC */ u32 m_aidsWithVoteData;
-    /* 0x3F0 */ u32 m_aidsWithVote;
-    /* 0x3F4 */ u8 _3F4[0x3F8 - 0x3F4];
+    /* 0x040 */ u8     _040[0x3E0 - 0x040];
+    /* 0x3E0 */ u32    m_aidsWithNewSelectPacket;
+    /* 0x3E4 */ u8     _3E4[0x3E8 - 0x3E4];
+    /* 0x3E8 */ u32    m_aidsWithNewMatchSettings;
+    /* 0x3EC */ u32    m_aidsWithVoteData;
+    /* 0x3F0 */ u32    m_aidsWithVote;
+    /* 0x3F4 */ u8     _3F4[0x3F8 - 0x3F4];
 
     static u32 s_kickTimerFrames;
 
     static constexpr u32 s_kickTimerThresholdFrames = 90 * 60;
 
-    static NetSelectHandler* s_instance AT(
-        RMCXD_PORT(0x809C2100, 0x809BD930, 0x809C1160, 0x809B0740, 0x809C2998)
-    );
+    static NetSelectHandler*
+        s_instance AT(RMCXD_PORT(0x809C2100, 0x809BD930, 0x809C1160, 0x809B0740, 0x809C2998));
 };
 
 static_assert(sizeof(NetSelectHandler) == 0x3F8);

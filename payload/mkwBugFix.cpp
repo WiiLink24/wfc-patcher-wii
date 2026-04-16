@@ -28,7 +28,7 @@ static u64 IsUltraShortcutCheckEnabled( //
 // This patch is implemented weirdly to be compatible with the existing
 // Ultra UnCut code.
 WWFC_DEFINE_PATCH = Patch::CallWithCTR(
-    WWFC_PATCH_LEVEL_BUGFIX | WWFC_PATCH_LEVEL_PARITY, //
+    WWFC_PATCH_LEVEL_BUGFIX | WWFC_PATCH_LEVEL_PARITY,                      //
     RMCXD_PORT(0x80535120, 0x805305D8, 0x80534AA0, 0x80523178, 0x8053493C), //
     ASM_LAMBDA(
         ( : ASM_IMPORT(i, IsUltraShortcutCheckEnabled)),
@@ -78,8 +78,7 @@ static u64 IsUltraShortcutCheckEnabled(u32 r3Discard, u32 r4Save)
 {
     bool enabled = false;
 
-    auto raceConfig = mkw::RaceConfigManager::Instance();
-    if (raceConfig->getConfig().isOnlineVersusRace()) {
+    if (mkw::RaceConfigManager::Instance()->getConfig().isWifiVSRace()) {
         if (Payload::g_enableUltraUncut == WWFC_BOOLEAN_RESET) {
             // Check if Worldwide or other vanilla match
             auto netController = mkw::NetManager::Instance();
@@ -92,7 +91,7 @@ static u64 IsUltraShortcutCheckEnabled(u32 r3Discard, u32 r4Save)
     }
 
     // Return hack to save r4 from caller
-    return (u64(enabled ? 1 : 0) << 32) | r4Save;
+    return (static_cast<u64>(enabled ? 1 : 0) << 32) | r4Save;
 }
 
 } // namespace wwfc::BugFix
