@@ -12,7 +12,7 @@ namespace wwfc::mkw::UI
 class Page
 {
 public:
-    enum class EFadeDirection {
+    enum class ENextType {
         NONE     = -1,
         FORWARD  = 0,
         BACKWARD = 1,
@@ -27,7 +27,7 @@ public:
     virtual void vf_18();
     virtual void vf_1C();
     virtual void vf_20();
-    virtual void push(EPageID pageId, EFadeDirection animation);
+    virtual void push(EPageID pageId, ENextType animation);
     virtual void vf_28();
     virtual void vf_2C();
     virtual void onActivate();

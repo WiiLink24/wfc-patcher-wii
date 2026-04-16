@@ -141,11 +141,11 @@ private:
                 section->getPage<YesNoPopupPage>(EPageID::POPUP_YES_NO);
             yesNoPopupPage->reset();
             yesNoPopupPage->setWindowMessage(0x19CA, &formatParam);
-            yesNoPopupPage->configureButton(0, 0xFAC, nullptr, EFadeDirection::NONE, s_onYesOrNo);
-            yesNoPopupPage->configureButton(1, 0xFAD, nullptr, EFadeDirection::NONE, s_onYesOrNo);
+            yesNoPopupPage->configureButton(0, 0xFAC, nullptr, ENextType::NONE, s_onYesOrNo);
+            yesNoPopupPage->configureButton(1, 0xFAD, nullptr, ENextType::NONE, s_onYesOrNo);
             yesNoPopupPage->setDefaultChoice(1);
 
-            push(EPageID::POPUP_YES_NO, EFadeDirection::FORWARD);
+            push(EPageID::POPUP_YES_NO, ENextType::FORWARD);
             break;
         }
 
@@ -166,7 +166,7 @@ private:
             messagePopupPage->reset();
             messagePopupPage->setWindowMessage(0x19CA, &formatParam);
 
-            push(EPageID::POPUP_MESSAGE, EFadeDirection::FORWARD);
+            push(EPageID::POPUP_MESSAGE, ENextType::FORWARD);
             break;
         }
 

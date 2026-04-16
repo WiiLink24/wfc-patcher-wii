@@ -50,7 +50,7 @@ private:
         messagePopupPage->reset();
         messagePopupPage->setWindowMessage(0x19CA, &formatParam);
 
-        push(EPageID::POPUP_MESSAGE, EFadeDirection::FORWARD);
+        push(EPageID::POPUP_MESSAGE, ENextType::FORWARD);
     }
 
     /* 0x044 */ u8 _044[0xF34 - 0x044];

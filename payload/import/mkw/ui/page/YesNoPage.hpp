@@ -59,13 +59,13 @@ public:
     }
 
     void configureButton(
-        u32 index, u32 messageId, FormatParam* formatParam, EFadeDirection animation,
+        u32 index, u32 messageId, FormatParam* formatParam, ENextType animation,
         IHandler* handler
     )
     {
         [[gnu::longcall]] void configureButton(
             YesNoPage * yesNoPage, u32 index, u32 messageId, FormatParam * formatParam,
-            EFadeDirection animation, IHandler * handler
+            ENextType animation, IHandler * handler
         ) AT(RMCXD_PORT(0x80652604, 0x8061EBF0, 0x80651C70, 0x8064091C, 0x80652B48));
 
         configureButton(this, index, messageId, formatParam, animation, handler);
