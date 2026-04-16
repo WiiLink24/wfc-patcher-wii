@@ -3,7 +3,7 @@
 #if RMC
 
 #  include "import/dwc.h"
-#  include "import/egg/heap.hpp"
+#  include "import/egg/core/eggHeap.hpp"
 #  include "import/mkw/system/System.hpp"
 #  include "import/mkw/ui/MultiMenuInputManager.hpp"
 #  include "import/mkw/ui/page/FriendRoomPage.hpp"

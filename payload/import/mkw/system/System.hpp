@@ -2,8 +2,8 @@
 
 #if RMC
 
-#  include "import/egg/heap.hpp"
-#  include "import/egg/sceneManager.hpp"
+#  include "import/egg/core/eggHeap.hpp"
+#  include "import/egg/core/eggSceneManager.hpp"
 
 namespace wwfc::mkw
 {

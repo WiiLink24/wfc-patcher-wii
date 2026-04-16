@@ -2,7 +2,7 @@
 
 #if RMC
 
-#  include "import/egg/vector.hpp"
+#  include "import/egg/core/eggVector.hpp"
 
 namespace wwfc::mkw
 {
