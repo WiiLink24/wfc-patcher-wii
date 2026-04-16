@@ -136,7 +136,7 @@ inline ItemDefaults ItemDefaults::s_table[u8(EItemType::COUNT)] = {
         .m_inBTBalloon  = true,
         .m_inBTCoin     = true,
         .m_hasUseMethod = true,
-        .m_hasQuantity  = false,
+        .m_hasQuantity  = true,
     },
     [u8(EItemType::BOMHEI)] = {
         .m_tailType     = EItemTailType::HOLD,
