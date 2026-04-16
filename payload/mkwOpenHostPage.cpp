@@ -2,19 +2,22 @@
 
 #if RMC
 
-#  include "MessagePopupPage.hpp"
-#  include "YesNoPopupPage.hpp"
 #  include "import/dwc.h"
 #  include "import/egg/heap.hpp"
 #  include "import/mkw/system/System.hpp"
 #  include "import/mkw/ui/MultiMenuInputManager.hpp"
+#  include "import/mkw/ui/page/FriendRoomPage.hpp"
+#  include "import/mkw/ui/page/MessagePopupPage.hpp"
+#  include "import/mkw/ui/page/YesNoPopupPage.hpp"
+#  include "import/mkw/ui/page/wifiFriendMenuPage.hpp"
 #  include "import/mkw/ui/section/SectionManager.hpp"
 #  include "import/revolution.h"
+#  include "wwfcPatch.hpp"
 
 namespace wwfc::mkw::UI
 {
 
-class OpenHostPage : public Page
+class OpenHostPage final : public Page
 {
 public:
     void onActivate() override
@@ -131,9 +134,9 @@ private:
         }
 
         switch (state) {
-        case State::Previous: {
+        case State::Previous:
             break;
-        }
+
         case State::Prompt: {
             FormatParam formatParam{};
             formatParam.strings[0] = openHostPromptMessage();
@@ -200,8 +203,7 @@ private:
     static State                                             s_state;
     static mkw::UI::MenuInputManager::Handler<OpenHostPage>* s_onOption;
     static mkw::UI::YesNoPage::Handler<OpenHostPage>*        s_onYesOrNo;
-    static bool                                              s_openHostEnabled;
-    static bool                                              s_sentOpenHostValue;
+    static bool                                              s_openHostEnabled, s_sentOpenHostValue;
     static const wchar_t* s_openHostPromptMessages[RVL::SCLanguageCount];
     static const wchar_t* s_connectionLostMessages[RVL::SCLanguageCount];
     static const wchar_t* s_openHostEnabledMessages[RVL::SCLanguageCount];
@@ -209,6 +211,167 @@ private:
 };
 
 static_assert(sizeof(OpenHostPage) == sizeof(Page));
+
+OpenHostPage::State                      OpenHostPage::s_state     = OpenHostPage::State::Previous;
+MenuInputManager::Handler<OpenHostPage>* OpenHostPage::s_onOption  = nullptr;
+YesNoPage::Handler<OpenHostPage>*        OpenHostPage::s_onYesOrNo = nullptr;
+bool                                     OpenHostPage::s_openHostEnabled    = false;
+bool                                     OpenHostPage::s_sentOpenHostValue  = false;
+const wchar_t* OpenHostPage::s_openHostPromptMessages[RVL::SCLanguageCount] = {
+    L"こうかいホストをゆうこうにしますか？\n"
+    L"\n"
+    L"この機能はあなたのフレンドコードを\n"
+    L"追加したプレイヤーはあなたが追加し返さなくても\n"
+    L"フレンドとしてあなたと会えるようになる機能です",
+    L"Enable Open Host?\n"
+    L"\n"
+    L"This feature allows players who\n"
+    L"add your friend code to meet up with you,\n"
+    L"even if you don't add them back.",
+    nullptr,
+    L"Activer l'Open Host?\n"
+    L"\n"
+    L"Cette fonctionnalité permet aux joueurs qui\n"
+    L"ajoutent votre code ami de vous rejoindre,\n"
+    L"même si vous ne les avez pas ajoutés.",
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+};
+const wchar_t* OpenHostPage::s_connectionLostMessages[RVL::SCLanguageCount] = {
+    L"サーバーからの接続が切断されました\n"
+    L"\n"
+    L"もう一度やり直してください",
+    L"You have lost connection to\n"
+    L"the server.\n"
+    L"\n"
+    L"Please try again later.",
+    nullptr,
+    L"Vous avez perdu la connexion\n"
+    L"au serveur.\n"
+    L"\n"
+    L"Veuillez réessayer ultérieurement.",
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+};
+const wchar_t* OpenHostPage::s_openHostEnabledMessages[RVL::SCLanguageCount] = {
+    L"こうかいホストをゆうこうにしました！",
+    L"Open Host is now enabled!",
+    nullptr,
+    L"Open Host est maintenant activé!",
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+};
+const wchar_t* OpenHostPage::s_openHostDisabledMessages[RVL::SCLanguageCount] = {
+    L"こうかいホストをむこうにしました！",
+    L"Open Host is now disabled!",
+    nullptr,
+    L"Open Host est maintenant désactivé!",
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+};
+
+// Allow users to open rooms without having any friends added
+WWFC_DEFINE_PATCH = 
+    Patch::CallWithCTR( //
+        WWFC_PATCH_LEVEL_FEATURE, //
+        RMCXD_PORT(0x8064D358, 0x8061A044, 0x8064C9C4, 0x8063B670, 0x8064D88C), //
+        [](mkw::UI::WifiFriendMenuPage* /* wifiFriendMenuPage */,
+           void* /* pushButton */) -> int {
+    constexpr int friendsAdded = 1;
+
+    return friendsAdded;
+}
+    );
+
+// Allow the "Open Host" feature to be enabled via the press of a button
+WWFC_DEFINE_PATCH = Patch::WritePointer(
+    WWFC_PATCH_LEVEL_FEATURE,
+    RMCXD_PORT(0x808B9008, 0x808BABF8, 0x808B8158, 0x808A7470, 0x808B9760), //
+
+    [](mkw::UI::Page* page) {
+        static_cast<FriendRoomPage*>(page)->FriendRoomPage::onActivate();
+
+        if (mkw::NetManager::Instance()->amITheRoomHost()) {
+            static_cast<OpenHostPage*>(page)->onActivate();
+        }
+    }
+);
+WWFC_DEFINE_PATCH = Patch::WritePointer(
+    WWFC_PATCH_LEVEL_FEATURE,
+    RMCXD_PORT(0x808B900C, 0x808BABFC, 0x808B815C, 0x808A7474, 0x808B9764), //
+
+    [](mkw::UI::Page* page) {
+        static_cast<FriendRoomPage*>(page)->FriendRoomPage::onDeactivate();
+
+        if (mkw::NetManager::Instance()->amITheRoomHost()) {
+            static_cast<OpenHostPage*>(page)->onDeactivate();
+        }
+    }
+);
+WWFC_DEFINE_PATCH = Patch::WritePointer(
+    WWFC_PATCH_LEVEL_FEATURE,
+    RMCXD_PORT(0x808B902C, 0x808BAC1C, 0x808B817C, 0x808A7494, 0x808B9784), //
+
+    [](mkw::UI::Page* page) {
+        static_cast<FriendRoomPage*>(page)->FriendRoomPage::onRefocus();
+
+        if (mkw::NetManager::Instance()->amITheRoomHost()) {
+            static_cast<OpenHostPage*>(page)->onRefocus();
+        }
+    }
+);
+WWFC_DEFINE_PATCH = Patch::WritePointer(
+    WWFC_PATCH_LEVEL_FEATURE,
+    RMCXD_PORT(0x808BFE7C, 0x808B97CC, 0x808BEFCC, 0x808AE2EC, 0x808C08BC), //
+
+    [](mkw::UI::Page* page) {
+        static_cast<WifiFriendMenuPage*>(page)->WifiFriendMenuPage::onActivate();
+
+        if (mkw::NetManager::Instance()->amITheRoomHost()) {
+            static_cast<OpenHostPage*>(page)->onActivate();
+        }
+    }
+);
+WWFC_DEFINE_PATCH = Patch::WritePointer(
+    WWFC_PATCH_LEVEL_FEATURE,
+    RMCXD_PORT(0x808BFE80, 0x808B97D0, 0x808BEFD0, 0x808AE2F0, 0x808C08C0), //
+
+    [](mkw::UI::Page* page) {
+        static_cast<WifiFriendMenuPage*>(page)->WifiFriendMenuPage::onDeactivate();
+
+        if (mkw::NetManager::Instance()->amITheRoomHost()) {
+            static_cast<OpenHostPage*>(page)->onDeactivate();
+        }
+    }
+);
+WWFC_DEFINE_PATCH = Patch::WritePointer(
+    WWFC_PATCH_LEVEL_FEATURE,
+    RMCXD_PORT(0x808BFEA0, 0x808B97F0, 0x808BEFF0, 0x808AE310, 0x808C08E0), //
+
+    [](mkw::UI::Page* page) {
+        static_cast<WifiFriendMenuPage*>(page)->WifiFriendMenuPage::onRefocus();
+
+        if (mkw::NetManager::Instance()->amITheRoomHost()) {
+            static_cast<OpenHostPage*>(page)->onRefocus();
+        }
+    }
+);
 
 } // namespace wwfc::mkw::UI
 

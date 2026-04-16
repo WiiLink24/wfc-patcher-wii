@@ -2,51 +2,36 @@
 
 #if RMC
 
-#  include "OpenHostPage.hpp"
+#  include "Page.hpp"
 
 namespace wwfc::mkw::UI
 {
 
-class WifiFriendMenuPage : public OpenHostPage
+class WifiFriendMenuPage : public Page
 {
 public:
     void onActivate() override
     {
-        [[gnu::longcall]] void onActivate(
-            WifiFriendMenuPage * wifiFriendMenuPage
-        )
-            AT(RMCXD_PORT(
-                0x8064CF18, 0x80619C04, 0x8064C584, 0x8063B230, 0x8064D44C
-            ));
+        [[gnu::longcall]] void onActivate(WifiFriendMenuPage * wifiFriendMenuPage)
+            AT(RMCXD_PORT(0x8064CF18, 0x80619C04, 0x8064C584, 0x8063B230, 0x8064D44C));
 
-        onActivate(this);
-
-        OpenHostPage::onActivate();
+        return onActivate(this);
     }
 
     void onDeactivate() override
     {
-        [[gnu::longcall]] void onDeactivate(
-            WifiFriendMenuPage * wifiFriendMenuPage
-        )
-            AT(RMCXD_PORT(
-                0x8064CFF8, 0x80619CE4, 0x8064C664, 0x8063B310, 0x8064D52C
-            ));
+        [[gnu::longcall]] void onDeactivate(WifiFriendMenuPage * wifiFriendMenuPage)
+            AT(RMCXD_PORT(0x8064CFF8, 0x80619CE4, 0x8064C664, 0x8063B310, 0x8064D52C));
 
-        onDeactivate(this);
-
-        OpenHostPage::onDeactivate();
+        return onDeactivate(this);
     }
 
     void onRefocus() override
     {
-        [[gnu::longcall]] void Page_onRefocus(Page * page) AT(RMCXD_PORT(
-            0x805BB228, 0x805B5668, 0x805BABA8, 0x805A9280, 0x805B9C8C
-        ));
+        [[gnu::longcall]] void Page_onRefocus(Page * page)
+            AT(RMCXD_PORT(0x805BB228, 0x805B5668, 0x805BABA8, 0x805A9280, 0x805B9C8C));
 
-        Page_onRefocus(this);
-
-        OpenHostPage::onRefocus();
+        return Page_onRefocus(this);
     }
 
 private:
@@ -54,26 +39,6 @@ private:
 };
 
 static_assert(sizeof(WifiFriendMenuPage) == 0xF34);
-
-extern "C" {
-static void
-WifiFriendMenu_onActivate(mkw::UI::WifiFriendMenuPage* wifiFriendMenuPage)
-{
-    wifiFriendMenuPage->WifiFriendMenuPage::onActivate();
-}
-
-static void
-WifiFriendMenu_onDeactivate(mkw::UI::WifiFriendMenuPage* wifiFriendMenuPage)
-{
-    wifiFriendMenuPage->WifiFriendMenuPage::onDeactivate();
-}
-
-static void
-WifiFriendMenu_onRefocus(mkw::UI::WifiFriendMenuPage* wifiFriendMenuPage)
-{
-    wifiFriendMenuPage->WifiFriendMenuPage::onRefocus();
-}
-}
 
 } // namespace wwfc::mkw::UI
 
