@@ -17,7 +17,7 @@
 namespace wwfc::mkw::UI
 {
 
-class OpenHostPage final : public Page
+class OpenHostPage : public Page
 {
 public:
     void onActivate() override
@@ -111,17 +111,13 @@ private:
     EState resolve() const
     {
         switch (s_state) {
-        case EState::PREVIOUS: {
+        case EState::PREVIOUS:
             break;
-        }
-        case EState::PROMPT: {
+        case EState::PROMPT:
             return EState::RESULT;
-        }
-        case EState::RESULT: {
+        case EState::RESULT:
             return EState::PREVIOUS;
         }
-        }
-
         return s_state;
     }
 
@@ -152,7 +148,8 @@ private:
             push(EPageID::POPUP_YES_NO, EFadeDirection::FORWARD);
             break;
         }
-        case EState::RESULT: {
+
+        case EState::RESULT:
             FormatParam formatParam{};
             if (!s_sentOpenHostValue) {
                 formatParam.strings[0] = connectionLostMessage();
@@ -165,13 +162,12 @@ private:
             }
 
             MessagePopupPage* messagePopupPage =
-                section->getPage<MessagePopupPage>(EPageID::POPUP_YES_NO);
+                section->getPage<MessagePopupPage>(EPageID::POPUP_MESSAGE);
             messagePopupPage->reset();
             messagePopupPage->setWindowMessage(0x19CA, &formatParam);
 
-            push(EPageID::POPUP_YES_NO, EFadeDirection::FORWARD);
+            push(EPageID::POPUP_MESSAGE, EFadeDirection::FORWARD);
             break;
-        }
         }
 
         s_state = state;
@@ -309,7 +305,7 @@ WWFC_DEFINE_PATCH = Patch::WritePointer(
         static_cast<FriendRoomPage*>(page)->FriendRoomPage::onActivate();
 
         if (mkw::NetManager::Instance()->amITheRoomHost()) {
-            static_cast<OpenHostPage*>(page)->onActivate();
+            static_cast<OpenHostPage*>(page)->OpenHostPage::onActivate();
         }
     }
 );
@@ -321,7 +317,7 @@ WWFC_DEFINE_PATCH = Patch::WritePointer(
         static_cast<FriendRoomPage*>(page)->FriendRoomPage::onDeactivate();
 
         if (mkw::NetManager::Instance()->amITheRoomHost()) {
-            static_cast<OpenHostPage*>(page)->onDeactivate();
+            static_cast<OpenHostPage*>(page)->OpenHostPage::onDeactivate();
         }
     }
 );
@@ -333,7 +329,7 @@ WWFC_DEFINE_PATCH = Patch::WritePointer(
         static_cast<FriendRoomPage*>(page)->FriendRoomPage::onRefocus();
 
         if (mkw::NetManager::Instance()->amITheRoomHost()) {
-            static_cast<OpenHostPage*>(page)->onRefocus();
+            static_cast<OpenHostPage*>(page)->OpenHostPage::onRefocus();
         }
     }
 );
@@ -343,10 +339,7 @@ WWFC_DEFINE_PATCH = Patch::WritePointer(
 
     [](mkw::UI::Page* page) {
         static_cast<WifiFriendMenuPage*>(page)->WifiFriendMenuPage::onActivate();
-
-        if (mkw::NetManager::Instance()->amITheRoomHost()) {
-            static_cast<OpenHostPage*>(page)->onActivate();
-        }
+        static_cast<OpenHostPage*>(page)->OpenHostPage::onActivate();
     }
 );
 WWFC_DEFINE_PATCH = Patch::WritePointer(
@@ -355,10 +348,7 @@ WWFC_DEFINE_PATCH = Patch::WritePointer(
 
     [](mkw::UI::Page* page) {
         static_cast<WifiFriendMenuPage*>(page)->WifiFriendMenuPage::onDeactivate();
-
-        if (mkw::NetManager::Instance()->amITheRoomHost()) {
-            static_cast<OpenHostPage*>(page)->onDeactivate();
-        }
+        static_cast<OpenHostPage*>(page)->OpenHostPage::onDeactivate();
     }
 );
 WWFC_DEFINE_PATCH = Patch::WritePointer(
@@ -367,10 +357,7 @@ WWFC_DEFINE_PATCH = Patch::WritePointer(
 
     [](mkw::UI::Page* page) {
         static_cast<WifiFriendMenuPage*>(page)->WifiFriendMenuPage::onRefocus();
-
-        if (mkw::NetManager::Instance()->amITheRoomHost()) {
-            static_cast<OpenHostPage*>(page)->onRefocus();
-        }
+        static_cast<OpenHostPage*>(page)->OpenHostPage::onRefocus();
     }
 );
 

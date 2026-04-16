@@ -1,10 +1,5 @@
 #include "wwfcBase.hpp"
 
-#include "mkwAntiFreeze.cpp"
-#include "mkwBugFix.cpp"
-#include "mkwFeature.cpp"
-#include "mkwSecurity.cpp"
-#include "mkwTime.cpp"
 #include "wwfcError.cpp"
 #include "wwfcGPReport.cpp"
 #include "wwfcHostPlatform.cpp"
@@ -17,3 +12,10 @@
 #include "wwfcProcess.cpp"
 #include "wwfcSecurity.cpp"
 #include "wwfcSupport.cpp"
+
+#include "mkwAntiFreeze.cpp"
+#include "mkwBugFix.cpp"
+#include "mkwFeature.cpp"
+#include "mkwOpenHostPage.cpp"
+#include "mkwSecurity.cpp"
+#include "mkwTime.cpp"
